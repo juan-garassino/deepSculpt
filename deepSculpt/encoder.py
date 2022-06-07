@@ -1,10 +1,12 @@
 from sklearn.preprocessing import LabelEncoder
+import numpy as np
 
 class Encoder():
 
     def __init__(self, sculpture):
 
         self.sculpture = sculpture
+        self.void_dim = self.sculpture.shape[0]
 
     def encoder(self):
 
@@ -15,7 +17,8 @@ class Encoder():
         binary_encoded_sculpture = np.array(
             [[int(char) for char in "{:03b}".format(color)]
              for color in colors],
-            dtype=object).reshape((48 * 3, 48, 48))
+            dtype=object).reshape(
+                (self.void_dim * 3, self.void_dim, self.void_dim))
 
         classes = binarizer.classes_
 
