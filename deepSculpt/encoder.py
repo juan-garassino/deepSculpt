@@ -1,21 +1,22 @@
 from sklearn.preprocessing import LabelEncoder
 
+class Encoder():
 
-class Encoder(Sculptor):
+    def __init__(self, sculpture):
 
-    def __init__(self, void):
-        self.void = void
+        self.sculpture = sculpture
 
-    def encoder(colors_array):
+    def encoder(self):
 
         binarizer = LabelEncoder()
 
-        colors = binarizer.fit_transform(colors_array.reshape(-1, 1))
+        colors = binarizer.fit_transform(self.sculpture.reshape(-1, 1))
 
-        binary_encoded = np.array([[int(char) for char in "{:03b}".format(color)]
-                                for color in colors],
-                                dtype=object).reshape((48 * 3, 48, 48))
+        binary_encoded_sculpture = np.array(
+            [[int(char) for char in "{:03b}".format(color)]
+             for color in colors],
+            dtype=object).reshape((48 * 3, 48, 48))
 
         classes = binarizer.classes_
 
-        return binary_encoded, classes
+        return binary_encoded_sculpture, classes
