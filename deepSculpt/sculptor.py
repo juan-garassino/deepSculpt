@@ -1,7 +1,7 @@
-import numpy as np
 import random
 import time
 
+import numpy as np
 
 class Sculptor():
 
@@ -22,7 +22,7 @@ class Sculptor():
         self.n_edge_elements = n_edge_elements
         self.n_plane_elements = n_plane_elements
         self.n_volume_elements = n_volume_elements
-        self.style = "#ffffff"
+        self.style = "#ffffff" # not plotting anymore
 
         self.element_edge_min = element_edge_min
         self.element_edge_max = element_edge_max
