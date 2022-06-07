@@ -1,3 +1,5 @@
+import numpy as np
+
 class Decoder():
 
     def __init__(self, binary_array_sculpture, classes, void_dim):
