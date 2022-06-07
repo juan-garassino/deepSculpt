@@ -25,7 +25,7 @@ class Plotter(Sculptor):
                                  facecolor=(self.style),
                                  subplot_kw=dict(projection="3d"))
         axes = axes.ravel()  # flats
-        for index in range(2):
+        for index in range(1):
             axes[0].voxels(self.void[0],
                                facecolors=self.void[1],
                                edgecolors="k",
