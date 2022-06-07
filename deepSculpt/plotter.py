@@ -1,12 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from deepSculpt.Sculptor import generative_sculpt
+from deepSculpt.sculptor import Sculptor
 
-class Plotter():
+class Plotter(Sculptor):
 
-    def __init__(self, void, void_dim, style):
+    def __init__(self, void, style):
         self.void = void
-        self.void_dim = void_dim
         self.style = style
 
     def plot_sections(self):
@@ -27,10 +26,8 @@ class Plotter():
                                  subplot_kw=dict(projection="3d"))
         axes = axes.ravel()  # flats
         for index in range(1):
-            self.void = np.zeros((self.void_dim, self.void_dim, self.void_dim))
-            sculpture = generative_sculpt()
-            axes[index].voxels(sculpture[0],
-                               facecolors=sculpture[1],
+            axes[index].voxels(self.void[0],
+                               facecolors=self.void[1],
                                edgecolors="k",
                                linewidth=0.05)  # axes[index]
         plt.savefig('image.png')  # agregar tiempo de impresion y exportar 3D
