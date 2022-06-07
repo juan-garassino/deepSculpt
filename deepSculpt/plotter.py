@@ -1,9 +1,13 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from deepSculpt.Sculptor import generative_sculpt
 
 class Plotter():
 
-    def __init__(self, void):
+    def __init__(self, void, void_dim, style):
         self.void = void
+        self.void_dim = void_dim
+        self.style = style
 
     def plot_sections(self):
         sculpture = self.void
@@ -15,9 +19,7 @@ class Plotter():
         for index in range(self.void.shape[0]):
             axes[index].imshow(sculpture[index, :, :], cmap="gray")
 
-    def plot_sculpture(
-            self):  # add call to generative sculpt and then plot like 12
-        #sculpture = self.void
+    def plot_sculpture(self):  # add call to generative sculpt and then plot like 12
         fig, axes = plt.subplots(ncols=2,
                                  nrows=2,
                                  figsize=(25, 25),
@@ -25,8 +27,8 @@ class Plotter():
                                  subplot_kw=dict(projection="3d"))
         axes = axes.ravel()  # flats
         for index in range(1):
-            self.void = np.zeros((void_dim, void_dim, void_dim))
-            sculpture = self.generative_sculpt()
+            self.void = np.zeros((self.void_dim, self.void_dim, self.void_dim))
+            sculpture = generative_sculpt()
             axes[index].voxels(sculpture[0],
                                facecolors=sculpture[1],
                                edgecolors="k",
