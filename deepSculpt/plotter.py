@@ -20,14 +20,18 @@ class Plotter(Sculptor):
 
     def plot_sculpture(self):  # add call to generative sculpt and then plot like 12
         fig, axes = plt.subplots(ncols=2,
-                                 nrows=2,
+                                 nrows=1,
                                  figsize=(25, 25),
                                  facecolor=(self.style),
                                  subplot_kw=dict(projection="3d"))
         axes = axes.ravel()  # flats
-        for index in range(1):
-            axes[index].voxels(self.void[0],
+        for index in range(2):
+            axes[0].voxels(self.void[0],
                                facecolors=self.void[1],
+                               edgecolors="k",
+                               linewidth=0.05)
+            axes[1].voxels(self.void[0].T,
+                               facecolors=self.void[1].T,
                                edgecolors="k",
                                linewidth=0.05)  # axes[index]
         plt.savefig('image.png')  # agregar tiempo de impresion y exportar 3D
