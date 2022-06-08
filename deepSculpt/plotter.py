@@ -30,8 +30,10 @@ class Plotter(Sculptor):
                                facecolors=self.void[1],
                                edgecolors="k",
                                linewidth=0.05)
-            axes[1].voxels(self.void[0].T,
-                               facecolors=self.void[1].T,
-                               edgecolors="k",
-                               linewidth=0.05)  # axes[index]
+
+            axes[1].voxels(np.rot90(self.void[0], 2),
+                           facecolors=np.rot90(self.void[1], 2),
+                           edgecolors="k",
+                           linewidth=0.05)
+
         plt.savefig('image.png')  # agregar tiempo de impresion y exportar 3D
