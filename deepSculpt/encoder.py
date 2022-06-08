@@ -18,7 +18,7 @@ class Encoder():
             [[int(char) for char in "{:03b}".format(color)]
              for color in colors],
             dtype=object).reshape(
-                (self.void_dim * 3, self.void_dim, self.void_dim))
+                (self.void_dim, self.void_dim, self.void_dim, 3, 1))
 
         classes = binarizer.classes_
 

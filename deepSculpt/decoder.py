@@ -19,7 +19,7 @@ class Decoder():
             '101': self.classes[5],
             "110": self.classes[6],
             "111": self.classes[7]
-        }
+        } # problems with the dcitionary when classes are not 8
 
         dic_void = {'000':1,'001':1,'010':1,'011':1,'100':1,'101':0,"110":0,"111":0}
 
