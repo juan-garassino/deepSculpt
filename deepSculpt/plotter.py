@@ -20,7 +20,7 @@ class Plotter(Sculptor):
 
     def plot_sculpture(self):  # add call to generative sculpt and then plot like 12
         fig, axes = plt.subplots(ncols=2,
-                                 nrows=1,
+                                 nrows=2,
                                  figsize=(25, 25),
                                  facecolor=(self.style),
                                  subplot_kw=dict(projection="3d"))
@@ -31,8 +31,18 @@ class Plotter(Sculptor):
                                edgecolors="k",
                                linewidth=0.05)
 
-            axes[1].voxels(np.rot90(self.void[0], 2),
+            axes[1].voxels(np.rot90(self.void[0], 1),
+                           facecolors=np.rot90(self.void[1], 1),
+                           edgecolors="k",
+                           linewidth=0.05)
+
+            axes[2].voxels(np.rot90(self.void[0], 2),
                            facecolors=np.rot90(self.void[1], 2),
+                           edgecolors="k",
+                           linewidth=0.05)
+
+            axes[3].voxels(np.rot90(self.void[0], 3),
+                           facecolors=np.rot90(self.void[1], 3),
                            edgecolors="k",
                            linewidth=0.05)
 
