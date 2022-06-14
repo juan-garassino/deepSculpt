@@ -67,5 +67,5 @@ class Plotter(Sculptor):
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M")
 
-        plt.savefig(f'image[{now}].png', transparent=self.transparent)  # agregar tiempo de impresion y exportar 3D
+        plt.savefig(f'image[{now}].png', transparent=self.transparent)  # agregar tiempo de impresion y exportar 3D y bounding box
         plt.savefig(f'image[{now}].svg', transparent=self.transparent)
