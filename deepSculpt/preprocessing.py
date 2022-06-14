@@ -69,11 +69,13 @@ class BinaryEncoderDecoder():
 
         self.n_bit = len(bin(self.classes.size)[2:])
 
+        binary_format = "{:" + f"{self.n_bit}" + "b}"
+
         binary_encoded_colors = np.array(
             [
                 [
-                    int(char) for char in "{:03b}".format(
-                        color)  # crea [0,0,0] desde el string
+                    int(char) for char in binary_format.format(color).replace(
+                        " ", "0")  # crea [0,0,0] desde el string
                 ]  # el 03b tiene como output el binario en 3 digitos
                 for color in
                 label_encoded_colors  #por cada uno de los flattened samples
