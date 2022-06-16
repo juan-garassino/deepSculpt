@@ -60,14 +60,14 @@ class BinaryEncoderDecoder():
 
     def binary_encoder(self):
 
-        binarizer = LabelEncoder()
+        self.binarizer_encoder = LabelEncoder()
 
         label_encoded_colors = self.binarizer_encoder.fit_transform(
             self.colors_labels_array.reshape(-1, 1))
 
         self.classes = self.binarizer_encoder.classes_
 
-        self.n_bit = len(bin(self.classes.size)[2:])
+        self.n_bit = len(bin( self.classes.size - 1 )[2:])
 
         binary_format = "{:" + f"{self.n_bit}" + "b}"
 
@@ -89,6 +89,8 @@ class BinaryEncoderDecoder():
         return binary_encoded_colors, self.classes
 
     def binary_decoder(self, binary_encoded_colors):
+
+        self.n_sample = binary_encoded_colors.shape[0]
 
         flatten_list = binary_encoded_colors.reshape(
             (self.n_sample * self.void_dim * self.void_dim * self.void_dim,
@@ -113,4 +115,4 @@ class BinaryEncoderDecoder():
             f"Just decoded 'decoded_void' shaped {decoded_void.shape} and 'decoded_color' shaped{decoded_color.shape}"
         )
 
-        return decoded_void, decoded_color
+        return decoded_void, decoded_color, np.unique(decode_preprocess_binary), np.unique(decode_preprocess_decimal)
