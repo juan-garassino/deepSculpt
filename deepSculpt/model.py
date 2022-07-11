@@ -31,10 +31,6 @@ import h5py
 from scipy.fft import dst, dct, fft
 from IPython import display
 
-##########
-## DATA ##
-##########
-
 if load_data:
     os.chdir("/content/drive/MyDrive/data/volumetries")
 
