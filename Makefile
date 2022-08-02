@@ -60,6 +60,9 @@ pypi:
 #      TRAIN MODEL
 # ----------------------------------
 
+# project id - replace with your GCP project id
+PROJECT_ID=deepsculpt
+
 # bucket
 BUCKET_NAME=deepsculpt
 
@@ -80,9 +83,6 @@ RUNTIME_VERSION=2.2
 PACKAGE_NAME=deepSculpt
 
 FILENAME=trainer
-
-# project id - replace with your GCP project id
-PROJECT_ID=deepsculpt
 
 set_project:
 	@gcloud config set project ${PROJECT_ID}
