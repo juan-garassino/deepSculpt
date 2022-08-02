@@ -25,7 +25,7 @@ from deepSculpt.params import (
     ELEMENT_PLANE_MIN,
     ELEMENT_PLANE_MAX,
     ELEMENT_VOLUME_MIN,
-    ELEMENT_VOLUME_MAX
+    ELEMENT_VOLUME_MAX,
 )
 
 

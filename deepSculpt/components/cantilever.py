@@ -29,9 +29,7 @@ def add_pipe_cantilever(self):  # THIS IS GOOD!!
         (self.element.shape[0], self.element.shape[1], self.depth)
     )
 
-    self.element_void = np.zeros(
-        (self.element.shape[0] - 2, self.element.shape[1] - 2)
-    )
+    self.element_void = np.zeros((self.element.shape[0] - 2, self.element.shape[1] - 2))
     self.element_void = np.repeat(self.element_void, repeats=self.depth).reshape(
         (self.element_void.shape[0], self.element_void.shape[1], self.depth)
     )
@@ -49,12 +47,8 @@ def add_pipe_cantilever(self):  # THIS IS GOOD!!
             np.random.randint(low=0, high=self.delta[2]),
         )
     )
-    corner_2 = np.array(
-        (corner_1[0] + self.element.shape[0], corner_1[1], corner_1[2])
-    )
-    corner_3 = np.array(
-        (corner_1[0], corner_1[1], corner_1[2] + self.element.shape[2])
-    )
+    corner_2 = np.array((corner_1[0] + self.element.shape[0], corner_1[1], corner_1[2]))
+    corner_3 = np.array((corner_1[0], corner_1[1], corner_1[2] + self.element.shape[2]))
     corner_4 = np.array(
         (
             corner_1[0] + self.element.shape[0],
@@ -63,18 +57,10 @@ def add_pipe_cantilever(self):  # THIS IS GOOD!!
         )
     )
 
-    corner_5 = np.array(
-        (corner_1[0], corner_1[1] + self.element.shape[1], corner_1[2])
-    )
-    corner_6 = np.array(
-        (corner_2[0], corner_2[1] + self.element.shape[1], corner_2[2])
-    )
-    corner_7 = np.array(
-        (corner_3[0], corner_3[1] + self.element.shape[1], corner_3[2])
-    )
-    corner_8 = np.array(
-        (corner_4[0], corner_4[1] + self.element.shape[1], corner_4[2])
-    )
+    corner_5 = np.array((corner_1[0], corner_1[1] + self.element.shape[1], corner_1[2]))
+    corner_6 = np.array((corner_2[0], corner_2[1] + self.element.shape[1], corner_2[2]))
+    corner_7 = np.array((corner_3[0], corner_3[1] + self.element.shape[1], corner_3[2]))
+    corner_8 = np.array((corner_4[0], corner_4[1] + self.element.shape[1], corner_4[2]))
 
     self.color_volume = np.random.randint(0, len(self.color_volumes))
 
