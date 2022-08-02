@@ -3,7 +3,6 @@ from deepSculpt.params import VOID_DIM, NOISE_DIM
 
 ## GENERATOR
 
-
 def make_three_dimentional_generator():
     model = Sequential()
     model.add(layers.Dense(3 * 3 * 3 * 512, use_bias=False, input_shape=(NOISE_DIM,)))
@@ -71,7 +70,6 @@ def make_three_dimentional_generator():
 
 
 ## CRITIC
-
 
 def make_three_dimentional_critic():
     model = Sequential()
