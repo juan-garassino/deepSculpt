@@ -8,17 +8,12 @@ from IPython import display
 import time
 from deepSculpt.params import (
     load_data,
-    n_samples,
-    void_dim,
+    N_SAMPLES,
+    VOID_DIM,
     BUFFER_SIZE,
     BATCH_SIZE,
     EPOCHS,
-    noise_dim,
-    num_examples_to_generate,
-    seed,
-    BUCKET_NAME,
-    BUCKET_TRAIN_DATA_PATH,
-    MODEL_BASE_PATH,
+    SEED
 )
 from deepSculpt.preprocessing import OneHotEncoderDecoder
 from deepSculpt.data import DataLoaderCreator
@@ -26,6 +21,18 @@ from deepSculpt.model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
+
+data = DataLoaderCreator()
+
+volumes, colors = data.create_sculpts(n_samples=N_SAMPLES,
+                   n_edge_elements=0,
+                   n_plane_elements=2,
+                   n_volume_elements=2,
+                   color_edges="dimgrey",
+                   color_planes="snow",
+                   color_volumes=["crimson", "turquoise", "gold"],
+                   verbose=False,
+                   void_dim=VOID_DIM)
 
 data = DataLoaderCreator(
     path_volumes="raw-data[2022-07-26].npy",

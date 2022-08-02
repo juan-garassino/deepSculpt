@@ -1,10 +1,10 @@
 from tensorflow.random import normal
 
-load_data = True
+CREATE_DATA = True
 
-n_samples = 5000
+N_SAMPLES = 5000
 
-void_dim = 24
+VOID_DIM = 24
 
 BUFFER_SIZE = 5000
 
@@ -12,14 +12,14 @@ BATCH_SIZE = 32
 
 EPOCHS = 5
 
-noise_dim = 1024
+NOISE_DIM = 1024
 
-num_examples_to_generate = 1
+SCULPTS_GEN = 1
 
-seed = normal([num_examples_to_generate, noise_dim])
+SEED = normal([SCULPTS_GEN, NOISE_DIM])
 
-BUCKET_NAME = ""
+BUCKET_NAME = 'deepsculpt'
 
-BUCKET_TRAIN_DATA_PATH = ""
+BUCKET_TRAIN_DATA_PATH = "data"
 
 MODEL_BASE_PATH = ""
