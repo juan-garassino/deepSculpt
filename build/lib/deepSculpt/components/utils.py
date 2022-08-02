@@ -1,36 +1,38 @@
-def return_axis(self):
+import numpy as np
 
-    self.section = np.random.randint(low=0 - 1, high=self.void[0].shape[0])
+def return_axis(void, color_void):
 
-    self.axis_selection = np.random.randint(low=0, high=3)
+    section = np.random.randint(low=0 - 1, high=void[0].shape[0])
 
-    if self.axis_selection == 0:
-        self.working_plane = self.void[self.section, :, :]
-        self.color_parameters = self.color_void[self.section, :, :]
-    elif self.axis_selection == 1:
-        self.working_plane = self.void[:, self.section, :]
-        self.color_parameters = self.color_void[:, self.section, :]
-    elif self.axis_selection == 2:
-        self.working_plane = self.void[:, :, self.section]
-        self.color_parameters = self.color_void[:, :, self.section]
+    axis_selection = np.random.randint(low=0, high=3)
+
+    if axis_selection == 0:
+        working_plane = void[section, :, :]
+        color_parameters = color_void[section, :, :]
+    elif axis_selection == 1:
+        working_plane = void[:, section, :]
+        color_parameters = color_void[:, section, :]
+    elif axis_selection == 2:
+        working_plane = void[:, :, section]
+        color_parameters = color_void[:, :, section]
     else:
         print("error")
 
     return (
-        self.working_plane,
-        self.color_parameters,
+        working_plane,
+        color_parameters,
     )
 
 
-def print_information(self):
-    print(f"void shape is: {np.array(self.void[0].shape)}")
-    print(f"element shape is : {np.array(self.element.shape)}")
-    print(f"the axis selection is: {self.axis_selection}")
-    print(f"delta is: {self.delta}")
-    print(f"section is: {self.section}")
-    print(f"top left corner is: {self.top_left_corner}")
-    print(f"bottom right corner is: {self.bottom_right_corner}")
+def print_information(void, element, axis_selection, delta, section, top_left_corner, bottom_right_corner):
+    print(f"void shape is: {np.array(void[0].shape)}")
+    print(f"element shape is : {np.array(element.shape)}")
+    print(f"the axis selection is: {axis_selection}")
+    print(f"delta is: {delta}")
+    print(f"section is: {section}")
+    print(f"top left corner is: {top_left_corner}")
+    print(f"bottom right corner is: {bottom_right_corner}")
     print(
-        f"slices are: {self.top_left_corner[0]}:{self.bottom_right_corner[0]} and {self.top_left_corner[1]}:{self.bottom_right_corner[1]}"
+        f"slices are: {top_left_corner[0]}:{bottom_right_corner[0]} and {top_left_corner[1]}:{bottom_right_corner[1]}"
     )
     print("###############################################################")
