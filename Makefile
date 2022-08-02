@@ -6,10 +6,10 @@ install_requirements:
 	@pip install -r requirements.txt
 
 check_code:
-	@flake8 scripts/* deep-sculpt/*.py
+	@flake8 scripts/* deepSculpt/*.py
 
 black:
-	@black scripts/* deep-sculpt/*.py
+	@black scripts/* deepSculpt/*.py
 
 test:
 	@coverage run -m pytest tests/*.py
@@ -23,8 +23,8 @@ clean:
 	@rm -f .coverage
 	@rm -fr */__pycache__ */*.pyc __pycache__
 	@rm -fr build dist
-	@rm -fr deep-sculpt-*.dist-info
-	@rm -fr deep-sculpt.egg-info
+	@rm -fr deepSculpt-*.dist-info
+	@rm -fr deepSculpt.egg-info
 
 install:
 	@pip install . -U
@@ -95,7 +95,7 @@ run_locally:
 
 ##### Job - - - - - - - - - - - - - - - - - - - - - - - - -
 
-JOB_NAME=mintrainer_$(shell date +'%Y%m%d_%H%M%S')
+JOB_NAME=deepsculpt_$(shell date +'%Y%m%d_%H%M%S')
 
 gcp_submit_training:
 	gcloud ai-platform jobs submit training ${JOB_NAME} \
