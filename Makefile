@@ -1,6 +1,7 @@
 # ----------------------------------
 #          INSTALL & TEST
 # ----------------------------------
+
 install_requirements:
 	@pip install -r requirements.txt
 
@@ -44,6 +45,7 @@ count_lines:
 # ----------------------------------
 #      UPLOAD PACKAGE TO PYPI
 # ----------------------------------
+
 PYPI_USERNAME=<AUTHOR>
 build:
 	@python setup.py sdist bdist_wheel
@@ -53,3 +55,61 @@ pypi_test:
 
 pypi:
 	@twine upload dist/* -u $(PYPI_USERNAME)
+
+# ----------------------------------
+#      TRAIN MODEL
+# ----------------------------------
+
+# bucket
+BUCKET_NAME=deepsculpt
+
+# training folder
+BUCKET_TRAINING_FOLDER=data
+
+# training params, choose your region from https://cloud.google.com/storage/docs/locations#available_locations
+REGION=europe-west1
+
+# app environment
+PYTHON_VERSION=3.7
+
+FRAMEWORK=scikit-learn
+
+RUNTIME_VERSION=2.2
+
+# package params
+PACKAGE_NAME=deepSculpt
+
+FILENAME=trainer
+
+# project id - replace with your GCP project id
+PROJECT_ID=deepsculpt
+
+set_project:
+	@gcloud config set project ${PROJECT_ID}
+
+create_bucket:
+	@gsutil mb -l ${REGION} -p ${PROJECT_ID} gs://${BUCKET_NAME}
+
+run_locally:
+	python -m deepSculpt.trainer
+
+##### Job - - - - - - - - - - - - - - - - - - - - - - - - -
+
+JOB_NAME=mintrainer_$(shell date +'%Y%m%d_%H%M%S')
+
+gcp_submit_training:
+	gcloud ai-platform jobs submit training ${JOB_NAME} \
+		--job-dir gs://${BUCKET_NAME}/${BUCKET_TRAINING_FOLDER} \
+		--package-path ${PACKAGE_NAME} \
+		--module-name ${PACKAGE_NAME}.${FILENAME} \
+		--python-version=${PYTHON_VERSION} \
+		--runtime-version=${RUNTIME_VERSION} \
+		--region ${REGION} \
+		--stream-logs
+
+# ----------------------------------
+#      RUN API
+# ----------------------------------
+
+run_api:
+	python app.py
