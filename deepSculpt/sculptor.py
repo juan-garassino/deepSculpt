@@ -1,8 +1,6 @@
 import random
 import time
-
 import numpy as np
-
 
 class Sculptor:
     def __init__(
@@ -37,7 +35,7 @@ class Sculptor:
         self.n_edge_elements = n_edge_elements
         self.n_plane_elements = n_plane_elements
         self.n_volume_elements = n_volume_elements
-        self.style = "#ffffff"  # not plotting anymore
+        self.style = "#ffffff"
 
         self.element_edge_min = element_edge_min
         self.element_edge_max = element_edge_max
@@ -51,15 +49,15 @@ class Sculptor:
 
         self.verbose = verbose
 
-    def return_axis(self):  # CAN I JUST HAVE ONE????
+    def return_axis(self):
 
         self.section = np.random.randint(
             low=0 - 1, high=self.void[0].shape[0]
-        )  # selects a section of the axis to work on
+        )
 
         self.axis_selection = np.random.randint(
             low=0, high=3
-        )  # decides if we are working in the X, Y or Z axis
+        )
 
         if self.axis_selection == 0:
             self.working_plane = self.void[self.section, :, :]
@@ -76,13 +74,9 @@ class Sculptor:
         return (
             self.working_plane,
             self.color_parameters,
-        )  # returns the selected plane for the void and the parameters array
+        )
 
-    ### MAIN FUNCTIONS ###
-
-    ######################
-    ## BUILDS THE EDGES ##
-    ######################
+## EDGES
 
     def add_edge(self):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
@@ -137,9 +131,7 @@ class Sculptor:
 
         return self.void, self.color_void
 
-    #######################
-    ## BUILDS THE PLANES ##
-    #######################
+## PLANES
 
     def add_plane(self):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
@@ -196,9 +188,7 @@ class Sculptor:
 
         return self.void, self.color_void
 
-    ###########################
-    ## BUILDS THE CANTILEVER ##
-    ###########################
+## CANTILEVER
 
     def add_pipe_cantilever(self):  # THIS IS GOOD!!
 
@@ -370,9 +360,7 @@ class Sculptor:
 
         return self.void
 
-    #####################
-    ## BUILDS THE GRID ##
-    #####################
+## GRIDS
 
     def add_grid(self):
         self.working_plane = self.void[:, :, self.section]
@@ -420,7 +408,7 @@ class Sculptor:
 
         return self.void, self.color_void
 
-    ### ULTILS ###
+## ULTILS
 
     def print_information(self):
         print(f"void shape is: {np.array(self.void[0].shape)}")
@@ -435,7 +423,7 @@ class Sculptor:
         )
         print("###############################################################")
 
-    ### GENERATOR ###
+## GENERATOR
 
     def generative_sculpt(self):
         start = time.time()
