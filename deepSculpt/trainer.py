@@ -7,13 +7,13 @@ from IPython import display
 
 import time
 from deepSculpt.params import (
-    load_data,
+    LOCALLY,
     N_SAMPLES,
     VOID_DIM,
     BUFFER_SIZE,
     BATCH_SIZE,
     EPOCHS,
-    SEED
+    CREATE_DATA,
 )
 from deepSculpt.preprocessing import OneHotEncoderDecoder
 from deepSculpt.data import DataLoaderCreator
@@ -22,24 +22,35 @@ from deepSculpt.model import (
     make_three_dimentional_critic,
 )
 
-data = DataLoaderCreator()
+if CREATE_DATA:
 
-volumes, colors = data.create_sculpts(n_samples=N_SAMPLES,
-                   n_edge_elements=0,
-                   n_plane_elements=2,
-                   n_volume_elements=2,
-                   color_edges="dimgrey",
-                   color_planes="snow",
-                   color_volumes=["crimson", "turquoise", "gold"],
-                   verbose=False,
-                   void_dim=VOID_DIM)
+    data = DataLoaderCreator()
 
-data = DataLoaderCreator(
-    path_volumes="raw-data[2022-07-26].npy",
-    path_colors="color-raw-data[2022-07-26].npy",
-)
+    volumes, colors = data.create_sculpts(
+        n_samples=N_SAMPLES,
+        n_edge_elements=0,
+        n_plane_elements=2,
+        n_volume_elements=2,
+        color_edges="dimgrey",
+        color_planes="snow",
+        color_volumes=["crimson", "turquoise", "gold"],
+        verbose=False,
+        void_dim=VOID_DIM,
+    )
 
-volumes, colors = data.get_data()
+else:
+
+    data = DataLoaderCreator(
+        path_volumes="raw-data[2022-07-26].npy",
+        path_colors="color-raw-data[2022-07-26].npy",
+    )
+    if LOCALLY:
+        volumes, colors = data.load_locally()
+
+    else:
+        volumes, colors = data.load_from_gcp()
+
+## PREPRO
 
 preprocessing_class_o = OneHotEncoderDecoder(colors)
 

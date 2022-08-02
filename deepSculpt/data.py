@@ -6,11 +6,17 @@ import numpy as np
 import os
 from datetime import date
 
-from deepSculpt.params import BUCKET_NAME, BUCKET_TRAIN_DATA_PATH, MODEL_BASE_PATH, VOID_DIM, N_SAMPLES, CREATE_DATA
+from deepSculpt.params import (
+    VOID_DIM,
+    N_SAMPLES,
+    BUCKET_NAME,
+    BUCKET_TRAIN_DATA_PATH,
+    MODEL_BASE_PATH,
+)
 
 
 class DataLoaderCreator:
-    def __init__(self, create=CREATE_DATA, locally=True, path_volumes="", path_colors=""):
+    def __init__(self, create=False, locally=True, path_volumes="", path_colors=""):
         self.locally = locally
         self.create = create
         self.path_volumes = path_volumes
@@ -103,26 +109,23 @@ class DataLoaderCreator:
 
         return (raw_data, color_raw_data)
 
-    def load_from_gcp(self):
-
-        data_file = "color-raw-data[2022-07-26].npy"
+    def load_from_gcp(self, volumes="", colors=""):
 
         client = storage.Client().bucket(BUCKET_NAME)
 
         blob = client.blob(BUCKET_TRAIN_DATA_PATH)
 
-        blob.download_to_filename(data_file)
+        blob.download_to_filename(colors)
 
-        df = pd.read_csv(data_file)
+        raw_data = np.load(volumes, allow_pickle=True)
 
-        return df
+        color_raw_data = np.load(colors, allow_pickle=True)
 
-    def get_data(self):
+        print(
+            f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+        )
 
-        if self.locally:
-            return self.load_locally(volumes=self.path_volumes, colors=self.path_colors)
-        else:
-            return self.load_from_gcp()
+        return (raw_data, color_raw_data)
 
     def clean_data(df):
         pass

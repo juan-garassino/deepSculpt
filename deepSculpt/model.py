@@ -3,14 +3,11 @@ from deepSculpt.params import VOID_DIM, NOISE_DIM
 
 ## GENERATOR
 
+
 def make_three_dimentional_generator():
     model = Sequential()
-    model.add(
-        layers.Dense(3 * 3 * 3 * 512, use_bias=False, input_shape=(NOISE_DIM,))
-    )
-    model.add(
-        layers.BatchNormalization()
-    )
+    model.add(layers.Dense(3 * 3 * 3 * 512, use_bias=False, input_shape=(NOISE_DIM,)))
+    model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
     model.add(layers.Reshape((3, 3, 3, 512)))
     assert model.output_shape == (None, 3, 3, 3, 512)
@@ -72,7 +69,9 @@ def make_three_dimentional_generator():
     assert model.output_shape == (None, 24, 24, 24, 6, 1)
     return model
 
+
 ## CRITIC
+
 
 def make_three_dimentional_critic():
     model = Sequential()

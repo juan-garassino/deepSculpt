@@ -2,6 +2,7 @@ import random
 import time
 import numpy as np
 
+
 class Sculptor:
     def __init__(
         self,
@@ -51,13 +52,9 @@ class Sculptor:
 
     def return_axis(self):
 
-        self.section = np.random.randint(
-            low=0 - 1, high=self.void[0].shape[0]
-        )
+        self.section = np.random.randint(low=0 - 1, high=self.void[0].shape[0])
 
-        self.axis_selection = np.random.randint(
-            low=0, high=3
-        )
+        self.axis_selection = np.random.randint(low=0, high=3)
 
         if self.axis_selection == 0:
             self.working_plane = self.void[self.section, :, :]
@@ -76,7 +73,7 @@ class Sculptor:
             self.color_parameters,
         )
 
-## EDGES
+    ## EDGES
 
     def add_edge(self):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
@@ -131,7 +128,7 @@ class Sculptor:
 
         return self.void, self.color_void
 
-## PLANES
+    ## PLANES
 
     def add_plane(self):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
@@ -188,7 +185,7 @@ class Sculptor:
 
         return self.void, self.color_void
 
-## CANTILEVER
+    ## CANTILEVER
 
     def add_pipe_cantilever(self):  # THIS IS GOOD!!
 
@@ -360,7 +357,7 @@ class Sculptor:
 
         return self.void
 
-## GRIDS
+    ## GRIDS
 
     def add_grid(self):
         self.working_plane = self.void[:, :, self.section]
@@ -408,7 +405,7 @@ class Sculptor:
 
         return self.void, self.color_void
 
-## ULTILS
+    ## ULTILS
 
     def print_information(self):
         print(f"void shape is: {np.array(self.void[0].shape)}")
@@ -423,7 +420,7 @@ class Sculptor:
         )
         print("###############################################################")
 
-## GENERATOR
+    ## GENERATOR
 
     def generative_sculpt(self):
         start = time.time()
