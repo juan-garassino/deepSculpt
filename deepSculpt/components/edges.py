@@ -8,8 +8,8 @@ def add_edge(
     void, color_void, element_edge_min, element_edge_max, step, verbose
 ):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
-    working_plane = return_axis()[0]
-    color_parameters = return_axis()[1]
+    working_plane = return_axis(void, color_void)[0]
+    color_parameters = return_axis(void, color_void)[1]
     # selection of the axis to work on
 
     if verbose == True:
