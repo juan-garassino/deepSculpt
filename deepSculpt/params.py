@@ -1,5 +1,7 @@
 from tensorflow.random import normal
 
+## TRAINING PARAMS
+
 LOCALLY = False
 
 CREATE_DATA = True
@@ -24,22 +26,30 @@ BUCKET_NAME = "deepsculpt"
 
 BUCKET_TRAIN_DATA_PATH = "data"
 
-MODEL_BASE_PATH = ""
+MODEL_BASE_PATH = ''
 
-"""        void_dim,
-        n_edge_elements,
-        n_plane_elements,
-        n_volume_elements,
-        color_edges,
-        color_planes,
-        color_volumes,
-        element_edge_min,
-        element_edge_max,
-        element_grid_min,
-        element_grid_max,
-        element_plane_min,
-        element_plane_max,
-        element_volume_min,
-        element_volume_max,
-        step,
-        verbose,"""
+## ELEMENTS PARAMS
+
+N_EDGE_ELEMENTS = 2
+
+N_PLANE_ELEMENTS = 2
+
+N_VOLUME_ELEMENTS = 2
+
+COLOR_EDGES = "dimgrey"
+
+COLOR_PLANES = "snow"
+
+COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
+
+ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = 0.8, 0.9
+
+ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = 0.9, 0.95
+
+ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = 0.4, 0.8
+
+ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX  = 0.2, 0.5
+
+STEP = 1
+
+VERBOSE = False

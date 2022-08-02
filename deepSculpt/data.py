@@ -12,6 +12,20 @@ from deepSculpt.params import (
     BUCKET_NAME,
     BUCKET_TRAIN_DATA_PATH,
     MODEL_BASE_PATH,
+    N_EDGE_ELEMENTS,
+    N_PLANE_ELEMENTS,
+    N_VOLUME_ELEMENTS,
+    COLOR_EDGES,
+    COLOR_PLANES,
+    COLOR_VOLUMES,
+    ELEMENT_EDGE_MIN,
+    ELEMENT_EDGE_MAX,
+    ELEMENT_GRID_MIN,
+    ELEMENT_GRID_MAX,
+    ELEMENT_PLANE_MIN,
+    ELEMENT_PLANE_MAX,
+    ELEMENT_VOLUME_MIN,
+    ELEMENT_VOLUME_MAX
 )
 
 
@@ -25,12 +39,12 @@ class DataLoaderCreator:
     def create_sculpts(
         self,
         n_samples=N_SAMPLES,
-        n_edge_elements=0,
-        n_plane_elements=0,
-        n_volume_elements=0,
-        color_edges="dimgrey",
-        color_planes="snow",
-        color_volumes=["crimson", "turquoise", "gold"],
+        n_edge_elements=N_EDGE_ELEMENTS,
+        n_plane_elements=N_PLANE_ELEMENTS,
+        n_volume_elements=N_VOLUME_ELEMENTS,
+        color_edges=COLOR_EDGES,
+        color_planes=COLOR_PLANES,
+        color_volumes=COLOR_VOLUMES,
         verbose=False,
         void_dim=VOID_DIM,
     ):
@@ -49,21 +63,21 @@ class DataLoaderCreator:
                 print("\r{0}".format(count), end="")
 
             sculptor = Sculptor(
-                void_dim=VOID_DIM,
+                void_dim=void_dim,
                 n_edge_elements=n_edge_elements,
                 n_plane_elements=n_plane_elements,
                 n_volume_elements=n_volume_elements,
                 color_edges=color_edges,
                 color_planes=color_planes,
                 color_volumes=color_volumes,  # ["greenyellow","orange","mediumpurple"]
-                element_edge_min=int(VOID_DIM * 0.8),
-                element_edge_max=int(VOID_DIM * 0.9),
-                element_grid_min=int(VOID_DIM * 0.9),
-                element_grid_max=int(VOID_DIM * 0.95),
-                element_plane_min=int(VOID_DIM * 0.4),
-                element_plane_max=int(VOID_DIM * 0.8),
-                element_volume_min=int(VOID_DIM * 0.2),
-                element_volume_max=int(VOID_DIM * 0.5),
+                element_edge_min=int(void_dim * ELEMENT_EDGE_MIN),
+                element_edge_max=int(void_dim * ELEMENT_EDGE_MAX),
+                element_grid_min=int(void_dim * ELEMENT_GRID_MIN),
+                element_grid_max=int(void_dim * ELEMENT_GRID_MAX),
+                element_plane_min=int(void_dim * ELEMENT_PLANE_MIN),
+                element_plane_max=int(void_dim * ELEMENT_PLANE_MAX),
+                element_volume_min=int(void_dim * ELEMENT_VOLUME_MIN),
+                element_volume_max=int(void_dim * ELEMENT_VOLUME_MAX),
                 step=1,
                 verbose=verbose,
             )
@@ -75,12 +89,12 @@ class DataLoaderCreator:
 
         raw_data = (
             np.asarray(raw_data)
-            .reshape((n_samples, VOID_DIM, VOID_DIM, VOID_DIM))
+            .reshape((N_SAMPLES, VOID_DIM, VOID_DIM, VOID_DIM))
             .astype("int8")
         )
 
         color_raw_data = np.asarray(color_raw_data).reshape(
-            (n_samples, VOID_DIM, VOID_DIM, VOID_DIM)
+            (N_SAMPLES, VOID_DIM, VOID_DIM, VOID_DIM)
         )
 
         np.save(f"raw-data[{date.today()}]", raw_data, allow_pickle=True)
@@ -135,5 +149,4 @@ class DataLoaderCreator:
 
 
 if __name__ == "__main__":
-    df = get_data()
-    print(df)
+    pass
