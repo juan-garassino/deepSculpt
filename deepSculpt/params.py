@@ -10,7 +10,7 @@ BUFFER_SIZE = 5000
 
 BATCH_SIZE = 32
 
-EPOCHS = 500
+EPOCHS = 5
 
 noise_dim = 1024
 
