@@ -5,6 +5,7 @@ twine
 wheel>=0.29
 
 # data science
+tensorflow
 numpy
 pandas
 scikit-learn
@@ -30,3 +31,6 @@ six>=1.14
 joblib
 memoized-property
 termcolor
+
+jupyter
+jupyterlab

@@ -1,13 +1,19 @@
 from deepSculpt.sculptor import Sculptor
+from google.cloud import storage
 
+import pandas as pd
 import numpy as np
 import os
 from datetime import date
 
+from deepSculpt.params import BUCKET_NAME, BUCKET_TRAIN_DATA_PATH, MODEL_BASE_PATH
+
 class DataLoaderCreator():
 
-    def __init__(self):
-        pass
+    def __init__(self, locally=True, path_volumes='' ,path_colors=''):
+        self.locally = locally
+        self.path_volumes = path_volumes
+        self.path_colors = path_colors
 
     def load(self, volumes="", colors=""):
 
@@ -24,6 +30,20 @@ class DataLoaderCreator():
         )
 
         return (raw_data, color_raw_data)
+
+    def load_from_gcp(self):
+
+        data_file = "data_train_1k.csv"
+
+        client = storage.Client().bucket(BUCKET_NAME)
+
+        blob = client.blob(BUCKET_TRAIN_DATA_PATH)
+
+        blob.download_to_filename(data_file)
+
+        df = pd.read_csv(data_file)
+
+        return df
 
     def create(self,
                n_samples=5,
@@ -93,3 +113,21 @@ class DataLoaderCreator():
         )
 
         return (raw_data, color_raw_data)
+
+    def get_data(self):
+
+        if self.locally:
+            return self.load(volumes=self.path_volumes, colors=self.path_colors)
+        else:
+            return self.load_from_gcp()
+
+    def clean_data(df):
+        pass
+
+
+    def holdout(df):
+        pass
+
+if __name__ == "__main__":
+    df = get_data()
+    print(df)
