@@ -9,7 +9,8 @@ check_code:
 	@flake8 scripts/* deepSculpt/*.py
 
 black:
-	@black scripts/* deepSculpt/*.py
+	@black scripts/* deepSculpt/*.py deepSculpt/components/*.py
+
 
 test:
 	@coverage run -m pytest tests/*.py

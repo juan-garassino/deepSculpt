@@ -1,52 +1,60 @@
-def add_edge(self):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
+import random
+import numpy as np
 
-    self.working_plane = self.return_axis()[0]
-    self.color_parameters = self.return_axis()[1]
+from deepSculpt.components.utils import return_axis
+
+
+def add_edge(
+    void, color_void, element_edge_min, element_edge_max, step, verbose
+):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
+
+    working_plane = return_axis()[0]
+    color_parameters = return_axis()[1]
     # selection of the axis to work on
 
-    if self.verbose == True:
+    if verbose == True:
         print(working_plane)
         print("###############################################################")
 
     # Variables
-    self.edge_length = random.randrange(
-        self.element_edge_min, self.element_edge_max, self.step
+    edge_length = random.randrange(
+        element_edge_min, element_edge_max, step
     )  # estas variables quizas no necesiten ser self!!
-    self.edge_plane = np.random.randint(low=0, high=2)
+    edge_plane = np.random.randint(low=0, high=2)
 
-    if self.edge_plane == 0:
-        self.element = np.ones(self.edge_length).reshape(self.edge_length, 1)
+    if edge_plane == 0:
+        element = np.ones(edge_length).reshape(edge_length, 1)
     else:
-        self.element = np.ones(self.edge_length).reshape(self.edge_length, 1).T
+        element = np.ones(edge_length).reshape(edge_length, 1).T
 
     # creates the element to be inserted
-    self.delta = np.array(self.working_plane.shape) - np.array(self.element.shape)
+    delta = np.array(working_plane.shape) - np.array(element.shape)
     # finds the delta between the size of the void and the size of the element
-    self.top_left_corner = np.array(
+    top_left_corner = np.array(
         (
-            np.random.randint(low=0, high=self.delta[0]),
-            np.random.randint(low=0, high=self.delta[1]),
+            np.random.randint(low=0, high=delta[0]),
+            np.random.randint(low=0, high=delta[1]),
         )
     )
     # finds the coordinates of the top left corner
-    self.bottom_right_corner = np.array(self.top_left_corner) + np.array(
-        self.element.shape
+    bottom_right_corner = np.array(top_left_corner) + np.array(
+        element.shape
     )  # - np.array([1,1]))
     # finds the coordinates of the bottom right corner
 
-    self.working_plane[
-        self.top_left_corner[0] : self.bottom_right_corner[0],
-        self.top_left_corner[1] : self.bottom_right_corner[1],
-    ] = self.element
+    working_plane[
+        top_left_corner[0] : bottom_right_corner[0],
+        top_left_corner[1] : bottom_right_corner[1],
+    ] = element
     # makes the slides using the coordinates equal to the element
 
-    self.color_parameters[
-        self.top_left_corner[0] : self.bottom_right_corner[0],
-        self.top_left_corner[1] : self.bottom_right_corner[1],
-    ] = self.color_edges
+    color_parameters[
+        top_left_corner[0] : bottom_right_corner[0],
+        top_left_corner[1] : bottom_right_corner[1],
+    ] = color_edges
 
-    if self.verbose == True:
-        print(self.working_plane)
+    if verbose == True:
+        print(working_plane)
         print("###############################################################")
 
-    return self.void, self.color_void
+    return void, color_void

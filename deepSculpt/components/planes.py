@@ -14,12 +14,8 @@ def add_plane(self):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
     # Variables
     self.element = np.ones(
         (
-            random.randrange(
-                self.element_plane_min, self.element_plane_max, self.step
-            ),
-            random.randrange(
-                self.element_plane_min, self.element_plane_max, self.step
-            ),
+            random.randrange(self.element_plane_min, self.element_plane_max, self.step),
+            random.randrange(self.element_plane_min, self.element_plane_max, self.step),
         )
     )
     # creates the element to be inserted
