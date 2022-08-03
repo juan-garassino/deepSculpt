@@ -47,4 +47,4 @@ def add_grid(void, color_void, element_grid_min, element_grid_max, step, verbose
         print(working_plane)
         print("###############################################################")
 
-    return void, color_void
+    return void.astype("int8"), color_void
