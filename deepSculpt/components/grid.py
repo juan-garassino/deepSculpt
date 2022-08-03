@@ -1,12 +1,13 @@
 import numpy as np
 import random
 from deepSculpt.components.utils import return_axis
+from deepSculpt.params import COLOR_EDGES
 
 
 def add_grid(void, color_void, element_grid_min, element_grid_max, step, verbose):
-    section = return_axis(void, color_void)[0]
+    section = return_axis(void, color_void)[2]
     working_plane = void[:, :, section]
-    color_parameters = return_axis()[1]
+    color_parameters = return_axis(void, color_void)[1]
     # selection of the axis to work on
 
     if verbose == True:
@@ -40,7 +41,7 @@ def add_grid(void, color_void, element_grid_min, element_grid_max, step, verbose
                 column[0] : column[3] + 1,
                 column[1] : column[4] + 1,
                 column[2] : column[5],
-            ] = color_edges
+            ] = COLOR_EDGES
 
     if verbose == True:
         print(working_plane)

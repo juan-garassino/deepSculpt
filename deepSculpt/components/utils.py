@@ -22,6 +22,7 @@ def return_axis(void, color_void):
     return (
         working_plane,
         color_parameters,
+        section,
     )
 
 
