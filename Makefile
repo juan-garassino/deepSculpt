@@ -85,6 +85,10 @@ PACKAGE_NAME=deepSculpt
 
 FILENAME=trainer
 
+MACHINE=config.yaml
+
+MACHINE_GPU=config-gpu.yaml
+
 set_project:
 	@gcloud config set project ${PROJECT_ID}
 
@@ -106,6 +110,18 @@ gcp_submit_training:
 		--python-version=${PYTHON_VERSION} \
 		--runtime-version=${RUNTIME_VERSION} \
 		--region ${REGION} \
+		--config ${MACHINE} \
+		--stream-logs
+
+gcp_submit_training_gpu:
+	gcloud ai-platform jobs submit training ${JOB_NAME} \
+		--job-dir gs://${BUCKET_NAME}/${BUCKET_TRAINING_FOLDER} \
+		--package-path ${PACKAGE_NAME} \
+		--module-name ${PACKAGE_NAME}.${FILENAME} \
+		--python-version=${PYTHON_VERSION} \
+		--runtime-version=${RUNTIME_VERSION} \
+		--region ${REGION} \
+		--config ${MACHINE_GPU} \
 		--stream-logs
 
 # ----------------------------------

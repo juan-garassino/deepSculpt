@@ -2,6 +2,7 @@ from tensorflow.data import Dataset
 from tensorflow import GradientTape
 from tensorflow.random import normal
 import matplotlib.pyplot as plt
+from google.cloud import storage
 
 from IPython import display
 import time
@@ -14,6 +15,8 @@ from deepSculpt.params import (
     BATCH_SIZE,
     EPOCHS,
     CREATE_DATA,
+    BUCKET_NAME,
+    SEED,
 )
 from deepSculpt.preprocessing import OneHotEncoderDecoder
 from deepSculpt.data import DataLoaderCreator
@@ -24,6 +27,7 @@ from deepSculpt.model import (
 
 from deepSculpt.losses import discriminator_loss, generator_loss
 from deepSculpt.optimizers import generator_optimizer, discriminator_optimizer
+from deepSculpt.plotter import Plotter
 
 if CREATE_DATA:
 
@@ -116,6 +120,44 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     )
     # applying the gradients on the trainable variables of the generator to update the parameters
 
+def generate_and_save_images(model, epoch, test_input):
+    # Notice `training` is set to False.
+    # This is so all layers run in inference mode (batchnorm).
+
+    #os.chdir("/content/drive/MyDrive/repositories/deepSculpt/results/softmax")
+
+    predictions = model(test_input, training=False).numpy().astype("int").reshape((1,24,24,24,6))
+
+    o_decoded_volumes, o_decoded_colors  = preprocessing_class_o.ohe_decoder(predictions)
+
+    plotter = Plotter(o_decoded_volumes[0],
+                    o_decoded_colors[0],
+                    figsize=25,
+                    style="#ffffff",
+                    dpi=200).plot_sculpture()
+
+    snapshot = 'image_at_epoch_{:04d}.png'.format(epoch)
+
+    plt.savefig(snapshot)
+
+    upload_result_to_gcp(snapshot)
+
+
+def upload_result_to_gcp(snapshot):
+
+    STORAGE_FILENAME = snapshot
+
+    storage_location = f"results/{STORAGE_FILENAME}"
+
+    client = storage.Client()
+
+    bucket = client.bucket(BUCKET_NAME)
+
+    blob = bucket.blob(storage_location)
+
+    blob.upload_from_filename(STORAGE_FILENAME)
+
+
 def train(dataset, epochs):
 
     # load checkpoint
@@ -187,7 +229,7 @@ def train(dataset, epochs):
                 file_prefix=checkpoint_prefix
             )  # saving weights and biases previously calculated by the train step gradients
         if (epoch + 1) % 2 == 0:
-            generate_and_save_images(generator, epoch + 1, seed)
+            generate_and_save_images(generator, epoch + 1, SEED)
         print("Time for epoch {} is {} sec".format(epoch + 1, time.time() - start))
 
         plt.close("all")
