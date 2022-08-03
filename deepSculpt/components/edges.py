@@ -2,6 +2,7 @@ import random
 import numpy as np
 
 from deepSculpt.components.utils import return_axis
+from deepSculpt.params import COLOR_EDGES
 
 
 def add_edge(
@@ -51,10 +52,10 @@ def add_edge(
     color_parameters[
         top_left_corner[0] : bottom_right_corner[0],
         top_left_corner[1] : bottom_right_corner[1],
-    ] = color_edges
+    ] = COLOR_EDGES
 
     if verbose == True:
         print(working_plane)
         print("###############################################################")
 
-    return void, color_void
+    return void.astype("int8"), color_void

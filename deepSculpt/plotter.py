@@ -44,7 +44,10 @@ class Plotter(Sculptor):
 
         axes = axes.ravel()  # flats
 
-        for index in range(1):  # to print one color i need a condition to not rotate!!
+        print(axes)
+        print(len(axes))
+
+        for plot in range(1):  # to print one color i need a condition to not rotate!!
             axes[0].voxels(
                 self.volumes, facecolors=self.colors, edgecolors="k", linewidth=0.05
             )
