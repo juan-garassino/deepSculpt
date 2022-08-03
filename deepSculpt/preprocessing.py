@@ -42,6 +42,8 @@ class OneHotEncoderDecoder:
 
     def ohe_decoder(self, one_hot_encoded_array):
 
+        self.n_sample = one_hot_encoded_array.shape[0]
+
         decoded_color = self.one_hot_encoder.inverse_transform(
             one_hot_encoded_array.reshape(
                 (
