@@ -6,9 +6,9 @@ LOCALLY = False
 
 CREATE_DATA = True
 
-N_SAMPLES = 5000
+N_SAMPLES = 10
 
-VOID_DIM = 24
+VOID_DIM = 48
 
 BUFFER_SIZE = 5000
 
@@ -42,13 +42,19 @@ COLOR_PLANES = "snow"
 
 COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
 
+"""[
+        "crimson", "turquoise", "gold", "orange", "mediumpurple", "greenyellow",
+        "firebrick", "salmon", "coral", "chartreuse", "steelblue", "lavender", "royalblue",
+        "indigo", "mediumvioletred"
+    ]"""
+
 ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = int(VOID_DIM * 0.8), int(VOID_DIM * 0.9)
 
-ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = int(VOID_DIM * 0.9), int(VOID_DIM * 0.95)
+ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = int(VOID_DIM * 0.8), int(VOID_DIM * 0.95)
 
 ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = int(VOID_DIM * 0.4), int(VOID_DIM * 0.8)
 
-ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = int(VOID_DIM * 0.2), int(VOID_DIM * 0.)
+ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = int(VOID_DIM * 0.2), int(VOID_DIM * 0.5)
 
 STEP = 1
 
