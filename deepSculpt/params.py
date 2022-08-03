@@ -42,6 +42,12 @@ COLOR_PLANES = "snow"
 
 COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
 
+"""[
+        "crimson", "turquoise", "gold", "orange", "mediumpurple", "greenyellow",
+        "firebrick", "salmon", "coral", "chartreuse", "steelblue", "lavender", "royalblue",
+        "indigo", "mediumvioletred"
+    ]"""
+
 ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = int(VOID_DIM * 0.8), int(VOID_DIM * 0.9)
 
 ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = int(VOID_DIM * 0.9), int(VOID_DIM * 0.95)
