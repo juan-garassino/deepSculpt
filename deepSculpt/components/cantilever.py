@@ -154,4 +154,4 @@ def add_pipe_cantilever(
         print_information()
         print("###############################################################")
 
-    return void, color_void
+    return void.astype("int8"), color_void
