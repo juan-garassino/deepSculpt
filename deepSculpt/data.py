@@ -122,26 +122,26 @@ class DataLoaderCreator:
         return (raw_data, color_raw_data)
 
     def load_from_gcp(self):
-        
+
         files = [self.path_volumes, self.path_colors]
-        
+
         client = storage.Client().bucket(BUCKET_NAME)
-        
+
         for file in files:
-            
+
             blob = client.blob(BUCKET_TRAIN_DATA_PATH + '/' + file)
 
             blob.download_to_filename(file)
 
         raw_data = np.load(self.path_volumes, allow_pickle=True)
-        
+
         color_raw_data = np.load(self.path_colors, allow_pickle=True)
 
         print(
             f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
         )
 
-        return (raw_data,)#, color_raw_data)
+        return (raw_data, color_raw_data)#, color_raw_data)
 
     def clean_data(df):
         pass
@@ -151,11 +151,10 @@ class DataLoaderCreator:
 
 
 if __name__ == "__main__":
-    
+
     data = DataLoaderCreator(create=False,
                              locally=True,
                              path_volumes="raw-data[2022-07-26].npy",
                              path_colors="color-raw-data[2022-07-26].npy").load_from_gcp()
-    
+
     data[0].shape
-    

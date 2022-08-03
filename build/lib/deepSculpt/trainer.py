@@ -1,15 +1,14 @@
 from tensorflow.data import Dataset
-from tensorflow.keras.losses import BinaryCrossentropy
-from tensorflow.keras.optimizers import Adam
-from tensorflow import ones_like, zeros_like, GradientTape, function
+from tensorflow import GradientTape
 from tensorflow.random import normal
-from IPython import display
 
+from IPython import display
 import time
 from deepSculpt.params import (
     LOCALLY,
     N_SAMPLES,
     VOID_DIM,
+    NOISE_DIM,
     BUFFER_SIZE,
     BATCH_SIZE,
     EPOCHS,
@@ -21,6 +20,9 @@ from deepSculpt.model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
+
+from deepSculpt.losses import discriminator_loss, generator_loss
+from deepSculpt.optimizers import generator_optimizer, discriminator_optimizer
 
 if CREATE_DATA:
 
@@ -64,62 +66,11 @@ generator = make_three_dimentional_generator()
 
 discriminator = make_three_dimentional_critic()
 
-##################################
-## Model Compile: Loss Function ##
-##################################
-
-cross_entropy = BinaryCrossentropy(from_logits=True)  # we take a BinaryCrossentropy
-
-# Binary cross entropy compares each of the predicted probabilities to actual class output which can be either 0 or 1
-# Binary Cross Entropy is the negative average of the log of corrected predicted probabilities
-
-########################
-## Discriminator loss ## ## check if the loss is calculating with the 6 channel array or not!!!
-########################
-
-# quantifies how well the discriminator is able to distinguish real images from generated
-
-
-def discriminator_loss(real_output, fake_output):
-    real_loss = cross_entropy(ones_like(real_output), real_output)
-    # compares the predictions of the discriminator over real images to a matrix of [1s] | must have a tendency/likelihood to 1
-    fake_loss = cross_entropy(zeros_like(fake_output), fake_output)
-    # compares the predictions of the discriminator over generated images to a matrix of [0s] | must have a tendency/likelihood to 0
-    total_loss = real_loss + fake_loss
-    return total_loss  # Total loss
-
-
-####################
-## Generator loss ##
-####################
-
-# quantifies how well it was able to trick the discriminator, if the generator is performing well, the discriminator will classify the fake images as real (1).
-
-
-def generator_loss(fake_output):
-    binary_cross_entropy = cross_entropy(ones_like(fake_output), fake_output)
-    # the generator's output need to have a tendency to 1, We compare the discriminators decisions on the generated images to an array of [1s]
-    return binary_cross_entropy
-
-
-##############################
-## Model Compile: Optimizer ##
-##############################
-
-# Two different optimizers since we train two separate networks:
-
-generator_optimizer = Adam(1e-3)  # SGD INSTEAD???   (Radford et al., 2015)
-
-discriminator_optimizer = Adam(1e-4)  # SGD INSTEAD???  (Radford et al., 2015)
+from tensorflow import GradientTape, function
 
 # Notice the use of `tf.function`
 # This annotation causes the function to be "compiled".
 @function
-
-####################
-## Training steps ##
-####################
-
 
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
@@ -164,14 +115,6 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     )
     # applying the gradients on the trainable variables of the generator to update the parameters
 
-
-###################
-## Training loop ##
-###################
-
-# training loop itself using train_step function previously defined
-
-
 def train(dataset, epochs):
 
     # load checkpoint
@@ -185,7 +128,7 @@ def train(dataset, epochs):
 
         for index, image_batch in enumerate(dataset):
             noise = normal(
-                [BATCH_SIZE, noise_dim]
+                [BATCH_SIZE, NOISE_DIM]
             )  # tf.random.normal([BATCH_SIZE, noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
 
             with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
