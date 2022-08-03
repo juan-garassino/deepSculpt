@@ -81,7 +81,7 @@ class Sculptor:
             add_pipe_cantilever(
                 self.void,
                 self.color_void,
-                self.element_volume_max,
+                self.element_volume_min,
                 self.element_volume_max,
                 self.step,
                 self.verbose,
