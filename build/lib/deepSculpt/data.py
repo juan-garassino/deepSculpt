@@ -1,11 +1,4 @@
 from deepSculpt.sculptor import Sculptor
-from google.cloud import storage
-
-import pandas as pd
-import numpy as np
-import os
-from datetime import date
-
 from deepSculpt.params import (
     VOID_DIM,
     N_SAMPLES,
@@ -26,8 +19,13 @@ from deepSculpt.params import (
     ELEMENT_PLANE_MAX,
     ELEMENT_VOLUME_MIN,
     ELEMENT_VOLUME_MAX,
+    VERBOSE,
 )
 
+from datetime import date
+import numpy as np
+import os
+from google.cloud import storage
 
 class DataLoaderCreator:
     def __init__(self, create=False, locally=True, path_volumes="", path_colors=""):
@@ -45,11 +43,11 @@ class DataLoaderCreator:
         color_edges=COLOR_EDGES,
         color_planes=COLOR_PLANES,
         color_volumes=COLOR_VOLUMES,
-        verbose=False,
+        verbose=VERBOSE,
         void_dim=VOID_DIM,
     ):
 
-        path = os.path.join(os.path.dirname(__file__),"deepSculpt", "data")
+        path = os.path.join(os.path.dirname(__file__), "data")
 
         os.chdir(path)
 
@@ -149,4 +147,6 @@ class DataLoaderCreator:
 
 
 if __name__ == "__main__":
-    pass
+    data = load_from_gcp(self, volumes="raw-data[2022-07-26].npy", colors="color-raw-data[2022-07-26].npy")
+    data[0].shape
+    

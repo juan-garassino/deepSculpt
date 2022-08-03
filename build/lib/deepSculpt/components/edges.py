@@ -58,4 +58,4 @@ def add_edge(
         print(working_plane)
         print("###############################################################")
 
-    return void, color_void
+    return void.astype("int8"), color_void
