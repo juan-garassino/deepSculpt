@@ -49,7 +49,7 @@ class DataLoaderCreator:
         void_dim=VOID_DIM,
     ):
 
-        path = os.path.join(os.path.dirname(__file__), "data")
+        path = os.path.join(os.path.dirname(__file__),"deepSculpt", "data")
 
         os.chdir(path)
 
@@ -70,14 +70,14 @@ class DataLoaderCreator:
                 color_edges=color_edges,
                 color_planes=color_planes,
                 color_volumes=color_volumes,  # ["greenyellow","orange","mediumpurple"]
-                element_edge_min=int(void_dim * ELEMENT_EDGE_MIN),
-                element_edge_max=int(void_dim * ELEMENT_EDGE_MAX),
-                element_grid_min=int(void_dim * ELEMENT_GRID_MIN),
-                element_grid_max=int(void_dim * ELEMENT_GRID_MAX),
-                element_plane_min=int(void_dim * ELEMENT_PLANE_MIN),
-                element_plane_max=int(void_dim * ELEMENT_PLANE_MAX),
-                element_volume_min=int(void_dim * ELEMENT_VOLUME_MIN),
-                element_volume_max=int(void_dim * ELEMENT_VOLUME_MAX),
+                element_edge_min=ELEMENT_EDGE_MIN,
+                element_edge_max=ELEMENT_EDGE_MAX,
+                element_grid_min=ELEMENT_GRID_MIN,
+                element_grid_max=ELEMENT_GRID_MAX,
+                element_plane_min=ELEMENT_PLANE_MIN,
+                element_plane_max=ELEMENT_PLANE_MAX,
+                element_volume_min=ELEMENT_VOLUME_MIN,
+                element_volume_max=ELEMENT_VOLUME_MAX,
                 step=1,
                 verbose=verbose,
             )
