@@ -4,11 +4,11 @@ from tensorflow.random import normal
 
 LOCALLY = False
 
-CREATE_DATA = True
+CREATE_DATA = False
 
 N_SAMPLES = 10
 
-VOID_DIM = 48
+VOID_DIM = 24
 
 BUFFER_SIZE = 5000
 

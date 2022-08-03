@@ -4,19 +4,19 @@ from tensorflow.random import normal
 
 LOCALLY = False
 
-CREATE_DATA = True
+CREATE_DATA = False
 
 N_SAMPLES = 10
 
-VOID_DIM = 48
+VOID_DIM = 24
 
-BUFFER_SIZE = 5000
+BUFFER_SIZE = 160
 
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 
-EPOCHS = 5
+EPOCHS = 2
 
-NOISE_DIM = 1024
+NOISE_DIM = 512
 
 SCULPTS_GEN = 1
 
