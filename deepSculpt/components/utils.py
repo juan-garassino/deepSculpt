@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def return_axis(void, color_void):
 
     section = np.random.randint(low=0 - 1, high=void[0].shape[0])
@@ -24,7 +25,9 @@ def return_axis(void, color_void):
     )
 
 
-def print_information(void, element, axis_selection, delta, section, top_left_corner, bottom_right_corner):
+def print_information(
+    void, element, axis_selection, delta, section, top_left_corner, bottom_right_corner
+):
     print(f"void shape is: {np.array(void[0].shape)}")
     print(f"element shape is : {np.array(element.shape)}")
     print(f"the axis selection is: {axis_selection}")

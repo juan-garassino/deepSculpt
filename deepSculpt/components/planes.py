@@ -4,7 +4,10 @@ import numpy as np
 from deepSculpt.components.utils import return_axis
 from deepSculpt.params import COLOR_PLANES
 
-def add_plane(void, color_void, element_plane_min, element_plane_max, step, verbose):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
+
+def add_plane(
+    void, color_void, element_plane_min, element_plane_max, step, verbose
+):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
     element = None
     delta = None
@@ -13,7 +16,7 @@ def add_plane(void, color_void, element_plane_min, element_plane_max, step, verb
     working_plane = return_axis(void, color_void)[0]
     color_parameters = return_axis(void, color_void)[1]
 
-    #section = None
+    # section = None
 
     if verbose == True:
         print(working_plane)

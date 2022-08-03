@@ -1,15 +1,19 @@
-def add_grid(self):
-    self.working_plane = self.void[:, :, self.section]
-    self.color_parameters = self.return_axis()[1]
+import numpy as np
+import random
+from deepSculpt.components.utils import return_axis
+
+
+def add_grid(void, color_void, element_grid_min, element_grid_max, step, verbose):
+    section = return_axis(void, color_void)[0]
+    working_plane = void[:, :, section]
+    color_parameters = return_axis()[1]
     # selection of the axis to work on
 
-    if self.verbose == True:
+    if verbose == True:
         print(working_plane)
         print("###############################################################")
 
-    column_height = random.randrange(
-        self.element_grid_min, self.element_grid_max, self.step
-    )
+    column_height = random.randrange(element_grid_min, element_grid_max, step)
     element = np.ones(column_height).reshape(column_height, 1)
 
     x = np.arange(start=1, stop=49, step=9)
@@ -24,7 +28,7 @@ def add_grid(self):
 
     for column_row in grid_coor:
         for column in column_row:
-            self.void[
+            void[
                 column[0] : column[3] + 1,
                 column[1] : column[4] + 1,
                 column[2] : column[5],
@@ -32,14 +36,14 @@ def add_grid(self):
 
     for column_row in grid_coor:
         for column in column_row:
-            self.color_void[
+            color_void[
                 column[0] : column[3] + 1,
                 column[1] : column[4] + 1,
                 column[2] : column[5],
-            ] = self.color_edges
+            ] = color_edges
 
-    if self.verbose == True:
-        print(self.working_plane)
+    if verbose == True:
+        print(working_plane)
         print("###############################################################")
 
-    return self.void, self.color_void
+    return void, color_void
