@@ -6,6 +6,7 @@ from deepSculpt.components.planes import add_plane
 import time
 import numpy as np
 
+
 class Sculptor:
     def __init__(
         self,

@@ -76,7 +76,6 @@ from tensorflow import GradientTape, function
 # Notice the use of `tf.function`
 # This annotation causes the function to be "compiled".
 @function
-
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
     noise = normal(
@@ -120,23 +119,27 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     )
     # applying the gradients on the trainable variables of the generator to update the parameters
 
+
 def generate_and_save_images(model, epoch, test_input):
     # Notice `training` is set to False.
     # This is so all layers run in inference mode (batchnorm).
 
-    #os.chdir("/content/drive/MyDrive/repositories/deepSculpt/results/softmax")
+    # os.chdir("/content/drive/MyDrive/repositories/deepSculpt/results/softmax")
 
-    predictions = model(test_input, training=False).numpy().astype("int").reshape((1,24,24,24,6))
+    predictions = (
+        model(test_input, training=False)
+        .numpy()
+        .astype("int")
+        .reshape((1, 24, 24, 24, 6))
+    )
 
-    o_decoded_volumes, o_decoded_colors  = preprocessing_class_o.ohe_decoder(predictions)
+    o_decoded_volumes, o_decoded_colors = preprocessing_class_o.ohe_decoder(predictions)
 
-    plotter = Plotter(o_decoded_volumes[0],
-                    o_decoded_colors[0],
-                    figsize=25,
-                    style="#ffffff",
-                    dpi=200).plot_sculpture()
+    plotter = Plotter(
+        o_decoded_volumes[0], o_decoded_colors[0], figsize=25, style="#ffffff", dpi=200
+    ).plot_sculpture()
 
-    snapshot = 'image_at_epoch_{:04d}.png'.format(epoch)
+    snapshot = "image_at_epoch_{:04d}.png".format(epoch)
 
     plt.savefig(snapshot)
 

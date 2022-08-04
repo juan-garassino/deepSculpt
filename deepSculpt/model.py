@@ -6,11 +6,27 @@ from deepSculpt.params import VOID_DIM, NOISE_DIM
 
 def make_three_dimentional_generator():
     model = Sequential()
-    model.add(layers.Dense(int(VOID_DIM/8) * int(VOID_DIM/8) * int(VOID_DIM/8) * NOISE_DIM, use_bias=False, input_shape=(NOISE_DIM,)))
+    model.add(
+        layers.Dense(
+            int(VOID_DIM / 8) * int(VOID_DIM / 8) * int(VOID_DIM / 8) * NOISE_DIM,
+            use_bias=False,
+            input_shape=(NOISE_DIM,),
+        )
+    )
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
-    model.add(layers.Reshape((int(VOID_DIM/8), int(VOID_DIM/8), int(VOID_DIM/8), NOISE_DIM)))
-    assert model.output_shape == (None, int(VOID_DIM/8), int(VOID_DIM/8), int(VOID_DIM/8), NOISE_DIM)
+    model.add(
+        layers.Reshape(
+            (int(VOID_DIM / 8), int(VOID_DIM / 8), int(VOID_DIM / 8), NOISE_DIM)
+        )
+    )
+    assert model.output_shape == (
+        None,
+        int(VOID_DIM / 8),
+        int(VOID_DIM / 8),
+        int(VOID_DIM / 8),
+        NOISE_DIM,
+    )
 
     model.add(
         layers.Conv3DTranspose(
@@ -22,13 +38,19 @@ def make_three_dimentional_generator():
             activation="relu",
         )
     )
-    assert model.output_shape == (None, int(VOID_DIM/8), int(VOID_DIM/8), int(VOID_DIM/8), NOISE_DIM)
+    assert model.output_shape == (
+        None,
+        int(VOID_DIM / 8),
+        int(VOID_DIM / 8),
+        int(VOID_DIM / 8),
+        NOISE_DIM,
+    )
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
 
     model.add(
         layers.Conv3DTranspose(
-            int(NOISE_DIM/2),
+            int(NOISE_DIM / 2),
             (3, 3, 3),
             strides=(2, 2, 2),
             padding="same",
@@ -36,13 +58,19 @@ def make_three_dimentional_generator():
             activation="relu",
         )
     )
-    assert model.output_shape == (None, int(VOID_DIM/4), int(VOID_DIM/4), int(VOID_DIM/4), int(NOISE_DIM/2))
+    assert model.output_shape == (
+        None,
+        int(VOID_DIM / 4),
+        int(VOID_DIM / 4),
+        int(VOID_DIM / 4),
+        int(NOISE_DIM / 2),
+    )
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
 
     model.add(
         layers.Conv3DTranspose(
-            int(NOISE_DIM/4),
+            int(NOISE_DIM / 4),
             (3, 3, 3),
             strides=(2, 2, 2),
             padding="same",
@@ -50,7 +78,13 @@ def make_three_dimentional_generator():
             activation="relu",
         )
     )
-    assert model.output_shape == (None, int(VOID_DIM/2), int(VOID_DIM/2), int(VOID_DIM/2), int(NOISE_DIM/4))
+    assert model.output_shape == (
+        None,
+        int(VOID_DIM / 2),
+        int(VOID_DIM / 2),
+        int(VOID_DIM / 2),
+        int(NOISE_DIM / 4),
+    )
     model.add(layers.BatchNormalization())
     model.add(layers.ReLU())
 
@@ -77,7 +111,7 @@ def make_three_dimentional_critic():
     model = Sequential()
     model.add(
         layers.Conv3D(
-            int(NOISE_DIM/8),
+            int(NOISE_DIM / 8),
             (3, 3, 3),
             strides=(2, 2, 2),
             padding="same",
@@ -89,7 +123,11 @@ def make_three_dimentional_critic():
 
     model.add(
         layers.Conv3D(
-            int(NOISE_DIM/4), (3, 3, 3), strides=(2, 2, 2), padding="same", activation="relu"
+            int(NOISE_DIM / 4),
+            (3, 3, 3),
+            strides=(2, 2, 2),
+            padding="same",
+            activation="relu",
         )
     )
     model.add(layers.LeakyReLU())
@@ -97,7 +135,11 @@ def make_three_dimentional_critic():
 
     model.add(
         layers.Conv3D(
-            int(NOISE_DIM/2), (3, 3, 3), strides=(2, 2, 2), padding="same", activation="relu"
+            int(NOISE_DIM / 2),
+            (3, 3, 3),
+            strides=(2, 2, 2),
+            padding="same",
+            activation="relu",
         )
     )
     model.add(layers.LeakyReLU())
