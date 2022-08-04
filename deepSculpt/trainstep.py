@@ -3,7 +3,6 @@ from tensorflow import GradientTape, function
 # Notice the use of `tf.function`
 # This annotation causes the function to be "compiled".
 @function
-
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
     noise = normal(

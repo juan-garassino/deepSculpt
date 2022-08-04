@@ -27,6 +27,7 @@ import numpy as np
 import os
 from google.cloud import storage
 
+
 class DataLoaderCreator:
     def __init__(self, create=False, locally=True, path_volumes="", path_colors=""):
         self.locally = locally
@@ -129,7 +130,7 @@ class DataLoaderCreator:
 
         for file in files:
 
-            blob = client.blob(BUCKET_TRAIN_DATA_PATH + '/' + file)
+            blob = client.blob(BUCKET_TRAIN_DATA_PATH + "/" + file)
 
             blob.download_to_filename(file)
 
@@ -141,7 +142,7 @@ class DataLoaderCreator:
             f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
         )
 
-        return (raw_data, color_raw_data)#, color_raw_data)
+        return (raw_data, color_raw_data)  # , color_raw_data)
 
     def clean_data(df):
         pass
@@ -152,9 +153,11 @@ class DataLoaderCreator:
 
 if __name__ == "__main__":
 
-    data = DataLoaderCreator(create=False,
-                             locally=True,
-                             path_volumes="raw-data[2022-07-26].npy",
-                             path_colors="color-raw-data[2022-07-26].npy").load_from_gcp()
+    data = DataLoaderCreator(
+        create=False,
+        locally=True,
+        path_volumes="raw-data[2022-07-26].npy",
+        path_colors="color-raw-data[2022-07-26].npy",
+    ).load_from_gcp()
 
     data[0].shape
