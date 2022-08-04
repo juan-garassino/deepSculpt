@@ -149,9 +149,7 @@ def upload_result_to_gcp(snapshot):
 
     storage_location = f"results/{STORAGE_FILENAME}"
 
-    client = storage.Client()
-
-    bucket = client.bucket(BUCKET_NAME)
+    bucket = storage.Client().bucket(BUCKET_NAME)
 
     blob = bucket.blob(storage_location)
 
