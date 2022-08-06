@@ -128,5 +128,5 @@ gcp_submit_training_gpu:
 #      RUN API
 # ----------------------------------
 
-run_api:
+api_run:
 	python app.py

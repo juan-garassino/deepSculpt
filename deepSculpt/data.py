@@ -1,7 +1,7 @@
 from deepSculpt.sculptor import Sculptor
 from deepSculpt.params import (
     VOID_DIM,
-    N_SAMPLES,
+    N_SAMPLES_CREATE,
     BUCKET_NAME,
     BUCKET_TRAIN_DATA_PATH,
     MODEL_BASE_PATH,
@@ -37,7 +37,7 @@ class DataLoaderCreator:
 
     def create_sculpts(
         self,
-        n_samples=N_SAMPLES,
+        n_samples=N_SAMPLES_CREATE,
         n_edge_elements=N_EDGE_ELEMENTS,
         n_plane_elements=N_PLANE_ELEMENTS,
         n_volume_elements=N_VOLUME_ELEMENTS,
@@ -88,12 +88,12 @@ class DataLoaderCreator:
 
         raw_data = (
             np.asarray(raw_data)
-            .reshape((N_SAMPLES, VOID_DIM, VOID_DIM, VOID_DIM))
+            .reshape((N_SAMPLES_CREATE, VOID_DIM, VOID_DIM, VOID_DIM))
             .astype("int8")
         )
 
         color_raw_data = np.asarray(color_raw_data).reshape(
-            (N_SAMPLES, VOID_DIM, VOID_DIM, VOID_DIM)
+            (N_SAMPLES_CREATE, VOID_DIM, VOID_DIM, VOID_DIM)
         )
 
         np.save(f"raw-data[{date.today()}]", raw_data, allow_pickle=True)

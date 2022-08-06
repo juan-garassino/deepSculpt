@@ -3,9 +3,11 @@ from tensorflow.train import Checkpoint
 from deepSculpt.params import BUCKET_NAME
 
 
-def upload_model_to_cgp(checkpoint):
+def upload_checkoint_to_cgp():
 
-    STORAGE_FILENAME = checkpoint
+    model_checkpoint = "ckpt-" + str(1) + ".index"
+
+    STORAGE_FILENAME = model_checkpoint
 
     storage_location = f"results/{STORAGE_FILENAME}"
 
@@ -16,39 +18,38 @@ def upload_model_to_cgp(checkpoint):
     blob.upload_from_filename(STORAGE_FILENAME)
 
 
-def save_model_checkpoint():
+def generate_and_save_checkpoint(checkpoint):
 
-    checkpoint = tf.train.Checkpoint(
-        generator_optimizer=generator_optimizer,
-        discriminator_optimizer=discriminator_optimizer,
-        generator=generator,
-        discriminator=discriminator,
+    if LOCALLY:
+
+        checkpoint_dir = (
+            "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
+        )
+
+        checkpoint_prefix = os.path.join(checkpoint_dir, "checkpoint")
+
+        checkpoint.save(file_prefix=checkpoint_prefix)
+
+    if not LOCALLY:
+
+        checkpoint_dir = "deepsculpt/results"
+
+        checkpoint_prefix = os.path.join(checkpoint_dir, "checkpoint")
+
+        checkpoint.save(file_prefix=checkpoint_prefix)
+
+        upload_checkoint_to_cgp()  # , model_checkpoint)# , model_checkpoint)
+
+
+def load_model_from_cgp():
+
+    opt = tf.keras.optimizers.Adam(0.1)
+    net = Net()
+    dataset = toy_dataset()
+    iterator = iter(dataset)
+    ckpt = tf.train.Checkpoint(
+        step=tf.Variable(1), optimizer=opt, net=net, iterator=iterator
     )
+    manager = tf.train.CheckpointManager(ckpt, "./tf_ckpts", max_to_keep=3)
 
-    upload_model_to_cgp(checkpoint)
-
-
-def load_model_from_cgp(ckeckpoint):
-
-    STORAGE_FILENAME = checkpoint
-
-    storage_location = f"results/{STORAGE_FILENAME}"
-
-    bucket = storage.Client().bucket(BUCKET_NAME)
-
-    blob = bucket.blob(storage_location)
-
-    blob.download_to_filename(STORAGE_FILENAME)
-
-    checkpoint = tf.train.Checkpoint(
-        generator_optimizer=generator_optimizer,
-        discriminator_optimizer=discriminator_optimizer,
-        generator=generator,
-        discriminator=discriminator,
-    )
-
-    checkpoint.restore(
-        "/content/drive/MyDrive/repositories/deepSculpt/checkpoints/softmax-checkpoints/ckpt-30"
-    )
-
-    return checkpoint, checkpoint_prefix
+    train_and_checkpoint(net, manager)

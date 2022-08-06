@@ -1,26 +1,38 @@
 from tensorflow.random import normal
+import numpy as np
 
 ## TRAINING PARAMS
 
-LOCALLY = False
+LOCALLY = True
 
 CREATE_DATA = False
 
-N_SAMPLES = 10
+N_SAMPLES_CREATE = 100
 
 VOID_DIM = 24
 
-BUFFER_SIZE = 160
+NOISE_DIM = 512
+
+FILE_TO_LOAD_VOLUMES = "raw-data[2022-07-26].npy"
+
+FILE_TO_LOAD_COLORS = "color-raw-data[2022-07-26].npy"
+
+
+TRAIN_SIZE = 32
+
+BUFFER_SIZE = int(TRAIN_SIZE / 10)
 
 BATCH_SIZE = 16
 
-EPOCHS = 80
+MINIBATCHES = np.arange(0, TRAIN_SIZE, TRAIN_SIZE / (TRAIN_SIZE / 10))
 
-NOISE_DIM = 512
+EPOCHS = 240
+
 
 SCULPTS_GEN = 1
 
 SEED = normal([SCULPTS_GEN, NOISE_DIM])
+
 
 BUCKET_NAME = "deepsculpt"
 
@@ -28,7 +40,13 @@ BUCKET_TRAIN_DATA_PATH = "data"
 
 MODEL_BASE_PATH = ""
 
+MODEL_CHECKPOINT = 1
+
+PICTURE_SNAPSHOT = 1
+
+
 ## ELEMENTS PARAMS
+
 
 N_EDGE_ELEMENTS = 2
 
