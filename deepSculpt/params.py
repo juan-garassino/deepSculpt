@@ -33,7 +33,6 @@ SCULPTS_GEN = 1
 
 SEED = normal([SCULPTS_GEN, NOISE_DIM])
 
-
 BUCKET_NAME = "deepsculpt"
 
 BUCKET_TRAIN_DATA_PATH = "data"

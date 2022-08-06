@@ -127,7 +127,10 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
         real_output = discriminator(
             images, training=True
         )  # trains discriminator based on labeled real pics
+<<<<<<< HEAD
 
+=======
+>>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
         fake_output = discriminator(
             generated_images, training=True
         )  # trains discriminator based on labeled generated pics
@@ -136,7 +139,6 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
         gen_loss = generator_loss(
             fake_output
         )  # calculating the generator loss function previously defined
-
         disc_loss = discriminator_loss(
             real_output, fake_output
         )  # calculating the descrim loss function previously defined

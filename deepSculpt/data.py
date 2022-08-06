@@ -1,7 +1,11 @@
 from deepSculpt.sculptor import Sculptor
 from deepSculpt.params import (
     VOID_DIM,
+<<<<<<< HEAD
     N_SAMPLES_CREATE,
+=======
+    N_SAMPLES,
+>>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
     BUCKET_NAME,
     BUCKET_TRAIN_DATA_PATH,
     MODEL_BASE_PATH,
@@ -37,7 +41,11 @@ class DataLoaderCreator:
 
     def create_sculpts(
         self,
+<<<<<<< HEAD
         n_samples=N_SAMPLES_CREATE,
+=======
+        n_samples=N_SAMPLES,
+>>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
         n_edge_elements=N_EDGE_ELEMENTS,
         n_plane_elements=N_PLANE_ELEMENTS,
         n_volume_elements=N_VOLUME_ELEMENTS,
@@ -88,12 +96,20 @@ class DataLoaderCreator:
 
         raw_data = (
             np.asarray(raw_data)
+<<<<<<< HEAD
             .reshape((N_SAMPLES_CREATE, VOID_DIM, VOID_DIM, VOID_DIM))
+=======
+            .reshape((N_SAMPLES, VOID_DIM, VOID_DIM, VOID_DIM))
+>>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
             .astype("int8")
         )
 
         color_raw_data = np.asarray(color_raw_data).reshape(
+<<<<<<< HEAD
             (N_SAMPLES_CREATE, VOID_DIM, VOID_DIM, VOID_DIM)
+=======
+            (N_SAMPLES, VOID_DIM, VOID_DIM, VOID_DIM)
+>>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
         )
 
         np.save(f"raw-data[{date.today()}]", raw_data, allow_pickle=True)

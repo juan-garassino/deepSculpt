@@ -128,5 +128,9 @@ gcp_submit_training_gpu:
 #      RUN API
 # ----------------------------------
 
+<<<<<<< HEAD
 api_run:
+=======
+run_api:
+>>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
 	python app.py
