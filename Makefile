@@ -85,6 +85,8 @@ PACKAGE_NAME=deepSculpt
 
 FILENAME=trainer
 
+JOB_DIR=gs://deepsculpt
+
 MACHINE=config.yaml
 
 MACHINE_GPU=config-gpu.yaml
@@ -111,6 +113,7 @@ gcp_submit_training:
 		--runtime-version=${RUNTIME_VERSION} \
 		--region ${REGION} \
 		--config ${MACHINE} \
+		--job-dir ${JOB_DIR} \
 		--stream-logs
 
 gcp_submit_training_gpu:
@@ -128,9 +131,5 @@ gcp_submit_training_gpu:
 #      RUN API
 # ----------------------------------
 
-<<<<<<< HEAD
 api_run:
-=======
-run_api:
->>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
 	python app.py

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from IPython import display
 import time
 import warnings
+
 warnings.filterwarnings("ignore")
 import os
 
@@ -97,11 +98,19 @@ discriminator = make_three_dimentional_critic()
 
 print(discriminator.summary())
 
-checkpoint_dir = (
-    "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
-)
+if LOCALLY:
+    checkpoint_dir = (
+        "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
+    )
 
-checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
+if not LOCALLY:
+    checkpoint_dir = "gs://deepsculpt/checkpoints"
+
+    # storage_location = f"results/{STORAGE_FILENAME}"
+
+    bucket = storage.Client().bucket(BUCKET_NAME)
+
+    # checkpoint_prefix = os.path.join(checkpoint_dir, "checkpoint")
 
 checkpoint = Checkpoint(
     step=Variable(1),
@@ -118,6 +127,7 @@ manager = CheckpointManager(
     checkpoint_name="checkpoint",
 )
 
+
 @function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
@@ -127,10 +137,6 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
         real_output = discriminator(
             images, training=True
         )  # trains discriminator based on labeled real pics
-<<<<<<< HEAD
-
-=======
->>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
         fake_output = discriminator(
             generated_images, training=True
         )  # trains discriminator based on labeled generated pics
@@ -162,6 +168,7 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
         zip(gradients_of_discriminator, discriminator.trainable_variables)
     )
     # applying the gradients on the trainable variables of the generator to update the parameters
+
 
 def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
@@ -274,9 +281,9 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
                     )
                 )
 
-                generate_and_save_checkpoint(
-                    checkpoint
-                )  # saving weights and biases previously calculated by the train step gradients
+                # generate_and_save_checkpoint(
+                #    checkpoint
+                # )  # saving weights and biases previously calculated by the train step gradients
 
                 checkpoint.step.assign_add(1)
 
@@ -292,10 +299,12 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
             # Save the model every 15 epochs
             if (epoch + 1) % MODEL_CHECKPOINT == 0:
                 generate_and_save_checkpoint(
-                    checkpoint
+                    checkpoint, manager, bucket
                 )  # saving weights and biases previously calculated by the train step gradients
             if (epoch + 1) % PICTURE_SNAPSHOT == 0:
-                generate_and_save_snapshot(generator, epoch + 1, SEED)
+                generate_and_save_snapshot(
+                    generator, epoch + 1, preprocessing_class_o, SEED
+                )
 
         print("\n#============================================================")
         print("|  - Time for epoch {} is {} sec".format(epoch + 1, time.time() - start))
@@ -306,6 +315,7 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
     # Generate after the final epoch
     display.clear_output(wait=True)
     # generate_and_save_images(generator, epochs, seed)
+
 
 if __name__ == "__main__":
     trainer(train_dataset, EPOCHS)
