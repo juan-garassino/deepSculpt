@@ -1,6 +1,7 @@
 from google.cloud import storage
 from tensorflow.train import Checkpoint
-from deepSculpt.params import BUCKET_NAME
+from deepSculpt.params import BUCKET_NAME, LOCALLY
+import os
 
 
 def upload_checkoint_to_cgp():
@@ -40,8 +41,12 @@ def generate_and_save_checkpoint(checkpoint):
 
         upload_checkoint_to_cgp()  # , model_checkpoint)# , model_checkpoint)
 
+    return checkpoint
 
-def load_model_from_cgp():
+
+def load_model_from_cgp(checkpoint, manager):
+
+    return checkpoint.restore(manager.latest_checkpoint)
 
     opt = tf.keras.optimizers.Adam(0.1)
     net = Net()

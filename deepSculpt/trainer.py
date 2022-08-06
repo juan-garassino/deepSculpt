@@ -26,6 +26,7 @@ from deepSculpt.optimizers import generator_optimizer, discriminator_optimizer
 
 # from deepSculpt.plotter import Plotter
 from deepSculpt.snapshots import generate_and_save_snapshot  # , upload_snapshot_to_gcp
+from deepSculpt.checkpoint import generate_and_save_checkpoint, load_model_from_cgp
 
 # from deepSculpt.checkpoint import save_model_checkpoint, upload_model_to_cgp
 from deepSculpt.params import (
@@ -173,7 +174,7 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
 # create a class
 def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
-    checkpoint.restore(manager.latest_checkpoint)  # REEEEEESTOREEEEEE
+    load_model_from_cgp(checkpoint, manager)  # REEEEEESTOREEEEEE
 
     if manager.latest_checkpoint:
         print("Restored from {}".format(manager.latest_checkpoint))
