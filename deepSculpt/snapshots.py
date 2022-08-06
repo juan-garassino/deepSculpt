@@ -1,4 +1,5 @@
 from google.cloud import storage
+import matplotlib.pyplot as plt
 
 from deepSculpt.params import BUCKET_NAME, LOCALLY
 from deepSculpt.plotter import Plotter

@@ -2,10 +2,8 @@ import matplotlib.pyplot as plt
 from IPython import display
 import time
 import warnings
-
 warnings.filterwarnings("ignore")
 import os
-
 
 from tensorflow.data import Dataset
 from tensorflow import GradientTape, function, Variable
@@ -24,11 +22,9 @@ from deepSculpt.model import (
 from deepSculpt.losses import discriminator_loss, generator_loss
 from deepSculpt.optimizers import generator_optimizer, discriminator_optimizer
 
-# from deepSculpt.plotter import Plotter
-from deepSculpt.snapshots import generate_and_save_snapshot  # , upload_snapshot_to_gcp
+from deepSculpt.snapshots import generate_and_save_snapshot
 from deepSculpt.checkpoint import generate_and_save_checkpoint, load_model_from_cgp
 
-# from deepSculpt.checkpoint import save_model_checkpoint, upload_model_to_cgp
 from deepSculpt.params import (
     LOCALLY,
     N_SAMPLES_CREATE,
@@ -80,10 +76,6 @@ elif not CREATE_DATA:
 else:
     print("error")
 
-###################
-## PREPROCESSING ##
-###################
-
 preprocessing_class_o = OneHotEncoderDecoder(colors)
 
 o_encode, o_classes = preprocessing_class_o.ohe_encoder()
@@ -112,7 +104,7 @@ checkpoint_dir = (
 checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
 
 checkpoint = Checkpoint(
-    # step=Variable(1),
+    step=Variable(1),
     generator_optimizer=generator_optimizer,
     discriminator_optimizer=discriminator_optimizer,
     generator=generator,
@@ -125,7 +117,6 @@ manager = CheckpointManager(
     max_to_keep=3,
     checkpoint_name="checkpoint",
 )
-
 
 @function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
@@ -170,8 +161,6 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     )
     # applying the gradients on the trainable variables of the generator to update the parameters
 
-
-# create a class
 def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
     load_model_from_cgp(checkpoint, manager)  # REEEEEESTOREEEEEE
@@ -316,7 +305,5 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
     display.clear_output(wait=True)
     # generate_and_save_images(generator, epochs, seed)
 
-
 if __name__ == "__main__":
-
     trainer(train_dataset, EPOCHS)
