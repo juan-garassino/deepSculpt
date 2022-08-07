@@ -3,7 +3,7 @@ import numpy as np
 
 ## TRAINING PARAMS
 
-LOCALLY = False
+LOCALLY = True
 
 CREATE_DATA = False
 
