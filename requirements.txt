@@ -10,8 +10,6 @@ numpy
 pandas
 scikit-learn
 matplotlib
-quad-mesh-simplify
-voxelfuse
 
 # tests/linter
 black
@@ -34,3 +32,6 @@ termcolor
 
 jupyter
 jupyterlab
+instabot
+quad-mesh-simplify
+voxelfuse
