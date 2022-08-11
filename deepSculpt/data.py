@@ -20,6 +20,7 @@ from deepSculpt.params import (
     ELEMENT_VOLUME_MIN,
     ELEMENT_VOLUME_MAX,
     VERBOSE,
+    TRAIN_SIZE,
 )
 
 from datetime import date
@@ -112,9 +113,9 @@ class DataLoaderCreator:
 
         os.chdir(path)
 
-        raw_data = np.load(self.path_volumes, allow_pickle=True)
+        raw_data = np.load(self.path_volumes, allow_pickle=True)[:TRAIN_SIZE]
 
-        color_raw_data = np.load(self.path_colors, allow_pickle=True)
+        color_raw_data = np.load(self.path_colors, allow_pickle=True)[:TRAIN_SIZE]
 
         print(
             f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
@@ -134,9 +135,9 @@ class DataLoaderCreator:
 
             blob.download_to_filename(file)
 
-        raw_data = np.load(self.path_volumes, allow_pickle=True)
+        raw_data = np.load(self.path_volumes, allow_pickle=True)[:TRAIN_SIZE]
 
-        color_raw_data = np.load(self.path_colors, allow_pickle=True)
+        color_raw_data = np.load(self.path_colors, allow_pickle=True)[:TRAIN_SIZE]
 
         print(
             f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
