@@ -43,6 +43,7 @@ from deepSculpt.params import (
     MINIBATCHES,
     FILE_TO_LOAD_VOLUMES,
     FILE_TO_LOAD_COLORS,
+    COLAB,
 )
 
 if CREATE_DATA:
@@ -98,9 +99,14 @@ discriminator = make_three_dimentional_critic()
 
 print(discriminator.summary())
 
-if LOCALLY:
+if LOCALLY and not COLAB:
     checkpoint_dir = (
         "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
+    )
+
+if LOCALLY and COLAB:
+    checkpoint_dir = (
+        "/content/drive/MyDrive/repositories/deepSculpt/checkpoints"
     )
 
 if not LOCALLY:
@@ -267,11 +273,11 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
         display.clear_output(wait=True)  # clearing output !!!TO BE CHECKED!!!
         # generate_and_save_images(generator, epoch + 1, seed)
 
-        if LOCALLY:
+        if LOCALLY and not COLAB:
 
             if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
 
-                os.chdir("/home/juan-garassino/code/juan-garassino/deepSculpt/results")
+                os.chdir("/home/juan-garassino/code/juan-garassino/deepSculpt/checkpoints")
 
                 save_path = manager.save()
 
@@ -294,6 +300,36 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
                 generate_and_save_snapshot(
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
+
+
+        if LOCALLY and COLAB:
+
+            if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
+
+                os.chdir("/content/drive/MyDrive/repositories/deepSculpt/checkpoints")
+
+                save_path = manager.save()
+
+                print(
+                    "Saved checkpoint for step {}: {}".format(
+                        int(checkpoint.step), save_path
+                    )
+                )
+
+                # generate_and_save_checkpoint(
+                #    checkpoint
+                # )  # saving weights and biases previously calculated by the train step gradients
+
+                checkpoint.step.assign_add(1)
+
+            if (epoch + 1) % PICTURE_SNAPSHOT == 0:
+                os.chdir(
+                    "/content/drive/MyDrive/repositories/deepSculpt/snapshots"
+                )
+                generate_and_save_snapshot(
+                    generator, epoch + 1, preprocessing_class_o, SEED
+                )
+
 
         if not LOCALLY:
             # Save the model every 15 epochs

@@ -5,17 +5,19 @@ import numpy as np
 
 LOCALLY = True
 
+COLAB = True
+
 CREATE_DATA = False
 
 N_SAMPLES_CREATE = 100
 
-VOID_DIM = 24
+VOID_DIM = 48
 
 NOISE_DIM = 512
 
-FILE_TO_LOAD_VOLUMES = "raw-data[2022-07-26].npy"
+FILE_TO_LOAD_VOLUMES = "raw-data[2022-06-15].npy"
 
-FILE_TO_LOAD_COLORS = "color-raw-data[2022-07-26].npy"
+FILE_TO_LOAD_COLORS = "color-raw-data[2022-06-15].npy"
 
 
 TRAIN_SIZE = 2500

@@ -1,7 +1,7 @@
 from google.cloud import storage
 import matplotlib.pyplot as plt
 
-from deepSculpt.params import BUCKET_NAME, LOCALLY
+from deepSculpt.params import BUCKET_NAME, LOCALLY, VOID_DIM
 from deepSculpt.plotter import Plotter
 
 
@@ -23,7 +23,7 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
         model(test_input, training=False)  # Notice 'training' is set to False
         .numpy()
         .astype("int")
-        .reshape((1, 24, 24, 24, 6))
+        .reshape((1, VOID_DIM, VOID_DIM, VOID_DIM, 6))
     )
 
     o_decoded_volumes, o_decoded_colors = preprocessing_class_o.ohe_decoder(predictions)
