@@ -106,7 +106,7 @@ if LOCALLY and not COLAB:
 
 if LOCALLY and COLAB:
     checkpoint_dir = (
-        "/content/drive/MyDrive/repositories/deepSculpt/checkpoints"
+        "/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints"
     )
 
 if not LOCALLY:
@@ -277,7 +277,7 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
             if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
 
-                os.chdir("/home/juan-garassino/code/juan-garassino/deepSculpt/checkpoints")
+                os.chdir("/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints")
 
                 save_path = manager.save()
 
@@ -306,7 +306,7 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
             if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
 
-                os.chdir("/content/drive/MyDrive/repositories/deepSculpt/checkpoints")
+                os.chdir("/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints")
 
                 save_path = manager.save()
 
@@ -324,7 +324,7 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
             if (epoch + 1) % PICTURE_SNAPSHOT == 0:
                 os.chdir(
-                    "/content/drive/MyDrive/repositories/deepSculpt/snapshots"
+                    "/content/drive/MyDrive/repositories/deepSculpt/results/snapshots"
                 )
                 generate_and_save_snapshot(
                     generator, epoch + 1, preprocessing_class_o, SEED
