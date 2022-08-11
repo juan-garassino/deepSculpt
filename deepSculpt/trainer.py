@@ -277,7 +277,9 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
             if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
 
-                os.chdir("/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints")
+                os.chdir(
+                    "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
+                )
 
                 save_path = manager.save()
 
@@ -301,12 +303,13 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
 
-
         if LOCALLY and COLAB:
 
             if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
 
-                os.chdir("/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints")
+                os.chdir(
+                    "/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints"
+                )
 
                 save_path = manager.save()
 
@@ -329,7 +332,6 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
                 generate_and_save_snapshot(
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
-
 
         if not LOCALLY:
             # Save the model every 15 epochs
