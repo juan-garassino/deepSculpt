@@ -5,13 +5,13 @@ import numpy as np
 
 LOCALLY = True
 
-COLAB = True
+COLAB = False
 
 CREATE_DATA = False
 
 N_SAMPLES_CREATE = 100
 
-VOID_DIM = 48
+VOID_DIM = 48 # 48
 
 NOISE_DIM = 512
 
