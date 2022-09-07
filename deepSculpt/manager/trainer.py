@@ -37,7 +37,7 @@ from deepSculpt.utils.params import (
 
 from colorama import Fore, Style
 
-if os.environ.get("CREATE_DATA"):
+if int(os.environ.get("CREATE_DATA")) == 1:
 
     data = DataLoaderCreator()
 
@@ -53,14 +53,14 @@ if os.environ.get("CREATE_DATA"):
         void_dim=int(os.environ.get("VOID_DIM")),
     )
 
-elif not os.environ.get("CREATE_DATA"):
+if int(os.environ.get("CREATE_DATA")) == 0:
 
     data = DataLoaderCreator(
         path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
         path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
     )
 
-    if os.environ.get("LOCALLY"):
+    if int(os.environ.get("LOCALLY")) == 1:
         volumes, colors = data.load_locally()
 
     else:
@@ -277,8 +277,8 @@ def trainer(
 
         if os.environ.get("LOCALLY") and not os.environ.get("COLAB"):
 
-            if (epoch + 1) % os.environ.get(
-                "MODEL_CHECKPOINT"
+            if (epoch + 1) % int(
+                os.environ.get("MODEL_CHECKPOINT")
             ) == 0:  # Save the model every 15 epochs
 
                 os.chdir(
@@ -299,7 +299,7 @@ def trainer(
 
                 checkpoint.step.assign_add(1)
 
-            if (epoch + 1) % os.environ.get("PICTURE_SNAPSHOT") == 0:
+            if (epoch + 1) % int(os.environ.get("PICTURE_SNAPSHOT")) == 0:
                 os.chdir(
                     "/home/juan-garassino/code/juan-garassino/deepSculpt/results/snapshots"
                 )
@@ -309,8 +309,8 @@ def trainer(
 
         if os.environ.get("LOCALLY") and os.environ.get("COLAB"):
 
-            if (epoch + 1) % os.environ.get(
-                "MODEL_CHECKPOINT"
+            if (epoch + 1) % int(
+                os.environ.get("MODEL_CHECKPOINT")
             ) == 0:  # Save the model every 15 epochs
 
                 os.chdir(
@@ -331,7 +331,7 @@ def trainer(
 
                 checkpoint.step.assign_add(1)
 
-            if (epoch + 1) % os.environ.get("PICTURE_SNAPSHOT") == 0:
+            if (epoch + 1) % int(os.environ.get("PICTURE_SNAPSHOT")) == 0:
                 os.chdir(
                     "/content/drive/MyDrive/repositories/deepSculpt/results/snapshots"
                 )
@@ -345,7 +345,7 @@ def trainer(
                 generate_and_save_checkpoint(
                     checkpoint, manager, bucket
                 )  # saving weights and biases previously calculated by the train step gradients
-            if (epoch + 1) % os.environ.get("PICTURE_SNAPSHOT") == 0:
+            if (epoch + 1) % int(os.environ.get("PICTURE_SNAPSHOT")) == 0:
                 generate_and_save_snapshot(
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )

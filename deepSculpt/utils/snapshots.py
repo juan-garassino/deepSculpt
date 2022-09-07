@@ -2,6 +2,7 @@ from google.cloud import storage
 import matplotlib.pyplot as plt
 
 from deepSculpt.utils.plotter import Plotter
+import os
 
 
 def upload_snapshot_to_gcp(snapshot_name):
