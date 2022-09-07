@@ -25,15 +25,23 @@ def generate_and_save_checkpoint(checkpoint, manager, bucket):
 
         save_path = manager.save()
 
-        print("\n🔼 " + Fore.BLUE + "Saved checkpoint for step {}: {}".format(
-            int(checkpoint.step), save_path) + Style.RESET_ALL)
+        print(
+            "\n🔼 "
+            + Fore.BLUE
+            + "Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path)
+            + Style.RESET_ALL
+        )
 
     if not os.environ.get("LOCALLY"):
 
         save_path = manager.save()
 
-        print("\n🔼 " + Fore.BLUE + "Saved checkpoint for step {}: {}".format(
-            int(checkpoint.step), save_path) + Style.RESET_ALL)
+        print(
+            "\n🔼 "
+            + Fore.BLUE
+            + "Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path)
+            + Style.RESET_ALL
+        )
 
     return checkpoint, manager
 

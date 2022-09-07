@@ -82,12 +82,17 @@ class Plotter(Sculptor):
             name_png, transparent=self.transparent
         )  # agregar tiempo de impresion y exportar 3D y bounding box
 
-        print("\n🔽 " + Fore.BLUE + f"Just created a snapshot {name_png}" +
-              Style.RESET_ALL)
+        print(
+            "\n🔽 " + Fore.BLUE + f"Just created a snapshot {name_png}" + Style.RESET_ALL
+        )
 
         name_svg = f"vectorial[{now}].png"
 
         plt.savefig(name_svg, transparent=self.transparent)
 
-        print("\n🔽 " + Fore.BLUE + f"Just created a vectorial snapshot {name_svg}" +
-              Style.RESET_ALL)
+        print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just created a vectorial snapshot {name_svg}"
+            + Style.RESET_ALL
+        )

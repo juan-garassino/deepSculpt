@@ -19,9 +19,11 @@ def upload_snapshot_to_gcp(snapshot_name):
     blob.upload_from_filename(STORAGE_FILENAME)
 
     print(
-        "\n🔼 " + Fore.BLUE +
-        f"Just uploaded a snapshot to gcp {STORAGE_FILENAME} @ {storage_location}"
-        + Style.RESET_ALL)
+        "\n🔼 "
+        + Fore.BLUE
+        + f"Just uploaded a snapshot to gcp {STORAGE_FILENAME} @ {storage_location}"
+        + Style.RESET_ALL
+    )
 
 
 def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
@@ -51,9 +53,11 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
     plt.savefig(snapshot_name)
 
     print(
-        "\n🔽 " + Fore.BLUE +
-        f"Just created a snapshot {snapshot_name} @"
-        + Style.RESET_ALL)
+        "\n🔽 "
+        + Fore.BLUE
+        + f"Just created a snapshot {snapshot_name}"
+        + Style.RESET_ALL
+    )
 
     if not os.environ.get("LOCALLY"):
         upload_snapshot_to_gcp(snapshot_name)
