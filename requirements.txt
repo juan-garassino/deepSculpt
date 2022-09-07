@@ -30,8 +30,9 @@ joblib
 memoized-property
 termcolor
 
+protobuf<=3.20
 jupyter
 jupyterlab
-instabot
+
 quad-mesh-simplify
 voxelfuse

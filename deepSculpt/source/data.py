@@ -49,7 +49,7 @@ class DataLoaderCreator:
         void_dim=VOID_DIM,
     ):
 
-        path = os.path.join(os.path.dirname(__file__), "data")
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
         os.chdir(path)
 
@@ -109,7 +109,7 @@ class DataLoaderCreator:
 
     def load_locally(self):
 
-        path = os.path.join(os.path.dirname(__file__), "data")
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
         os.chdir(path)
 
