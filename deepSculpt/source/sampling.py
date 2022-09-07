@@ -4,10 +4,11 @@ from deepSculpt.source.preprocessing import OneHotEncoderDecoder
 from colorama import Fore, Style
 import numpy as np
 from tensorflow.data import Dataset
-from deepSculpt.utils.params import (BUFFER_SIZE)
+from deepSculpt.utils.params import BUFFER_SIZE
 import tensorflow as tf
 
-def sampling(): # convert to spare tensor
+
+def sampling():  # convert to spare tensor
 
     if int(os.environ.get("CREATE_DATA")) == 1:
 
@@ -48,13 +49,17 @@ def sampling(): # convert to spare tensor
     print(
         "\n⏹ "
         + Fore.YELLOW
-        + "Just preproccess data from shape {} to {}".format(colors.shape, o_encode.shape)
+        + "Just preproccess data from shape {} to {}".format(
+            colors.shape, o_encode.shape
+        )
         + Style.RESET_ALL
     )
 
-    print("\n⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes) + Style.RESET_ALL)
+    print(
+        "\n⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes) + Style.RESET_ALL
+    )
 
-    tf.sparse.from_dense(o_encode)
+    # o_encode = tf.sparse.from_dense(o_encode)
 
     train_dataset = (
         Dataset.from_tensor_slices(o_encode)

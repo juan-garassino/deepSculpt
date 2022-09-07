@@ -16,11 +16,17 @@ from google.cloud import storage
 from tensorflow import GradientTape, function
 
 from deepSculpt.source.sampling import sampling
-from deepSculpt.model.model import make_three_dimentional_generator,make_three_dimentional_critic
+from deepSculpt.model.model import (
+    make_three_dimentional_generator,
+    make_three_dimentional_critic,
+)
 from deepSculpt.model.losses import discriminator_loss, generator_loss
 from deepSculpt.model.optimizers import generator_optimizer, discriminator_optimizer
 from deepSculpt.utils.snapshots import generate_and_save_snapshot
-from deepSculpt.utils.checkpoint import generate_and_save_checkpoint, load_model_from_cgp
+from deepSculpt.utils.checkpoint import (
+    generate_and_save_checkpoint,
+    load_model_from_cgp,
+)
 from deepSculpt.utils.params import SEED, MINIBATCHES
 
 from colorama import Fore, Style
@@ -175,7 +181,7 @@ def trainer(
                 print(
                     "\n⏩ "
                     + Fore.MAGENTA
-                    + "Minibatch number %d" % (index + 1,)
+                    + f"Minibatch number {index + 1} epoch {epoch + 1}"
                     + Style.RESET_ALL
                     + "\n"
                 )
