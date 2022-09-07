@@ -47,9 +47,9 @@ ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = int(int(os.environ.get("VOID_DIM")) * 0.4
     int(os.environ.get("VOID_DIM")) * 0.8
 )
 
-ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = int(int(os.environ.get("VOID_DIM")) * 0.2), int(
-    int(os.environ.get("VOID_DIM")) * 0.5
-)
+ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = int(
+    int(os.environ.get("VOID_DIM")) * 0.2
+), int(int(os.environ.get("VOID_DIM")) * 0.5)
 
 STEP = 1
 

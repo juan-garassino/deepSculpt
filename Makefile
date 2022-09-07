@@ -9,9 +9,7 @@ check_code:
 	@flake8 scripts/* deepSculpt/*.py
 
 black:
-	@black scripts/* deepSculpt/source/*.py deepSculpt/utils/*.py deepSculpt/workflow/*.py \
-	deepSculpt/manager/*.py deepSculpt/manager/components/*.py deepSculpt/model/*.py deepSculpt/utils/*.py deepSculpt/emissary/*.py \
-	deepSculpt/examplesborrar/*.py
+	@black scripts/* deepSculpt/*/*.py deepSculpt/*.py deepSculpt/*/*/*.py
 
 
 test:

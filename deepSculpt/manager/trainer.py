@@ -35,6 +35,8 @@ from deepSculpt.utils.params import (
     MINIBATCHES,
 )
 
+from colorama import Fore, Style
+
 if os.environ.get("CREATE_DATA"):
 
     data = DataLoaderCreator()
@@ -71,7 +73,7 @@ preprocessing_class_o = OneHotEncoderDecoder(colors)
 
 o_encode, o_classes = preprocessing_class_o.ohe_encoder()
 
-print(f"The classes are: {o_classes}")
+print("\n⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes))
 
 train_dataset = (
     Dataset.from_tensor_slices(o_encode)
@@ -82,11 +84,18 @@ train_dataset = (
 
 generator = make_three_dimentional_generator()
 
+print("\n⏹ " + Fore.BLUE + "The Generators summary is" + Fore.YELLOW + "\n")
+
 print(generator.summary())
 
 discriminator = make_three_dimentional_critic()
 
+print("\n⏹ " + Fore.BLUE + "The Discriminators summary is" + Fore.YELLOW + "\n")
+
 print(discriminator.summary())
+
+print(Style.RESET_ALL)
+
 
 if os.environ.get("LOCALLY") and not os.environ.get("COLAB"):
     checkpoint_dir = (
@@ -173,29 +182,20 @@ def trainer(
         load_model_from_cgp(checkpoint, manager)  # REEEEEESTOREEEEEE
 
     if manager.latest_checkpoint:
-        print("Restored from {}".format(manager.latest_checkpoint))
+        print(
+            "\n🔼 "
+            + Fore.YELLOW
+            + "Restored from {}...".format(manager.latest_checkpoint)
+            + Style.RESET_ALL
+        )
     else:
-        print("Initializing from scratch.")
+        print("\n⏹ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
 
     for epoch in range(epochs):
 
         start = time.time()
-        print(
-            "\n##########################################################################################"
-        )
-        print(
-            "# ----------------------------------------------------------------------------------------"
-        )
-        print(
-            "# -----------------------------------------------------   Start of epoch %d"
-            % (epoch + 1,)
-        )
-        print(
-            "# ----------------------------------------------------------------------------------------"
-        )
-        print(
-            "##########################################################################################"
-        )
+
+        print("\n⏩ " + Fore.RED + "Epoch number %d" % (epoch + 1,) + Style.RESET_ALL)
 
         for index, image_batch in enumerate(dataset):
             noise = normal(
@@ -224,24 +224,34 @@ def trainer(
 
             if (index + 1) % MINIBATCHES[index]:
                 minibatch_start = time.time()
-                print("\n#============================================================")
-                print(f"| Minibatch Number {index+1}")
-                print("#============================================================")
-                print("|")
-                print(f"|  - The loss of the generator is: {gen_loss}")  # , end="\r")
+
                 print(
-                    f"|  - The loss of the discriminator is: {disc_loss}"
-                )  # , end="\r")
-                print("|")
-                print(
-                    "|  - Time for Minibatch {} is {} sec".format(
-                        index + 1, time.time() - minibatch_start
-                    )
+                    "\n⏩ "
+                    + Fore.MAGENTA
+                    + "Minibatch number %d" % (index + 1,)
+                    + Style.RESET_ALL
+                    + "\n"
                 )
-                print("|")
+
                 print(
-                    "#============================================================"
-                )  # , end="\r")
+                    "\nℹ️ "
+                    + Fore.CYAN
+                    + "Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
+                        disc_loss, gen_loss
+                    )
+                    + Style.RESET_ALL
+                )
+
+                print(
+                    "\n📶 "
+                    + Fore.MAGENTA
+                    + "Time for minibatches between {} and {} is {} sec".format(
+                        index + 1,
+                        index + 1 + int(os.environ.get("BATCH_SIZE")),
+                        time.time() - minibatch_start,
+                    )
+                    + Style.RESET_ALL
+                )
 
             gradients_of_generator = gen_tape.gradient(
                 gen_loss, generator.trainable_variables
@@ -340,9 +350,12 @@ def trainer(
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
 
-        print("\n#============================================================")
-        print("|  - Time for epoch {} is {} sec".format(epoch + 1, time.time() - start))
-        print("#============================================================")
+        print(
+            "\n📶 "
+            + Fore.MAGENTA
+            + "Time for epoch {} is {} sec".format(epoch + 1, time.time() - start)
+            + Style.RESET_ALL
+        )
 
         plt.close("all")
 

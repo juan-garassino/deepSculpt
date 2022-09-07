@@ -21,6 +21,8 @@ from datetime import date
 import numpy as np
 import os
 from google.cloud import storage
+import time
+from colorama import Fore, Style
 
 
 class DataLoaderCreator:
@@ -51,10 +53,21 @@ class DataLoaderCreator:
         color_raw_data = []
         count = 0
 
-        for sculpture in range(n_samples):  #
-            count = count + 1
-            if count % 10 == 0:
-                print("\r{0}".format(count), end="")
+        for count, sculpture in enumerate(range(n_samples)):  #
+
+            start = time.time()
+
+            if (count + 1) % 25 == 0:
+                print(
+                    "\n⏹ "
+                    + Fore.GREEN
+                    + "{} sculputers where created in {}".format(
+                        (count + 1), time.time() - start
+                    )
+                    + Style.RESET_ALL
+                )
+
+                # print("\r{0}".format(count), end="")
 
             sculptor = Sculptor(
                 void_dim=void_dim,
@@ -108,7 +121,10 @@ class DataLoaderCreator:
         np.save(f"color-raw-data[{date.today()}]", color_raw_data, allow_pickle=True)
 
         print(
-            f"Just created 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            "\n🔼 "
+            + Fore.BLUE
+            + f"Just created 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            + Style.RESET_ALL
         )
 
         return (raw_data, color_raw_data)
@@ -128,7 +144,10 @@ class DataLoaderCreator:
         ]
 
         print(
-            f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            "\n🔼 "
+            + Fore.BLUE
+            + f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            + Style.RESET_ALL
         )
 
         return (raw_data, color_raw_data)
@@ -154,7 +173,10 @@ class DataLoaderCreator:
         ]
 
         print(
-            f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            "\n🔼 "
+            + Fore.BLUE
+            + f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            + Style.RESET_ALL
         )
 
         return (raw_data, color_raw_data)  # , color_raw_data)

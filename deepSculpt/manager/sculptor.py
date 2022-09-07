@@ -5,6 +5,7 @@ from deepSculpt.manager.components.planes import add_plane
 
 import time
 import numpy as np
+from colorama import Fore, Style
 
 
 class Sculptor:
@@ -96,6 +97,12 @@ class Sculptor:
                 self.verbose,
             )
 
-        print("Time for sculptures is {} sec".format(time.time() - start))
+        if self.verbose:
+            print(
+                "\n⏹  "
+                + Fore.GREEN
+                + "Time for sculptures is {} sec".format(time.time() - start)
+                + Style.RESET_ALL
+            )
 
         return self.void, self.color_void

@@ -33,6 +33,7 @@ termcolor
 protobuf<=3.20
 jupyter
 jupyterlab
+colorama
 
 quad-mesh-simplify
 voxelfuse
