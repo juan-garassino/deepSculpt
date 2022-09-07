@@ -1,6 +1,6 @@
 from google.cloud import storage
 from tensorflow.train import Checkpoint
-from deepSculpt.params import BUCKET_NAME, LOCALLY
+from deepSculpt.utils.params import BUCKET_NAME, LOCALLY
 import os
 
 

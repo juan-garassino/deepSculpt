@@ -1,33 +1,34 @@
 import random
 import numpy as np
 
-from deepSculpt.components.utils import return_axis
-from deepSculpt.params import COLOR_EDGES
+from deepSculpt.manager.components.utils import return_axis
+from deepSculpt.utils.params import COLOR_PLANES
 
 
-def add_edge(
-    void, color_void, element_edge_min, element_edge_max, step, verbose
+def add_plane(
+    void, color_void, element_plane_min, element_plane_max, step, verbose
 ):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
+    element = None
+    delta = None
+    top_left_corner = None
+    bottom_right_corner = None
     working_plane = return_axis(void, color_void)[0]
     color_parameters = return_axis(void, color_void)[1]
-    # selection of the axis to work on
+
+    # section = None
 
     if verbose == True:
         print(working_plane)
         print("###############################################################")
 
     # Variables
-    edge_length = random.randrange(
-        element_edge_min, element_edge_max, step
-    )  # estas variables quizas no necesiten ser self!!
-    edge_plane = np.random.randint(low=0, high=2)
-
-    if edge_plane == 0:
-        element = np.ones(edge_length).reshape(edge_length, 1)
-    else:
-        element = np.ones(edge_length).reshape(edge_length, 1).T
-
+    element = np.ones(
+        (
+            random.randrange(element_plane_min, element_plane_max, step),
+            random.randrange(element_plane_min, element_plane_max, step),
+        )
+    )
     # creates the element to be inserted
     delta = np.array(working_plane.shape) - np.array(element.shape)
     # finds the delta between the size of the void and the size of the element
@@ -42,7 +43,6 @@ def add_edge(
         element.shape
     )  # - np.array([1,1]))
     # finds the coordinates of the bottom right corner
-
     working_plane[
         top_left_corner[0] : bottom_right_corner[0],
         top_left_corner[1] : bottom_right_corner[1],
@@ -52,10 +52,10 @@ def add_edge(
     color_parameters[
         top_left_corner[0] : bottom_right_corner[0],
         top_left_corner[1] : bottom_right_corner[1],
-    ] = COLOR_EDGES
+    ] = COLOR_PLANES
 
     if verbose == True:
-        print(working_plane)
+        print_information()
         print("###############################################################")
 
     return void.astype("int8"), color_void

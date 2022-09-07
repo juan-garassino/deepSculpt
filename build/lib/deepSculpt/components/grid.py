@@ -1,7 +1,7 @@
 import numpy as np
 import random
-from deepSculpt.components.utils import return_axis
-from deepSculpt.params import COLOR_EDGES
+from deepSculpt.manager.components.utils import return_axis
+from deepSculpt.utils.params import COLOR_EDGES
 
 
 def add_grid(void, color_void, element_grid_min, element_grid_max, step, verbose):

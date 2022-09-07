@@ -1,8 +1,8 @@
 from google.cloud import storage
 import matplotlib.pyplot as plt
 
-from deepSculpt.params import BUCKET_NAME, LOCALLY, VOID_DIM
-from deepSculpt.plotter import Plotter
+from deepSculpt.utils.params import BUCKET_NAME, LOCALLY, VOID_DIM
+from deepSculpt.utils.plotter import Plotter
 
 
 def upload_snapshot_to_gcp(snapshot_name):

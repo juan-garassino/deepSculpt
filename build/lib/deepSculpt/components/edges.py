@@ -1,8 +1,8 @@
 import random
 import numpy as np
 
-from deepSculpt.components.utils import return_axis
-from deepSculpt.params import COLOR_EDGES
+from deepSculpt.manager.components.utils import return_axis
+from deepSculpt.utils.params import COLOR_EDGES
 
 
 def add_edge(

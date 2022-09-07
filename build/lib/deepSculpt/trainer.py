@@ -14,19 +14,19 @@ from tensorflow.train import Checkpoint, CheckpointManager
 from google.cloud import storage
 from tensorflow import GradientTape, function
 
-from deepSculpt.preprocessing import OneHotEncoderDecoder
-from deepSculpt.data import DataLoaderCreator
-from deepSculpt.model import (
+from deepSculpt.source.preprocessing import OneHotEncoderDecoder
+from deepSculpt.source.data import DataLoaderCreator
+from deepSculpt.model.model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
-from deepSculpt.losses import discriminator_loss, generator_loss
-from deepSculpt.optimizers import generator_optimizer, discriminator_optimizer
+from deepSculpt.model.losses import discriminator_loss, generator_loss
+from deepSculpt.model.optimizers import generator_optimizer, discriminator_optimizer
 
-from deepSculpt.snapshots import generate_and_save_snapshot
-from deepSculpt.checkpoint import generate_and_save_checkpoint, load_model_from_cgp
+from deepSculpt.utils.snapshots import generate_and_save_snapshot
+from deepSculpt.utils.checkpoint import generate_and_save_checkpoint, load_model_from_cgp
 
-from deepSculpt.params import (
+from deepSculpt.utils.params import (
     LOCALLY,
     N_SAMPLES_CREATE,
     VOID_DIM,

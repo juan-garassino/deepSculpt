@@ -1,5 +1,5 @@
 from tensorflow.keras import Sequential, layers
-from deepSculpt.params import VOID_DIM, NOISE_DIM
+from deepSculpt.utils.params import VOID_DIM, NOISE_DIM
 
 ## GENERATOR
 

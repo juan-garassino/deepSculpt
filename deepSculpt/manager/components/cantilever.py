@@ -1,7 +1,7 @@
 import random
 import numpy as np
 
-from deepSculpt.params import COLOR_VOLUMES
+from deepSculpt.utils.params import COLOR_VOLUMES
 
 
 def add_pipe_cantilever(

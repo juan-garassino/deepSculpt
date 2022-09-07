@@ -1,5 +1,5 @@
-from deepSculpt.sculptor import Sculptor
-from deepSculpt.params import (
+from deepSculpt.manager.sculptor import Sculptor
+from deepSculpt.utils.params import (
     VOID_DIM,
     N_SAMPLES_CREATE,
     BUCKET_NAME,

@@ -1,7 +1,7 @@
 # from xml.dom import NO_MODIFICATION_ALLOWED_ERR
 import matplotlib.pyplot as plt
 import numpy as np
-from deepSculpt.sculptor import Sculptor
+from deepSculpt.manager.sculptor import Sculptor
 from datetime import datetime
 
 

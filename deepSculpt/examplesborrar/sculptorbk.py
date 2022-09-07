@@ -2,11 +2,11 @@ import random
 import time
 import numpy as np
 
-from deepSculpt.components.cantilever import add_pipe_cantilever
-from deepSculpt.components.edges import add_edge
-from deepSculpt.components.grid import add_grid
-from deepSculpt.components.planes import add_plane
-from deepSculpt.components.utils import return_axis
+from deepSculpt.manager.components.cantilever import add_pipe_cantilever
+from deepSculpt.manager.components.edges import add_edge
+from deepSculpt.manager.components.grid import add_grid
+from deepSculpt.manager.components.planes import add_plane
+from deepSculpt.manager.components.utils import return_axis
 
 
 class Sculptor:
