@@ -10,8 +10,6 @@ raw_data/
 *.svg
 *.png
 *.npy
-<<<<<<< HEAD
 
-results
-=======
->>>>>>> a8f7f64f706648c04e5e999510e7266ae824c920
+results/snapshots/*
+results/checkpoints/*
