@@ -9,7 +9,9 @@ check_code:
 	@flake8 scripts/* deepSculpt/*.py
 
 black:
-	@black scripts/* deepSculpt/*.py deepSculpt/components/*.py
+	@black scripts/* deepSculpt/source/*.py deepSculpt/utils/*.py deepSculpt/workflow/*.py \
+	deepSculpt/manager/*.py deepSculpt/manager/components/*.py deepSculpt/model/*.py deepSculpt/utils/*.py deepSculpt/emissary/*.py \
+	deepSculpt/examplesborrar/*.py
 
 
 test:
@@ -22,10 +24,14 @@ ftest:
 clean:
 	@rm -f */version.txt
 	@rm -f .coverage
-	@rm -fr */__pycache__ */*.pyc __pycache__
+	@rm -fr */__pycache__ */*/__pycache__ */*/*/__pycache__ */*.pyc __pycache__
 	@rm -fr build dist
 	@rm -fr deepSculpt-*.dist-info
 	@rm -fr deepSculpt.egg-info
+	@rm -fr results/checkpoints/*
+	@rm -fr results/snapshots/*
+	@rm -fr deepSculpt/data/*.svg
+	@rm -fr deepSculpt/data/*.png
 
 install:
 	@pip install . -U
@@ -65,7 +71,7 @@ pypi:
 PROJECT_ID=deepsculpt
 
 # bucket
-BUCKET_NAME=deepsculpt
+os.environ.get('BUCKET_NAME')=deepsculpt
 
 # training folder
 BUCKET_TRAINING_FOLDER=data
@@ -95,7 +101,7 @@ set_project:
 	@gcloud config set project ${PROJECT_ID}
 
 create_bucket:
-	@gsutil mb -l ${REGION} -p ${PROJECT_ID} gs://${BUCKET_NAME}
+	@gsutil mb -l ${REGION} -p ${PROJECT_ID} gs://${os.environ.get('BUCKET_NAME')}
 
 run_locally:
 	python -m deepSculpt.manager.trainer
@@ -106,7 +112,7 @@ JOB_NAME=deepsculpt_$(shell date +'%Y%m%d_%H%M%S')
 
 gcp_submit_training:
 	gcloud ai-platform jobs submit training ${JOB_NAME} \
-		--job-dir gs://${BUCKET_NAME}/${BUCKET_TRAINING_FOLDER} \
+		--job-dir gs://${os.environ.get('BUCKET_NAME')}/${BUCKET_TRAINING_FOLDER} \
 		--package-path ${PACKAGE_NAME} \
 		--module-name ${PACKAGE_NAME}.${FILENAME} \
 		--python-version=${PYTHON_VERSION} \
@@ -118,7 +124,7 @@ gcp_submit_training:
 
 gcp_submit_training_gpu:
 	gcloud ai-platform jobs submit training ${JOB_NAME} \
-		--job-dir gs://${BUCKET_NAME}/${BUCKET_TRAINING_FOLDER} \
+		--job-dir gs://${os.environ.get('BUCKET_NAME')}/${BUCKET_TRAINING_FOLDER} \
 		--package-path ${PACKAGE_NAME} \
 		--module-name ${PACKAGE_NAME}.${FILENAME} \
 		--python-version=${PYTHON_VERSION} \

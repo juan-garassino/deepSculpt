@@ -1,7 +1,6 @@
 from google.cloud import storage
 import matplotlib.pyplot as plt
 
-from deepSculpt.utils.params import BUCKET_NAME, LOCALLY, VOID_DIM
 from deepSculpt.utils.plotter import Plotter
 
 
@@ -11,7 +10,7 @@ def upload_snapshot_to_gcp(snapshot_name):
 
     storage_location = f"results/{STORAGE_FILENAME}"
 
-    bucket = storage.Client().bucket(BUCKET_NAME)
+    bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
 
     blob = bucket.blob(storage_location)
 
@@ -23,7 +22,15 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
         model(test_input, training=False)  # Notice 'training' is set to False
         .numpy()
         .astype("int")
-        .reshape((1, VOID_DIM, VOID_DIM, VOID_DIM, 6))
+        .reshape(
+            (
+                1,
+                int(os.environ.get("VOID_DIM")),
+                int(os.environ.get("VOID_DIM")),
+                int(os.environ.get("VOID_DIM")),
+                6,
+            )
+        )
     )
 
     o_decoded_volumes, o_decoded_colors = preprocessing_class_o.ohe_decoder(predictions)
@@ -36,5 +43,5 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
 
     plt.savefig(snapshot_name)
 
-    if not LOCALLY:
+    if not os.environ.get("LOCALLY"):
         upload_snapshot_to_gcp(snapshot_name)

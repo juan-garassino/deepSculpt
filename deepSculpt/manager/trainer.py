@@ -24,34 +24,23 @@ from deepSculpt.model.losses import discriminator_loss, generator_loss
 from deepSculpt.model.optimizers import generator_optimizer, discriminator_optimizer
 
 from deepSculpt.utils.snapshots import generate_and_save_snapshot
-from deepSculpt.utils.checkpoint import generate_and_save_checkpoint, load_model_from_cgp
-
-from deepSculpt.utils.params import (
-    LOCALLY,
-    N_SAMPLES_CREATE,
-    VOID_DIM,
-    NOISE_DIM,
-    BUFFER_SIZE,
-    BATCH_SIZE,
-    EPOCHS,
-    CREATE_DATA,
-    BUCKET_NAME,
-    SEED,
-    MODEL_CHECKPOINT,
-    PICTURE_SNAPSHOT,
-    TRAIN_SIZE,
-    MINIBATCHES,
-    FILE_TO_LOAD_VOLUMES,
-    FILE_TO_LOAD_COLORS,
-    COLAB,
+from deepSculpt.utils.checkpoint import (
+    generate_and_save_checkpoint,
+    load_model_from_cgp,
 )
 
-if CREATE_DATA:
+from deepSculpt.utils.params import (
+    BUFFER_SIZE,
+    SEED,
+    MINIBATCHES,
+)
+
+if os.environ.get("CREATE_DATA"):
 
     data = DataLoaderCreator()
 
     volumes, colors = data.create_sculpts(
-        n_samples=N_SAMPLES_CREATE,
+        n_samples=int(os.environ.get("N_SAMPLES_CREATE")),
         n_edge_elements=0,
         n_plane_elements=2,
         n_volume_elements=2,
@@ -59,17 +48,17 @@ if CREATE_DATA:
         color_planes="snow",
         color_volumes=["crimson", "turquoise", "gold"],
         verbose=False,
-        void_dim=VOID_DIM,
+        void_dim=int(os.environ.get("VOID_DIM")),
     )
 
-elif not CREATE_DATA:
+elif not os.environ.get("CREATE_DATA"):
 
     data = DataLoaderCreator(
-        path_volumes=FILE_TO_LOAD_VOLUMES,
-        path_colors=FILE_TO_LOAD_COLORS,
+        path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
+        path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
     )
 
-    if LOCALLY:
+    if os.environ.get("LOCALLY"):
         volumes, colors = data.load_locally()
 
     else:
@@ -87,8 +76,8 @@ print(f"The classes are: {o_classes}")
 train_dataset = (
     Dataset.from_tensor_slices(o_encode)
     .shuffle(BUFFER_SIZE)
-    .take(TRAIN_SIZE)
-    .batch(BATCH_SIZE)
+    .take(int(os.environ.get("TRAIN_SIZE")))
+    .batch(int(os.environ.get("BATCH_SIZE")))
 )
 
 generator = make_three_dimentional_generator()
@@ -99,22 +88,22 @@ discriminator = make_three_dimentional_critic()
 
 print(discriminator.summary())
 
-if LOCALLY and not COLAB:
+if os.environ.get("LOCALLY") and not os.environ.get("COLAB"):
     checkpoint_dir = (
         "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
     )
 
-if LOCALLY and COLAB:
+if os.environ.get("LOCALLY") and os.environ.get("COLAB"):
     checkpoint_dir = (
         "/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints"
     )
 
-if not LOCALLY:
+if not os.environ.get("LOCALLY"):
     checkpoint_dir = "gs://deepsculpt/checkpoints"
 
     # storage_location = f"results/{STORAGE_FILENAME}"
 
-    bucket = storage.Client().bucket(BUCKET_NAME)
+    bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
 
     # checkpoint_prefix = os.path.join(checkpoint_dir, "checkpoint")
 
@@ -176,9 +165,12 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     # applying the gradients on the trainable variables of the generator to update the parameters
 
 
-def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
+def trainer(
+    dataset, epochs, locally=os.environ.get("LOCALLY")
+):  # load checkpoint, checkpoint + manager
 
-    load_model_from_cgp(checkpoint, manager)  # REEEEEESTOREEEEEE
+    if not locally:
+        load_model_from_cgp(checkpoint, manager)  # REEEEEESTOREEEEEE
 
     if manager.latest_checkpoint:
         print("Restored from {}".format(manager.latest_checkpoint))
@@ -207,8 +199,8 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
         for index, image_batch in enumerate(dataset):
             noise = normal(
-                [BATCH_SIZE, NOISE_DIM]
-            )  # tf.random.normal([BATCH_SIZE, noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
+                [int(os.environ.get("BATCH_SIZE")), int(os.environ.get("NOISE_DIM"))]
+            )  # tf.random.normal([os.environ.get('BATCH_SIZE'), noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
 
             with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
                 generated_images = generator(
@@ -273,9 +265,11 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
         display.clear_output(wait=True)  # clearing output !!!TO BE CHECKED!!!
         # generate_and_save_images(generator, epoch + 1, seed)
 
-        if LOCALLY and not COLAB:
+        if os.environ.get("LOCALLY") and not os.environ.get("COLAB"):
 
-            if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
+            if (epoch + 1) % os.environ.get(
+                "MODEL_CHECKPOINT"
+            ) == 0:  # Save the model every 15 epochs
 
                 os.chdir(
                     "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
@@ -295,7 +289,7 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
                 checkpoint.step.assign_add(1)
 
-            if (epoch + 1) % PICTURE_SNAPSHOT == 0:
+            if (epoch + 1) % os.environ.get("PICTURE_SNAPSHOT") == 0:
                 os.chdir(
                     "/home/juan-garassino/code/juan-garassino/deepSculpt/results/snapshots"
                 )
@@ -303,9 +297,11 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
 
-        if LOCALLY and COLAB:
+        if os.environ.get("LOCALLY") and os.environ.get("COLAB"):
 
-            if (epoch + 1) % MODEL_CHECKPOINT == 0:  # Save the model every 15 epochs
+            if (epoch + 1) % os.environ.get(
+                "MODEL_CHECKPOINT"
+            ) == 0:  # Save the model every 15 epochs
 
                 os.chdir(
                     "/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints"
@@ -325,7 +321,7 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
                 checkpoint.step.assign_add(1)
 
-            if (epoch + 1) % PICTURE_SNAPSHOT == 0:
+            if (epoch + 1) % os.environ.get("PICTURE_SNAPSHOT") == 0:
                 os.chdir(
                     "/content/drive/MyDrive/repositories/deepSculpt/results/snapshots"
                 )
@@ -333,13 +329,13 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
 
-        if not LOCALLY:
+        if not os.environ.get("LOCALLY"):
             # Save the model every 15 epochs
-            if (epoch + 1) % MODEL_CHECKPOINT == 0:
+            if (epoch + 1) % os.environ.get("MODEL_CHECKPOINT") == 0:
                 generate_and_save_checkpoint(
                     checkpoint, manager, bucket
                 )  # saving weights and biases previously calculated by the train step gradients
-            if (epoch + 1) % PICTURE_SNAPSHOT == 0:
+            if (epoch + 1) % os.environ.get("PICTURE_SNAPSHOT") == 0:
                 generate_and_save_snapshot(
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
@@ -356,4 +352,4 @@ def trainer(dataset, epochs):  # load checkpoint, checkpoint + manager
 
 
 if __name__ == "__main__":
-    trainer(train_dataset, EPOCHS)
+    trainer(train_dataset, int(os.environ.get("EPOCHS")))

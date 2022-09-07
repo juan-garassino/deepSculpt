@@ -1,10 +1,5 @@
 from deepSculpt.manager.sculptor import Sculptor
 from deepSculpt.utils.params import (
-    VOID_DIM,
-    N_SAMPLES_CREATE,
-    BUCKET_NAME,
-    BUCKET_TRAIN_DATA_PATH,
-    MODEL_BASE_PATH,
     N_EDGE_ELEMENTS,
     N_PLANE_ELEMENTS,
     N_VOLUME_ELEMENTS,
@@ -20,7 +15,6 @@ from deepSculpt.utils.params import (
     ELEMENT_VOLUME_MIN,
     ELEMENT_VOLUME_MAX,
     VERBOSE,
-    TRAIN_SIZE,
 )
 
 from datetime import date
@@ -38,7 +32,7 @@ class DataLoaderCreator:
 
     def create_sculpts(
         self,
-        n_samples=N_SAMPLES_CREATE,
+        n_samples=int(os.environ.get("N_SAMPLES_CREATE")),
         n_edge_elements=N_EDGE_ELEMENTS,
         n_plane_elements=N_PLANE_ELEMENTS,
         n_volume_elements=N_VOLUME_ELEMENTS,
@@ -46,7 +40,7 @@ class DataLoaderCreator:
         color_planes=COLOR_PLANES,
         color_volumes=COLOR_VOLUMES,
         verbose=VERBOSE,
-        void_dim=VOID_DIM,
+        void_dim=int(os.environ.get("VOID_DIM")),
     ):
 
         path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
@@ -89,12 +83,24 @@ class DataLoaderCreator:
 
         raw_data = (
             np.asarray(raw_data)
-            .reshape((N_SAMPLES_CREATE, VOID_DIM, VOID_DIM, VOID_DIM))
+            .reshape(
+                (
+                    int(os.environ.get("N_SAMPLES_CREATE")),
+                    int(os.environ.get("VOID_DIM")),
+                    int(os.environ.get("VOID_DIM")),
+                    int(os.environ.get("VOID_DIM")),
+                )
+            )
             .astype("int8")
         )
 
         color_raw_data = np.asarray(color_raw_data).reshape(
-            (N_SAMPLES_CREATE, VOID_DIM, VOID_DIM, VOID_DIM)
+            (
+                int(os.environ.get("N_SAMPLES_CREATE")),
+                int(os.environ.get("VOID_DIM")),
+                int(os.environ.get("VOID_DIM")),
+                int(os.environ.get("VOID_DIM")),
+            )
         )
 
         np.save(f"raw-data[{date.today()}]", raw_data, allow_pickle=True)
@@ -113,9 +119,13 @@ class DataLoaderCreator:
 
         os.chdir(path)
 
-        raw_data = np.load(self.path_volumes, allow_pickle=True)[:TRAIN_SIZE]
+        raw_data = np.load(self.path_volumes, allow_pickle=True)[
+            : int(os.environ.get("TRAIN_SIZE"))
+        ]
 
-        color_raw_data = np.load(self.path_colors, allow_pickle=True)[:TRAIN_SIZE]
+        color_raw_data = np.load(self.path_colors, allow_pickle=True)[
+            : int(os.environ.get("TRAIN_SIZE"))
+        ]
 
         print(
             f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
@@ -127,17 +137,21 @@ class DataLoaderCreator:
 
         files = [self.path_volumes, self.path_colors]
 
-        client = storage.Client().bucket(BUCKET_NAME)
+        client = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
 
         for file in files:
 
-            blob = client.blob(BUCKET_TRAIN_DATA_PATH + "/" + file)
+            blob = client.blob(os.environ.get("BUCKET_TRAIN_DATA_PATH") + "/" + file)
 
             blob.download_to_filename(file)
 
-        raw_data = np.load(self.path_volumes, allow_pickle=True)[:TRAIN_SIZE]
+        raw_data = np.load(self.path_volumes, allow_pickle=True)[
+            : int(os.environ.get("TRAIN_SIZE"))
+        ]
 
-        color_raw_data = np.load(self.path_colors, allow_pickle=True)[:TRAIN_SIZE]
+        color_raw_data = np.load(self.path_colors, allow_pickle=True)[
+            : int(os.environ.get("TRAIN_SIZE"))
+        ]
 
         print(
             f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"

@@ -6,8 +6,8 @@ from tensorflow import GradientTape, function
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
     noise = normal(
-        [BATCH_SIZE, noise_dim]
-    )  # tf.random.normal([BATCH_SIZE, noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
+        [int(os.environ.get("BATCH_SIZE")), noise_dim]
+    )  # tf.random.normal([os.environ.get('BATCH_SIZE'), noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
 
     with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
         generated_images = generator(noise, training=True)  # iterates over the noises

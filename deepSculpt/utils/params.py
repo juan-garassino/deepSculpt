@@ -1,50 +1,18 @@
 from tensorflow.random import normal
 import numpy as np
+import os
 
 ## TRAINING PARAMS
 
-LOCALLY = True
+BUFFER_SIZE = int(int(os.environ.get("TRAIN_SIZE")) / 10)
 
-COLAB = False
+MINIBATCHES = np.arange(
+    0,
+    int(os.environ.get("TRAIN_SIZE")),
+    int(os.environ.get("TRAIN_SIZE")) / (int(os.environ.get("TRAIN_SIZE")) / 10),
+)
 
-CREATE_DATA = False
-
-N_SAMPLES_CREATE = 100
-
-VOID_DIM = 48 # 48
-
-NOISE_DIM = 512
-
-FILE_TO_LOAD_VOLUMES = "raw-data[2022-06-15].npy"
-
-FILE_TO_LOAD_COLORS = "color-raw-data[2022-06-15].npy"
-
-
-TRAIN_SIZE = 2500
-
-BUFFER_SIZE = int(TRAIN_SIZE / 10)
-
-BATCH_SIZE = 16
-
-MINIBATCHES = np.arange(0, TRAIN_SIZE, TRAIN_SIZE / (TRAIN_SIZE / 10))
-
-EPOCHS = 200
-
-
-SCULPTS_GEN = 1
-
-SEED = normal([SCULPTS_GEN, NOISE_DIM])
-
-BUCKET_NAME = "deepsculpt"
-
-BUCKET_TRAIN_DATA_PATH = "data"
-
-MODEL_BASE_PATH = ""
-
-MODEL_CHECKPOINT = 20
-
-PICTURE_SNAPSHOT = 1
-
+SEED = normal([int(os.environ.get("SCULPTS_GEN")), int(os.environ.get("NOISE_DIM"))])
 
 ## ELEMENTS PARAMS
 
@@ -67,13 +35,21 @@ COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
         "indigo", "mediumvioletred"
     ]"""
 
-ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = int(VOID_DIM * 0.8), int(VOID_DIM * 0.9)
+ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = int(int(os.environ.get("VOID_DIM")) * 0.8), int(
+    int(os.environ.get("VOID_DIM")) * 0.9
+)
 
-ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = int(VOID_DIM * 0.8), int(VOID_DIM * 0.95)
+ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = int(int(os.environ.get("VOID_DIM")) * 0.8), int(
+    int(os.environ.get("VOID_DIM")) * 0.95
+)
 
-ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = int(VOID_DIM * 0.4), int(VOID_DIM * 0.8)
+ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = int(int(os.environ.get("VOID_DIM")) * 0.4), int(
+    int(os.environ.get("VOID_DIM")) * 0.8
+)
 
-ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = int(VOID_DIM * 0.2), int(VOID_DIM * 0.5)
+ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = int(int(os.environ.get("VOID_DIM")) * 0.2), int(
+    int(os.environ.get("VOID_DIM")) * 0.5
+)
 
 STEP = 1
 

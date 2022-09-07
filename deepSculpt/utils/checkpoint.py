@@ -1,6 +1,5 @@
 from google.cloud import storage
 from tensorflow.train import Checkpoint
-from deepSculpt.utils.params import BUCKET_NAME, LOCALLY
 import os
 
 
@@ -21,7 +20,7 @@ def upload_checkoint_to_cgp(bucket):
 
 def generate_and_save_checkpoint(checkpoint, manager, bucket):
 
-    if LOCALLY:
+    if os.environ.get("LOCALLY"):
 
         save_path = manager.save()
 
@@ -37,7 +36,7 @@ def generate_and_save_checkpoint(checkpoint, manager, bucket):
 
         # checkpoint.save(file_prefix=checkpoint_prefix)
 
-    if not LOCALLY:
+    if not os.environ.get("LOCALLY"):
 
         save_path = manager.save()
 
