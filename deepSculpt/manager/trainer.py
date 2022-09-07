@@ -66,14 +66,15 @@ if int(os.environ.get("CREATE_DATA")) == 0:
     else:
         volumes, colors = data.load_from_gcp()
 
-else:
+if not colors and not volumes:
     print("error")
 
 preprocessing_class_o = OneHotEncoderDecoder(colors)
 
 o_encode, o_classes = preprocessing_class_o.ohe_encoder()
 
-print("\n⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes))
+print("\n⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes) +
+      Style.RESET_ALL)
 
 train_dataset = (
     Dataset.from_tensor_slices(o_encode)
@@ -243,8 +244,8 @@ def trainer(
                     "\n📶 "
                     + Fore.MAGENTA
                     + "Time for minibatches between {} and {} is {} sec".format(
-                        index + 1,
-                        index + 1 + int(os.environ.get("BATCH_SIZE")),
+                        (index * int(os.environ.get("BATCH_SIZE"))) ,
+                        ((index + 1) * int(os.environ.get("BATCH_SIZE"))),
                         time.time() - minibatch_start,
                     )
                     + Style.RESET_ALL
