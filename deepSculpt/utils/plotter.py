@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from deepSculpt.manager.sculptor import Sculptor
 from datetime import datetime
+from colorama import Fore, Style
 
 
 class Plotter(Sculptor):
@@ -75,7 +76,18 @@ class Plotter(Sculptor):
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M")
 
+        name_png = f"image[{now}].png"
+
         plt.savefig(
-            f"image[{now}].png", transparent=self.transparent
+            name_png, transparent=self.transparent
         )  # agregar tiempo de impresion y exportar 3D y bounding box
-        plt.savefig(f"image[{now}].svg", transparent=self.transparent)
+
+        print("\n🔽 " + Fore.BLUE + f"Just created a snapshot {name_png}" +
+              Style.RESET_ALL)
+
+        name_svg = f"vectorial[{now}].png"
+
+        plt.savefig(name_svg, transparent=self.transparent)
+
+        print("\n🔽 " + Fore.BLUE + f"Just created a vectorial snapshot {name_svg}" +
+              Style.RESET_ALL)

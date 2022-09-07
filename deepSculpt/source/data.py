@@ -121,11 +121,9 @@ class DataLoaderCreator:
         np.save(f"color-raw-data[{date.today()}]", color_raw_data, allow_pickle=True)
 
         print(
-            "\n🔼 "
-            + Fore.BLUE
-            + f"Just created 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
-            + Style.RESET_ALL
-        )
+            "\n🔽 " + Fore.BLUE +
+            f"Just created 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            + Style.RESET_ALL)
 
         return (raw_data, color_raw_data)
 

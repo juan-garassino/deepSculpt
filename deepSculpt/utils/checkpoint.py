@@ -1,6 +1,7 @@
 from google.cloud import storage
 from tensorflow.train import Checkpoint
 import os
+from colorama import Fore, Style
 
 
 def upload_checkoint_to_cgp(bucket):
@@ -24,33 +25,15 @@ def generate_and_save_checkpoint(checkpoint, manager, bucket):
 
         save_path = manager.save()
 
-        print(
-            "Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path)
-        )
-
-        # checkpoint_dir = (
-        #    "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
-        # )
-
-        # checkpoint_prefix = os.path.join(checkpoint_dir, "checkpoint")
-
-        # checkpoint.save(file_prefix=checkpoint_prefix)
+        print("\n🔼 " + Fore.BLUE + "Saved checkpoint for step {}: {}".format(
+            int(checkpoint.step), save_path) + Style.RESET_ALL)
 
     if not os.environ.get("LOCALLY"):
 
         save_path = manager.save()
 
-        print(
-            "Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path)
-        )
-
-        # checkpoint_dir = "deepsculpt/results"
-
-        # checkpoint_prefix = os.path.join(checkpoint_dir, "checkpoint")
-
-        # checkpoint.save(file_prefix=checkpoint_prefix)
-
-        # upload_checkoint_to_cgp(bucket)  # , model_checkpoint)# , model_checkpoint)
+        print("\n🔼 " + Fore.BLUE + "Saved checkpoint for step {}: {}".format(
+            int(checkpoint.step), save_path) + Style.RESET_ALL)
 
     return checkpoint, manager
 

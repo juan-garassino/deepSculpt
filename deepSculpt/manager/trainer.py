@@ -182,12 +182,9 @@ def trainer(
         load_model_from_cgp(checkpoint, manager)  # REEEEEESTOREEEEEE
 
     if manager.latest_checkpoint:
-        print(
-            "\n🔼 "
-            + Fore.YELLOW
-            + "Restored from {}...".format(manager.latest_checkpoint)
-            + Style.RESET_ALL
-        )
+        print("\n🔽 " + Fore.YELLOW +
+              "Restored from {}...".format(manager.latest_checkpoint) +
+              Style.RESET_ALL)
     else:
         print("\n⏹ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
 
@@ -287,15 +284,10 @@ def trainer(
 
                 save_path = manager.save()
 
-                print(
-                    "Saved checkpoint for step {}: {}".format(
+                print("\n🔼 " + Fore.BLUE +
+                      "Saved checkpoint for step {}: {}".format(
                         int(checkpoint.step), save_path
-                    )
-                )
-
-                # generate_and_save_checkpoint(
-                #    checkpoint
-                # )  # saving weights and biases previously calculated by the train step gradients
+                    ) + Style.RESET_ALL)
 
                 checkpoint.step.assign_add(1)
 
@@ -319,15 +311,9 @@ def trainer(
 
                 save_path = manager.save()
 
-                print(
-                    "Saved checkpoint for step {}: {}".format(
-                        int(checkpoint.step), save_path
-                    )
-                )
-
-                # generate_and_save_checkpoint(
-                #    checkpoint
-                # )  # saving weights and biases previously calculated by the train step gradients
+                print("\n🔼 " + Fore.BLUE +
+                      "Saved checkpoint for step {}: {}".format(
+                          int(checkpoint.step), save_path) + Style.RESET_ALL)
 
                 checkpoint.step.assign_add(1)
 
