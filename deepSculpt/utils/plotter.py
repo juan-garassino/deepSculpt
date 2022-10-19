@@ -86,7 +86,7 @@ class Plotter(Sculptor):
             "\n🔽 " + Fore.BLUE + f"Just created a snapshot {name_png}" + Style.RESET_ALL
         )
 
-        name_svg = f"vectorial[{now}].png"
+        name_svg = f"vectorial[{now}].svg"
 
         plt.savefig(name_svg, transparent=self.transparent)
 

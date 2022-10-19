@@ -235,7 +235,7 @@ def trainer(
             ) == 0:  # Save the model every 15 epochs
 
                 os.chdir(
-                    "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"
+                    "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints" # add $HOME as path for colab and local
                 )
 
                 save_path = manager.save()
