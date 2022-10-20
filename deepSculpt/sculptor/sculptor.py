@@ -1,7 +1,7 @@
-from deepSculpt.manager.components.cantilever import add_pipe_cantilever
-from deepSculpt.manager.components.edges import add_edge
-from deepSculpt.manager.components.grid import add_grid
-from deepSculpt.manager.components.planes import add_plane
+from deepSculpt.sculptor.components.cantilever import add_pipe_cantilever
+from deepSculpt.sculptor.components.edges import add_edge
+from deepSculpt.sculptor.components.grid import add_grid
+from deepSculpt.sculptor.components.planes import add_plane
 
 import time
 import numpy as np

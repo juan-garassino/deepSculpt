@@ -1,5 +1,5 @@
 from deepSculpt.sculptor.sculptor import Sculptor
-from deepSculpt.tools.params import (
+from deepSculpt.manager.tools.params import (
     N_EDGE_ELEMENTS,
     N_PLANE_ELEMENTS,
     N_VOLUME_ELEMENTS,

@@ -1,10 +1,11 @@
-import os
 from deepSculpt.curator.curator import DataLoaderCreator
-from deepSculpt.source.preprocessing import OneHotEncoderDecoder
+from deepSculpt.curator.tools.preprocessing import OneHotEncoderDecoder
+from deepSculpt.manager.tools.params import BUFFER_SIZE
+
+import os
 from colorama import Fore, Style
 import numpy as np
 from tensorflow.data import Dataset
-from deepSculpt.tools.params import BUFFER_SIZE
 import tensorflow as tf
 
 
