@@ -15,7 +15,7 @@ from tensorflow.train import Checkpoint, CheckpointManager
 from google.cloud import storage
 from tensorflow import GradientTape, function
 
-from deepSculpt.curator.tools.sampling import sampling
+from deepSculpt.manager.tools.sampling import sampling
 from deepSculpt.trainer.tools.model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,

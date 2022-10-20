@@ -33,6 +33,7 @@ class Curator:
 
     def create_sculpts(
         self,
+        directory,
         n_samples=int(os.environ.get("N_SAMPLES_CREATE")),
         n_edge_elements=N_EDGE_ELEMENTS,
         n_plane_elements=N_PLANE_ELEMENTS,
@@ -43,10 +44,6 @@ class Curator:
         verbose=VERBOSE,
         void_dim=int(os.environ.get("VOID_DIM")),
     ):
-
-        path = os.path.join(
-            os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
-        )
 
         raw_data = []
         color_raw_data = []
@@ -122,10 +119,12 @@ class Curator:
             .astype("object")
         )
 
-        np.save(f"{path}/sample-volumes[{date.today()}]", raw_data, allow_pickle=True)
+        np.save(
+            f"{directory}/sample-volumes[{date.today()}]", raw_data, allow_pickle=True
+        )
 
         np.save(
-            f"{path}/sample-colors[{date.today()}]",
+            f"{directory}/sample-colors[{date.today()}]",
             color_raw_data,
             allow_pickle=True,
         )
