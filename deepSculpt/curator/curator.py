@@ -1,4 +1,4 @@
-from deepSculpt.manager.sculptor import Sculptor
+from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.utils.params import (
     N_EDGE_ELEMENTS,
     N_PLANE_ELEMENTS,
@@ -20,12 +20,11 @@ from deepSculpt.utils.params import (
 from datetime import date
 import numpy as np
 import os
-from google.cloud import storage
 import time
 from colorama import Fore, Style
 
 
-class DataLoaderCreator:
+class Curator:
     def __init__(self, create=False, locally=True, path_volumes="", path_colors=""):
         self.locally = locally
         self.create = create
@@ -91,41 +90,45 @@ class DataLoaderCreator:
 
             sculpture = sculptor.generative_sculpt()
 
-            # raw_data.append(sculpture[0].astype("int8")) # NOT APPEND BUT SAVE IN DIFF FILES!!
+            raw_data.append(
+                sculpture[0].astype("int8")
+            )  # NOT APPEND BUT SAVE IN DIFF FILES!!
 
-            # color_raw_data.append(sculpture[1])
+            color_raw_data.append(sculpture[1])
 
-            raw_data = (
-                np.asarray(sculpture[0])
-                .reshape(
-                    (
-                        # int(os.environ.get("N_SAMPLES_CREATE")),
-                        int(os.environ.get("VOID_DIM")),
-                        int(os.environ.get("VOID_DIM")),
-                        int(os.environ.get("VOID_DIM")),
-                    )
-                )
-                .astype("int8")
-            )
-
-            color_raw_data = np.asarray(sculpture[1]).reshape(
+        raw_data = (
+            np.asarray(raw_data)
+            .reshape(
                 (
-                    # int(os.environ.get("N_SAMPLES_CREATE")),
+                    int(os.environ.get("N_SAMPLES_CREATE")),
                     int(os.environ.get("VOID_DIM")),
                     int(os.environ.get("VOID_DIM")),
                     int(os.environ.get("VOID_DIM")),
                 )
             )
+            .astype("int8")
+        )
 
-            np.save(
-                f"sample-{count+1}-volumes[{date.today()}]", raw_data, allow_pickle=True
+        color_raw_data = (
+            np.asarray(color_raw_data)
+            .reshape(
+                (
+                    int(os.environ.get("N_SAMPLES_CREATE")),
+                    int(os.environ.get("VOID_DIM")),
+                    int(os.environ.get("VOID_DIM")),
+                    int(os.environ.get("VOID_DIM")),
+                )
             )
+            .astype("object")
+        )
 
-            np.save(
-                f"sample-{count+1}-colors[{date.today()}]",
-                color_raw_data,
-                allow_pickle=True,
-            )
+        np.save(f"sample-volumes[{date.today()}]", raw_data, allow_pickle=True)
+
+        np.save(
+            f"sample-colors[{date.today()}]",
+            color_raw_data,
+            allow_pickle=True,
+        )
 
         print(
             "\n🔽 "
@@ -136,72 +139,6 @@ class DataLoaderCreator:
 
         return (raw_data, color_raw_data)
 
-    def load_locally(self):
-
-        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-
-        os.chdir(path)
-
-        raw_data = np.load(self.path_volumes, allow_pickle=True)[
-            : int(os.environ.get("TRAIN_SIZE"))
-        ]
-
-        color_raw_data = np.load(self.path_colors, allow_pickle=True)[
-            : int(os.environ.get("TRAIN_SIZE"))
-        ]
-
-        print(
-            "\n🔼 "
-            + Fore.BLUE
-            + f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
-            + Style.RESET_ALL
-        )
-
-        return (raw_data, color_raw_data)
-
-    def load_from_gcp(self):
-
-        files = [self.path_volumes, self.path_colors]
-
-        client = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
-
-        for file in files:
-
-            blob = client.blob(os.environ.get("BUCKET_TRAIN_DATA_PATH") + "/" + file)
-
-            blob.download_to_filename(file)
-
-        raw_data = np.load(self.path_volumes, allow_pickle=True)[
-            : int(os.environ.get("TRAIN_SIZE"))
-        ]
-
-        color_raw_data = np.load(self.path_colors, allow_pickle=True)[
-            : int(os.environ.get("TRAIN_SIZE"))
-        ]
-
-        print(
-            "\n🔼 "
-            + Fore.BLUE
-            + f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
-            + Style.RESET_ALL
-        )
-
-        return (raw_data, color_raw_data)  # , color_raw_data)
-
-    def clean_data(df):
-        pass
-
-    def holdout(df):
-        pass
-
 
 if __name__ == "__main__":
-
-    data = DataLoaderCreator(
-        create=False,
-        locally=True,
-        path_volumes="raw-data[2022-07-26].npy",
-        path_colors="color-raw-data[2022-07-26].npy",
-    ).load_from_gcp()
-
-    data[0].shape
+    pass

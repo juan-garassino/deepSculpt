@@ -1,5 +1,5 @@
 import os
-from deepSculpt.source.data import DataLoaderCreator
+from deepSculpt.curator.curator import DataLoaderCreator
 from deepSculpt.source.preprocessing import OneHotEncoderDecoder
 from colorama import Fore, Style
 import numpy as np

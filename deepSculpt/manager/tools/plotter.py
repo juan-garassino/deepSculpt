@@ -1,7 +1,7 @@
 # from xml.dom import NO_MODIFICATION_ALLOWED_ERR
 import matplotlib.pyplot as plt
 import numpy as np
-from deepSculpt.manager.sculptor import Sculptor
+from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.manager.manager import Manager
 from datetime import datetime
 from colorama import Fore, Style
@@ -46,12 +46,9 @@ class Plotter(Sculptor):
             dpi=self.dpi,
         )
 
-        axes = axes.ravel()  # flats
+        axes = axes.ravel()
 
-        # print(axes)
-        # print(len(axes))
-
-        for plot in range(1):  # to print one color i need a condition to not rotate!!
+        for plot in range(1):
             axes[0].voxels(
                 self.volumes,
                 edgecolors="k",

@@ -1,4 +1,4 @@
-from deepSculpt.manager.trainer import trainer
+from deepSculpt.trainer.trainer import trainer
 
 
 def main(

@@ -28,8 +28,9 @@ clean:
 	@rm -fr deepSculpt.egg-info
 	@rm -fr results/checkpoints/*
 	@rm -fr results/snapshots/*
-	@rm -fr deepSculpt/data/*.svg
-	@rm -fr deepSculpt/data/*.png
+	@rm -fr deepSculpt/results/*.svg
+	@rm -fr deepSculpt/results/*.png
+	@rm -fr deepSculpt/data/*.npy
 
 install:
 	@pip install . -U
