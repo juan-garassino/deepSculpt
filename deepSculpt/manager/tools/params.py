@@ -17,11 +17,11 @@ SEED = normal([int(os.environ.get("SCULPTS_GEN")), int(os.environ.get("NOISE_DIM
 ## ELEMENTS PARAMS
 
 
-N_EDGE_ELEMENTS = 2
+N_EDGE_ELEMENTS = 0
 
-N_PLANE_ELEMENTS = 2
+N_PLANE_ELEMENTS = 0
 
-N_VOLUME_ELEMENTS = 2
+N_VOLUME_ELEMENTS = 7
 
 COLOR_EDGES = "dimgrey"
 
