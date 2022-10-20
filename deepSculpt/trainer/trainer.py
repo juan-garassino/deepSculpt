@@ -15,22 +15,25 @@ from tensorflow.train import Checkpoint, CheckpointManager
 from google.cloud import storage
 from tensorflow import GradientTape, function
 
-from deepSculpt.source.sampling import sampling
-from deepSculpt.model.model import (
+from deepSculpt.curator.tools.sampling import sampling
+from deepSculpt.trainer.tools.model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
-from deepSculpt.model.losses import discriminator_loss, generator_loss
-from deepSculpt.model.optimizers import generator_optimizer, discriminator_optimizer
-from deepSculpt.utils.snapshots import (
+from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
+from deepSculpt.trainer.tools.optimizers import (
+    generator_optimizer,
+    discriminator_optimizer,
+)
+from deepSculpt.manager.tools.snapshots import (
     generate_and_save_snapshot,
     upload_snapshot_to_gcp,
 )
-from deepSculpt.utils.checkpoint import (
+from deepSculpt.manager.tools.checkpoint import (
     generate_and_save_checkpoint,
     load_model_from_cgp,
 )
-from deepSculpt.utils.params import SEED, MINIBATCHES
+from deepSculpt.manager.tools.params import SEED, MINIBATCHES
 
 from colorama import Fore, Style
 

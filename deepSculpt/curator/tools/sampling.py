@@ -4,7 +4,7 @@ from deepSculpt.source.preprocessing import OneHotEncoderDecoder
 from colorama import Fore, Style
 import numpy as np
 from tensorflow.data import Dataset
-from deepSculpt.utils.params import BUFFER_SIZE
+from deepSculpt.tools.params import BUFFER_SIZE
 import tensorflow as tf
 
 

@@ -11,7 +11,6 @@ check_code:
 black:
 	@black scripts/* deepSculpt/*/*.py deepSculpt/*.py deepSculpt/*/*/*.py
 
-
 test:
 	@coverage run -m pytest tests/*.py
 	@coverage report -m --omit="${VIRTUAL_ENV}/lib/python*"

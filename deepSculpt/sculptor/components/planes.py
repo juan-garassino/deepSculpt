@@ -2,7 +2,7 @@ import random
 import numpy as np
 
 from deepSculpt.manager.components.utils import return_axis
-from deepSculpt.utils.params import COLOR_PLANES
+from deepSculpt.tools.params import COLOR_PLANES
 
 
 def add_plane(
