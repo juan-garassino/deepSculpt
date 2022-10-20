@@ -47,7 +47,9 @@ class Curator:
     ):
 
         raw_data = []
+
         color_raw_data = []
+
         count = 0
 
         for count, sculpture in enumerate(range(n_samples)):  #

@@ -15,6 +15,7 @@ from tensorflow.train import Checkpoint, CheckpointManager
 from google.cloud import storage
 from tensorflow import GradientTape, function
 
+from deepSculpt.manager.manager import Manager
 from deepSculpt.manager.tools.sampling import sampling
 from deepSculpt.trainer.tools.model import (
     make_three_dimentional_generator,
@@ -262,6 +263,8 @@ def trainer(
                     "checkpoints",
                 )
 
+                Manager.make_directory(out_dir)
+
                 os.chdir(out_dir)
 
                 save_path = manager.save()
@@ -309,6 +312,8 @@ def trainer(
                     "results",
                     "checkpoints",
                 )
+
+                Manager.make_directory(out_dir)
 
                 os.chdir(out_dir)
 
