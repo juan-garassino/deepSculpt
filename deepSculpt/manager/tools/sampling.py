@@ -1,6 +1,6 @@
 from deepSculpt.curator.curator import Curator
 from deepSculpt.curator.tools.preprocessing import OneHotEncoderDecoder
-from deepSculpt.manager.tools.params import BUFFER_SIZE
+from deepSculpt.curator.tools.params import BUFFER_SIZE
 
 import os
 from colorama import Fore, Style

@@ -34,7 +34,7 @@ from deepSculpt.manager.tools.checkpoint import (
     generate_and_save_checkpoint,
     load_model_from_cgp,
 )
-from deepSculpt.manager.tools.params import SEED, MINIBATCHES
+from deepSculpt.curator.tools.params import SEED, MINIBATCHES
 
 from colorama import Fore, Style
 
@@ -67,6 +67,8 @@ if int(os.environ.get("INSTANCE")) == 0:
         "checkpoints",
     )
 
+    Manager.make_directory(checkpoint_dir)
+
 ## local on and colab on COLAB
 
 if int(os.environ.get("INSTANCE")) == 1:
@@ -81,12 +83,16 @@ if int(os.environ.get("INSTANCE")) == 1:
         "checkpoints",
     )
 
+    Manager.make_directory(checkpoint_dir)
+
 ## local off and goes to bucket GCP
 
 if int(os.environ.get("INSTANCE")) == 2:
+
     checkpoint_dir = "gs://deepsculpt/checkpoints"
 
     bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
+
 
 checkpoint = Checkpoint(
     step=Variable(1),
@@ -263,9 +269,7 @@ def trainer(
                     "checkpoints",
                 )
 
-                Manager.make_directory(out_dir)
-
-                os.chdir(out_dir)
+                # os.chdir(out_dir)
 
                 save_path = manager.save()
 
@@ -313,9 +317,7 @@ def trainer(
                     "checkpoints",
                 )
 
-                Manager.make_directory(out_dir)
-
-                os.chdir(out_dir)
+                # os.chdir(out_dir)
 
                 save_path = manager.save()
 

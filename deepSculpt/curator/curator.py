@@ -1,6 +1,6 @@
 from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.manager.manager import Manager
-from deepSculpt.manager.tools.params import (
+from deepSculpt.curator.tools.params import (
     N_EDGE_ELEMENTS,
     N_PLANE_ELEMENTS,
     N_VOLUME_ELEMENTS,
