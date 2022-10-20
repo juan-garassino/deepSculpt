@@ -21,7 +21,7 @@ def upload_checkoint_to_cgp(bucket):
 
 def generate_and_save_checkpoint(checkpoint, manager, bucket):
 
-    if os.environ.get("LOCALLY"):
+    if int(os.environ.get("LOCALLY")) == 1:
 
         save_path = manager.save()
 
@@ -32,7 +32,7 @@ def generate_and_save_checkpoint(checkpoint, manager, bucket):
             + Style.RESET_ALL
         )
 
-    if not os.environ.get("LOCALLY"):
+    if int(os.environ.get("LOCALLY")) == 0:
 
         save_path = manager.save()
 

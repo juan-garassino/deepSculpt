@@ -2,6 +2,9 @@ from google.cloud import storage
 import matplotlib.pyplot as plt
 
 from deepSculpt.utils.plotter import Plotter
+from deepSculpt.manager.manager import Manager
+
+from datetime import datetime
 import os
 from colorama import Fore, Style
 
@@ -26,9 +29,11 @@ def upload_snapshot_to_gcp(snapshot_name):
     )
 
 
-def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
+def generate_and_save_snapshot(model, epoch, preprocessing_class_o, snapshot_input, directory):
+
+    # Generates the sculpture
     predictions = (
-        model(test_input, training=False)  # Notice 'training' is set to False
+        model(snapshot_input, training=False)  # Notice 'training' is set to False
         .numpy()
         .astype("int")
         .reshape(
@@ -42,13 +47,19 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
         )
     )
 
+    # Decodes the structure to be plotted
     o_decoded_volumes, o_decoded_colors = preprocessing_class_o.ohe_decoder(predictions)
 
+    # Plots the Sculpture
     Plotter(
         o_decoded_volumes[0], o_decoded_colors[0], figsize=25, style="#ffffff", dpi=200
-    ).plot_sculpture()
+    ).plot_sculpture(directory)
 
-    snapshot_name = "image_at_epoch_{:04d}.png".format(epoch)
+    # Creates the ouput directory
+    Manager.make_directory(directory)
+
+    # Creates a timestamp
+    snapshot_name = "{}/run/image_at_epoch_{:04d}.png".format(directory, epoch)
 
     plt.savefig(snapshot_name)
 
@@ -59,5 +70,5 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, test_input):
         + Style.RESET_ALL
     )
 
-    if not os.environ.get("LOCALLY"):
+    if int(os.environ.get("LOCALLY")) == 0:
         upload_snapshot_to_gcp(snapshot_name)
