@@ -253,9 +253,16 @@ def trainer(
                 os.environ.get("MODEL_CHECKPOINT")
             ) == 0:  # Save the model every 15 epochs
 
-                os.chdir(
-                    "/home/juan-garassino/code/juan-garassino/deepSculpt/results/checkpoints"  # add $HOME as path for colab and local
+                out_dir = os.path.join(
+                    os.environ.get("HOME"),
+                    "code",
+                    "juan-garassino",
+                    "deepSculpt",
+                    "results",
+                    "checkpoints",
                 )
+
+                os.chdir(out_dir)
 
                 save_path = manager.save()
 
@@ -291,9 +298,19 @@ def trainer(
             # Save the checkpoint
             if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")) == 0:
 
-                os.chdir(
-                    "/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints"
+                out_dir = os.path.join(
+                    os.environ.get("HOME"),
+                    "..",
+                    "content",
+                    "drive",
+                    "MyDrive",
+                    "repositories",
+                    "deepSculpt",
+                    "results",
+                    "checkpoints",
                 )
+
+                os.chdir(out_dir)
 
                 save_path = manager.save()
 
