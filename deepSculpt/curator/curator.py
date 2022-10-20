@@ -1,4 +1,5 @@
 from deepSculpt.sculptor.sculptor import Sculptor
+from deepSculpt.manager.manager import Manager
 from deepSculpt.manager.tools.params import (
     N_EDGE_ELEMENTS,
     N_PLANE_ELEMENTS,
@@ -118,6 +119,8 @@ class Curator:
             )
             .astype("object")
         )
+
+        Manager.make_directory(directory)
 
         np.save(
             f"{directory}/sample-volumes[{date.today()}]", raw_data, allow_pickle=True

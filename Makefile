@@ -101,7 +101,7 @@ set_project:
 create_bucket:
 	@gsutil mb -l ${REGION} -p ${PROJECT_ID} gs://${os.environ.get('BUCKET_NAME')}
 
-run_locally:
+run_model:
 	python -m deepSculpt.trainer.trainer
 
 ##### Job - - - - - - - - - - - - - - - - - - - - - - - - -

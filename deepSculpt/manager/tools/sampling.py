@@ -35,7 +35,14 @@ def sampling():  # convert to spare tensor
 
         if int(os.environ.get("INSTANCE")) == 1:
             path = os.path.join(
-                os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+                os.environ.get("HOME"),
+                "..",
+                "content",
+                "drive",
+                "MyDrive",
+                "repositories",
+                "deepSculpt",
+                "data",
             )
 
         if int(os.environ.get("INSTANCE")) == 2:
@@ -43,9 +50,9 @@ def sampling():  # convert to spare tensor
                 os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
             )
 
-        data = Curator()
+        curator = Curator()
 
-        volumes, colors = data.create_sculpts(
+        volumes, colors = curator.create_sculpts(
             path,
             n_samples=int(os.environ.get("N_SAMPLES_CREATE")),
             n_edge_elements=0,
