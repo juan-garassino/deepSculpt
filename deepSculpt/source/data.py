@@ -91,7 +91,7 @@ class DataLoaderCreator:
 
             sculpture = sculptor.generative_sculpt()
 
-            raw_data.append(sculpture[0].astype("int8"))
+            raw_data.append(sculpture[0].astype("int8")) ## NOT APPEND BUT SAVE IN DIFF FILES!!
             color_raw_data.append(sculpture[1])
 
         raw_data = (

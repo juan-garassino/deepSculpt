@@ -10,6 +10,21 @@ import tensorflow as tf
 
 def sampling():  # convert to spare tensor
 
+    # Loads the data
+    if int(os.environ.get("CREATE_DATA")) == 0:
+
+        data = DataLoaderCreator(
+            path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
+            path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
+        )
+
+        if int(os.environ.get("INSTANCE")) == 1:
+            volumes, colors = data.load_locally()
+
+        else:
+            volumes, colors = data.load_from_gcp()
+
+    # Creates the data
     if int(os.environ.get("CREATE_DATA")) == 1:
 
         data = DataLoaderCreator()
@@ -26,22 +41,11 @@ def sampling():  # convert to spare tensor
             void_dim=int(os.environ.get("VOID_DIM")),
         )
 
-    if int(os.environ.get("CREATE_DATA")) == 0:
-
-        data = DataLoaderCreator(
-            path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
-            path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
-        )
-
-        if int(os.environ.get("LOCALLY")) == 1:
-            volumes, colors = data.load_locally()
-
-        else:
-            volumes, colors = data.load_from_gcp()
 
     if isinstance(colors, np.ndarray) == False:
         print("error")
 
+    # Preproccess the data
     preprocessing_class_o = OneHotEncoderDecoder(colors)
 
     o_encode, o_classes = preprocessing_class_o.ohe_encoder()
@@ -61,6 +65,7 @@ def sampling():  # convert to spare tensor
 
     # o_encode = tf.sparse.from_dense(o_encode)
 
+    # Creates the dataset
     train_dataset = (
         Dataset.from_tensor_slices(o_encode)
         .shuffle(BUFFER_SIZE)

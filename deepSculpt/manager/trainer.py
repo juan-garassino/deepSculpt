@@ -52,7 +52,7 @@ print(Style.RESET_ALL)
 
 ## local on COMPUTER
 
-if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 0:
+if int(os.environ.get("INSTANCE")) ==  0:
 
     checkpoint_dir = os.path.join(
         os.environ.get("HOME"),
@@ -65,7 +65,7 @@ if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 0:
 
 ## local on and colab on COLAB
 
-if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 1:
+if int(os.environ.get("INSTANCE")) == 1:
 
     checkpoint_dir = os.path.join(
         "content",
@@ -79,7 +79,7 @@ if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 1:
 
 ## local off and goes to bucket GCP
 
-if int(os.environ.get("LOCALLY")) == 0:
+if int(os.environ.get("INSTANCE")) == 2:
     checkpoint_dir = "gs://deepsculpt/checkpoints"
 
     bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
@@ -143,7 +143,7 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
 
 
 def trainer(
-    dataset, epochs, locally=os.environ.get("LOCALLY")
+    dataset, epochs, locally=os.environ.get("INSTANCE")
 ):  # load checkpoint, checkpoint + manager
 
     if not locally:
@@ -244,7 +244,7 @@ def trainer(
         # generate_and_save_images(generator, epoch + 1, seed)
 
         # Saves checkpoint and snapshots locally
-        if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 0:
+        if int(os.environ.get("INSTANCE")) == 0:
 
             if (epoch + 1) % int(
                 os.environ.get("MODEL_CHECKPOINT")
@@ -283,7 +283,7 @@ def trainer(
                 )
 
         # Saves Checkpoint and snapshot to COLAB
-        if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 1:
+        if int(os.environ.get("INSTANCE")) == 1:
 
             # Save the checkpoint
             if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")) == 0:
@@ -311,19 +311,6 @@ def trainer(
                     os.environ.get("HOME"),
                     "..",
                     "content",
-                    "results",
-                    "deepSculpt",
-                    "predictions",
-                )
-
-                generate_and_save_snapshot(
-                    generator, epoch + 1, preprocessing_class_o, SEED, out_dir
-                )
-
-                out_dir = os.path.join(
-                    os.environ.get("HOME"),
-                    "..",
-                    "content",
                     "drive",
                     "MyDrive",
                     "repositories",
@@ -336,22 +323,36 @@ def trainer(
                     generator, epoch + 1, preprocessing_class_o, SEED, out_dir
                 )
 
-                snapshot_name = "{}/image_at_epoch_{:04d}.png".format(out_dir, epoch)
+                out_dir = os.path.join(
+                    os.environ.get("HOME"),
+                    "..",
+                    "content",
+                    "results",
+                    "deepSculpt",
+                    "predictions",
+                )
+
+                generate_and_save_snapshot(
+                    generator, epoch + 1, preprocessing_class_o, SEED, out_dir
+                )
+
+                snapshot_name = "{}/image_at_epoch_{:04d}.png".format(
+                    out_dir, epoch)
 
                 plt.savefig(snapshot_name)
 
                 print(
                     "\n🔽 "
                     + Fore.BLUE
-                    + f"Just created a snapshot {snapshot_name} @ {out_dir}"
+                    + f"Just created a snapshot {snapshot_name.split('/')[-1]} @ {out_dir}"
                     + Style.RESET_ALL
                 )
 
-                if int(os.environ.get("LOCALLY")) == 0:
+                if int(os.environ.get("INSTANCE")) == 0:
                     upload_snapshot_to_gcp(snapshot_name)
 
         # Saves checkpoint and snapshots to GCP
-        if int(os.environ.get("LOCALLY")) == 0:
+        if int(os.environ.get("INSTANCE")) == 2:
             # Save the model every 15 epochs
             if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")) == 0:
                 generate_and_save_checkpoint(
