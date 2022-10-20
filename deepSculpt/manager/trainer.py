@@ -289,9 +289,9 @@ def trainer(dataset, epochs, locally=os.environ.get("LOCALLY")
                                            preprocessing_class_o, SEED,
                                            out_dir)
 
-                out_dir = os.path.join("content", "drive", "MyDrive",
-                                       "repositories", "deepSculpt", "results",
-                                       "snapshots")
+                out_dir = os.path.join(os.environ.get("HOME"), "..", "content",
+                                       "drive", "MyDrive", "repositories",
+                                       "deepSculpt", "results", "snapshots")
 
                 generate_and_save_snapshot(generator, epoch + 1,
                                            preprocessing_class_o, SEED,
