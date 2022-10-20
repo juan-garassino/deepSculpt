@@ -74,6 +74,8 @@ if int(os.environ.get("INSTANCE")) == 0:
 if int(os.environ.get("INSTANCE")) == 1:
 
     checkpoint_dir = os.path.join(
+        os.environ.get("HOME"),
+        "..",
         "content",
         "drive",
         "MyDrive",
