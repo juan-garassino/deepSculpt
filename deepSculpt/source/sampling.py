@@ -41,7 +41,6 @@ def sampling():  # convert to spare tensor
             void_dim=int(os.environ.get("VOID_DIM")),
         )
 
-
     if isinstance(colors, np.ndarray) == False:
         print("error")
 

@@ -91,34 +91,41 @@ class DataLoaderCreator:
 
             sculpture = sculptor.generative_sculpt()
 
-            raw_data.append(sculpture[0].astype("int8")) ## NOT APPEND BUT SAVE IN DIFF FILES!!
-            color_raw_data.append(sculpture[1])
+            # raw_data.append(sculpture[0].astype("int8")) # NOT APPEND BUT SAVE IN DIFF FILES!!
 
-        raw_data = (
-            np.asarray(raw_data)
-            .reshape(
+            # color_raw_data.append(sculpture[1])
+
+            raw_data = (
+                np.asarray(sculpture[0])
+                .reshape(
+                    (
+                        # int(os.environ.get("N_SAMPLES_CREATE")),
+                        int(os.environ.get("VOID_DIM")),
+                        int(os.environ.get("VOID_DIM")),
+                        int(os.environ.get("VOID_DIM")),
+                    )
+                )
+                .astype("int8")
+            )
+
+            color_raw_data = np.asarray(sculpture[1]).reshape(
                 (
-                    int(os.environ.get("N_SAMPLES_CREATE")),
+                    # int(os.environ.get("N_SAMPLES_CREATE")),
                     int(os.environ.get("VOID_DIM")),
                     int(os.environ.get("VOID_DIM")),
                     int(os.environ.get("VOID_DIM")),
                 )
             )
-            .astype("int8")
-        )
 
-        color_raw_data = np.asarray(color_raw_data).reshape(
-            (
-                int(os.environ.get("N_SAMPLES_CREATE")),
-                int(os.environ.get("VOID_DIM")),
-                int(os.environ.get("VOID_DIM")),
-                int(os.environ.get("VOID_DIM")),
+            np.save(
+                f"sample-{count+1}-volumes[{date.today()}]", raw_data, allow_pickle=True
             )
-        )
 
-        np.save(f"raw-data[{date.today()}]", raw_data, allow_pickle=True)
-
-        np.save(f"color-raw-data[{date.today()}]", color_raw_data, allow_pickle=True)
+            np.save(
+                f"sample-{count+1}-colors[{date.today()}]",
+                color_raw_data,
+                allow_pickle=True,
+            )
 
         print(
             "\n🔽 "

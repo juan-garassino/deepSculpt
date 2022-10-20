@@ -53,7 +53,10 @@ class Plotter(Sculptor):
 
         for plot in range(1):  # to print one color i need a condition to not rotate!!
             axes[0].voxels(
-                self.volumes, edgecolors="k", linewidth=0.05, facecolors=self.colors,
+                self.volumes,
+                edgecolors="k",
+                linewidth=0.05,
+                facecolors=self.colors,
             )
 
             axes[1].voxels(

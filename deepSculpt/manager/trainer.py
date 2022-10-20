@@ -52,7 +52,7 @@ print(Style.RESET_ALL)
 
 ## local on COMPUTER
 
-if int(os.environ.get("INSTANCE")) ==  0:
+if int(os.environ.get("INSTANCE")) == 0:
 
     checkpoint_dir = os.path.join(
         os.environ.get("HOME"),
@@ -336,8 +336,7 @@ def trainer(
                     generator, epoch + 1, preprocessing_class_o, SEED, out_dir
                 )
 
-                snapshot_name = "{}/image_at_epoch_{:04d}.png".format(
-                    out_dir, epoch)
+                snapshot_name = "{}/image_at_epoch_{:04d}.png".format(out_dir, epoch)
 
                 plt.savefig(snapshot_name)
 
