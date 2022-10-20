@@ -1,4 +1,4 @@
-from deepSculpt.curator.curator import DataLoaderCreator
+from deepSculpt.curator.curator import Curator
 from deepSculpt.curator.tools.preprocessing import OneHotEncoderDecoder
 from deepSculpt.manager.tools.params import BUFFER_SIZE
 
@@ -14,7 +14,7 @@ def sampling():  # convert to spare tensor
     # Loads the data
     if int(os.environ.get("CREATE_DATA")) == 0:
 
-        data = DataLoaderCreator(
+        data = Curator(
             path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
             path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
         )
@@ -28,7 +28,7 @@ def sampling():  # convert to spare tensor
     # Creates the data
     if int(os.environ.get("CREATE_DATA")) == 1:
 
-        data = DataLoaderCreator()
+        data = Curator()
 
         volumes, colors = data.create_sculpts(
             n_samples=int(os.environ.get("N_SAMPLES_CREATE")),

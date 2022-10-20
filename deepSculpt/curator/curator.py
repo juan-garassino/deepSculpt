@@ -44,9 +44,9 @@ class Curator:
         void_dim=int(os.environ.get("VOID_DIM")),
     ):
 
-        path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-
-        os.chdir(path)
+        path = os.path.join(
+            os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+        )
 
         raw_data = []
         color_raw_data = []
@@ -122,10 +122,10 @@ class Curator:
             .astype("object")
         )
 
-        np.save(f"sample-volumes[{date.today()}]", raw_data, allow_pickle=True)
+        np.save(f"{path}/sample-volumes[{date.today()}]", raw_data, allow_pickle=True)
 
         np.save(
-            f"sample-colors[{date.today()}]",
+            f"{path}/sample-colors[{date.today()}]",
             color_raw_data,
             allow_pickle=True,
         )
