@@ -29,7 +29,9 @@ def upload_snapshot_to_gcp(snapshot_name):
     )
 
 
-def generate_and_save_snapshot(model, epoch, preprocessing_class_o, snapshot_input, directory):
+def generate_and_save_snapshot(
+    model, epoch, preprocessing_class_o, snapshot_input, directory
+):
 
     # Generates the sculpture
     predictions = (
@@ -54,21 +56,3 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, snapshot_inp
     Plotter(
         o_decoded_volumes[0], o_decoded_colors[0], figsize=25, style="#ffffff", dpi=200
     ).plot_sculpture(directory)
-
-    # Creates the ouput directory
-    Manager.make_directory(directory)
-
-    # Creates a timestamp
-    snapshot_name = "{}/image_at_epoch_{:04d}.png".format(directory, epoch)
-
-    plt.savefig(snapshot_name)
-
-    print(
-        "\n🔽 "
-        + Fore.BLUE
-        + f"Just created a snapshot {snapshot_name} @ {directory}"
-        + Style.RESET_ALL
-    )
-
-    if int(os.environ.get("LOCALLY")) == 0:
-        upload_snapshot_to_gcp(snapshot_name)

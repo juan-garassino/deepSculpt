@@ -34,7 +34,9 @@ class Plotter(Sculptor):
         for index in range(self.void.shape[0]):
             axes[index].imshow(sculpture[index, :, :], cmap="gray")
 
-    def plot_sculpture(self, directory):  # add call to generative sculpt and then plot like 12
+    def plot_sculpture(
+        self, directory
+    ):  # add call to generative sculpt and then plot like 12
         fig, axes = plt.subplots(
             ncols=2,
             nrows=2,
@@ -86,14 +88,19 @@ class Plotter(Sculptor):
         )  # agregar tiempo de impresion y exportar 3D y bounding box
 
         print(
-            "\n🔽 " + Fore.BLUE +
-            f"Just created a snapshot {name_png.split('/')[-1]} @ {directory}"
-            + Style.RESET_ALL)
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory}"
+            + Style.RESET_ALL
+        )
 
         name_svg = f"{directory}/vectorial[{now}].svg"
 
         plt.savefig(name_svg, transparent=self.transparent)
 
-        print("\n🔽 " + Fore.BLUE +
-              f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory}" +
-              Style.RESET_ALL)
+        print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory}"
+            + Style.RESET_ALL
+        )
