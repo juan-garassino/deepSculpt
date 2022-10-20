@@ -223,8 +223,8 @@ def trainer(dataset, epochs, locally=os.environ.get("LOCALLY")
         display.clear_output(wait=True)  # clearing output !!!TO BE CHECKED!!!
         # generate_and_save_images(generator, epoch + 1, seed)
 
-        if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get(
-                "COLAB")) == 0:  # Saves checkpoint and snapshots locally
+        # Saves checkpoint and snapshots locally
+        if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 0:
 
             if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")
                                  ) == 0:  # Save the model every 15 epochs
@@ -256,11 +256,11 @@ def trainer(dataset, epochs, locally=os.environ.get("LOCALLY")
                                            preprocessing_class_o, SEED,
                                            out_dir)
 
-        if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get(
-                "COLAB")) == 1:  # Saves Checkpoint and snapshot to COLAB
+        # Saves Checkpoint and snapshot to COLAB
+        if int(os.environ.get("LOCALLY")) == 1 and int(os.environ.get("COLAB")) == 1:
 
-            if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")
-                                 ) == 0:  # Save the model every 15 epochs
+            # Save the checkpoint
+            if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")) == 0:
 
                 os.chdir(
                     "/content/drive/MyDrive/repositories/deepSculpt/results/checkpoints"
@@ -297,8 +297,8 @@ def trainer(dataset, epochs, locally=os.environ.get("LOCALLY")
                                            preprocessing_class_o, SEED,
                                            out_dir)
 
-        if int(os.environ.get(
-                "LOCALLY")) == 0:  # Saves checkpoint and snapshots to GCP
+        # Saves checkpoint and snapshots to GCP
+        if int(os.environ.get("LOCALLY")) == 0:
             # Save the model every 15 epochs
             if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")) == 0:
                 generate_and_save_checkpoint(

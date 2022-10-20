@@ -59,14 +59,14 @@ def generate_and_save_snapshot(model, epoch, preprocessing_class_o, snapshot_inp
     Manager.make_directory(directory)
 
     # Creates a timestamp
-    snapshot_name = "{}/run/image_at_epoch_{:04d}.png".format(directory, epoch)
+    snapshot_name = "{}/image_at_epoch_{:04d}.png".format(directory, epoch)
 
     plt.savefig(snapshot_name)
 
     print(
         "\n🔽 "
         + Fore.BLUE
-        + f"Just created a snapshot {snapshot_name}"
+        + f"Just created a snapshot {snapshot_name} @ {directory}"
         + Style.RESET_ALL
     )
 
