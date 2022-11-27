@@ -2,26 +2,26 @@ import matplotlib.pyplot as plt
 from IPython import display
 import time
 import warnings
-
 warnings.filterwarnings("ignore")
+
+from colorama import Fore, Style
 import os
 import numpy as np
+from google.cloud import storage
 
 from tensorflow.data import Dataset
 from tensorflow import GradientTape, function, Variable
 from tensorflow.random import normal
 from tensorflow.train import Checkpoint, CheckpointManager
 
-from google.cloud import storage
-from tensorflow import GradientTape, function
-
 from deepSculpt.manager.manager import Manager
+from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
 from deepSculpt.manager.tools.sampling import sampling
+
 from deepSculpt.trainer.tools.model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
-from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
 from deepSculpt.trainer.tools.optimizers import (
     generator_optimizer,
     discriminator_optimizer,
@@ -36,15 +36,25 @@ from deepSculpt.manager.tools.checkpoint import (
 )
 from deepSculpt.curator.tools.params import SEED, MINIBATCHES
 
-from colorama import Fore, Style
+# Loads Data
 
 train_dataset, preprocessing_class_o = sampling()
+
+# add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
+
+# ADD MLFLOW I PREFECT
+
+# ARREGLAR PLOTER CAMBIANDO LOS 1 POR EL COLOR!
+
+# Initiates the Generator
 
 generator = make_three_dimentional_generator()
 
 print("\n⏹ " + Fore.BLUE + "The Generators summary is" + Fore.YELLOW + "\n")
 
 print(generator.summary())
+
+# Initiates the Discriminator
 
 discriminator = make_three_dimentional_critic()
 
@@ -54,7 +64,7 @@ print(discriminator.summary())
 
 print(Style.RESET_ALL)
 
-## local on COMPUTER
+## Local instance enviroment on COMPUTER
 
 if int(os.environ.get("INSTANCE")) == 0:
 
@@ -69,7 +79,7 @@ if int(os.environ.get("INSTANCE")) == 0:
 
     Manager.make_directory(checkpoint_dir)
 
-## local on and colab on COLAB
+## Local instance eviroment on COLAB
 
 if int(os.environ.get("INSTANCE")) == 1:
 
@@ -87,7 +97,7 @@ if int(os.environ.get("INSTANCE")) == 1:
 
     Manager.make_directory(checkpoint_dir)
 
-## local off and goes to bucket GCP
+## Cloud instance enviroment in GCP
 
 if int(os.environ.get("INSTANCE")) == 2:
 
@@ -95,6 +105,7 @@ if int(os.environ.get("INSTANCE")) == 2:
 
     bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
 
+# Initiates a Checkpoint Object
 
 checkpoint = Checkpoint(
     step=Variable(1),
@@ -103,6 +114,8 @@ checkpoint = Checkpoint(
     generator=generator,
     discriminator=discriminator,
 )
+
+# Initiates a Checkpoint Manager Object
 
 manager = CheckpointManager(
     checkpoint=checkpoint,
@@ -158,8 +171,8 @@ def trainer(
     dataset, epochs, locally=os.environ.get("INSTANCE")
 ):  # load checkpoint, checkpoint + manager
 
-    if not locally:
-        load_model_from_cgp(checkpoint, manager)  # REEEEEESTOREEEEEE
+    if int(os.environ.get("INSTANCE")) == 2:
+        load_model_from_cgp(checkpoint, manager)
 
     if manager.latest_checkpoint:
         print(
@@ -258,9 +271,7 @@ def trainer(
         # Saves checkpoint and snapshots locally
         if int(os.environ.get("INSTANCE")) == 0:
 
-            if (epoch + 1) % int(
-                os.environ.get("MODEL_CHECKPOINT")
-            ) == 0:  # Save the model every 15 epochs
+            if (epoch + 1) % int(os.environ.get("MODEL_CHECKPOINT")) == 0:
 
                 out_dir = os.path.join(
                     os.environ.get("HOME"),
@@ -270,8 +281,6 @@ def trainer(
                     "results",
                     "checkpoints",
                 )
-
-                # os.chdir(out_dir)
 
                 save_path = manager.save()
 
@@ -390,6 +399,10 @@ def trainer(
                 generate_and_save_snapshot(
                     generator, epoch + 1, preprocessing_class_o, SEED
                 )
+
+        # Saves checkpoint and snapshots to MLFOW
+        if int(os.environ.get("INSTANCE")) == 2:
+            print('to MLFLOW')
 
         print(
             "\n📶 "

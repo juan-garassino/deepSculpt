@@ -48,6 +48,41 @@ count_lines:
 	@echo ''
 
 # ----------------------------------
+#      MODEL
+# ----------------------------------
+
+app-id= 1639938746408345
+
+app-secret= eb85d63732bdf12fd935d4a3437f5740
+
+redirect-uri=
+
+code=
+
+access_token=IGQVJYQTNGcHc2akpNcVdtY1NjQmgxU2V1V014bVREdDBTMFFVR3hrWms3XzVBU25QajJTWElzSmVHWTFHU2c0bFZAmQllrWkFtYkoxcFpwVnBzcEU2VGU0STRSYl9tazdfVzRJUVFmdkh0ejdhczFubAZDZD
+
+run_test:
+	curl -X POST \
+    https://api.instagram.com/oauth/${access_token} client_id=${app-id} client_secret=${app-secret} \
+		grant_type=${authorization_code} redirect_uri=${redirect-uri} code=${code}
+
+run_trainer:
+	python -m deepSculpt.trainer.trainer
+
+run_sculptor:
+	python -m deepSculpt.sculptor.sculptor
+
+run_curator:
+	python -m deepSculpt.curator.curator
+
+run_emissary:
+	python -m deepSculpt.emissary.emissary
+
+run_manager:
+	python -m deepSculpt.manager.manager
+
+
+# ----------------------------------
 #      UPLOAD PACKAGE TO PYPI
 # ----------------------------------
 
@@ -100,9 +135,6 @@ set_project:
 
 create_bucket:
 	@gsutil mb -l ${REGION} -p ${PROJECT_ID} gs://${os.environ.get('BUCKET_NAME')}
-
-run_model:
-	python -m deepSculpt.trainer.trainer
 
 ##### Job - - - - - - - - - - - - - - - - - - - - - - - - -
 

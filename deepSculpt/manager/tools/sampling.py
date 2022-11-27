@@ -12,7 +12,7 @@ import tensorflow as tf
 def sampling():  # convert to spare tensor
 
     # Loads the data
-    if int(os.environ.get("CREATE_DATA")) == 0:
+    if int(os.environ.get("CREATE_DATA")) == 0: # LOADS FROM BIG QUERY
 
         data = Curator(
             path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
@@ -26,7 +26,7 @@ def sampling():  # convert to spare tensor
             volumes, colors = data.load_from_gcp()
 
     # Creates the data
-    if int(os.environ.get("CREATE_DATA")) == 1:
+    if int(os.environ.get("CREATE_DATA")) == 1: # CREATES AND UPLOADS TO BIG QUERY
 
         if int(os.environ.get("INSTANCE")) == 0:
             path = os.path.join(

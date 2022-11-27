@@ -1,7 +1,7 @@
 import random
 import numpy as np
 
-from deepSculpt.sculptor.components.utils import return_axis
+from deepSculpt.sculptor.components.utils import return_axis, print_information
 from deepSculpt.curator.tools.params import COLOR_PLANES
 
 
