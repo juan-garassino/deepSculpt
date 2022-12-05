@@ -104,7 +104,7 @@ pypi:
 PROJECT_ID=deepsculpt
 
 # bucket
-os.environ.get('BUCKET_NAME')=deepsculpt
+BUCKET_NAME=
 
 # training folder
 BUCKET_TRAINING_FOLDER=data

@@ -145,4 +145,4 @@ class Curator:
 
 
 if __name__ == "__main__":
-    pass
+    curator = Curator()

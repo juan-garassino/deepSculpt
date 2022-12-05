@@ -11,23 +11,23 @@ from colorama import Fore, Style
 class Sculptor:
     def __init__(
         self,
-        void_dim,
-        n_edge_elements,
-        n_plane_elements,
-        n_volume_elements,
-        color_edges,
-        color_planes,
-        color_volumes,
-        element_edge_min,
-        element_edge_max,
-        element_grid_min,
-        element_grid_max,
-        element_plane_min,
-        element_plane_max,
-        element_volume_min,
-        element_volume_max,
-        step,
-        verbose,
+        void_dim=16,
+        n_edge_elements=1,
+        n_plane_elements=1,
+        n_volume_elements=1,
+        color_edges=None,
+        color_planes=None,
+        color_volumes=None,
+        element_edge_min=1,
+        element_edge_max=5,
+        element_grid_min=1,
+        element_grid_max=5,
+        element_plane_min=1,
+        element_plane_max=5,
+        element_volume_min=1,
+        element_volume_max=5,
+        step=1,
+        verbose=False,
     ):
 
         self.void = np.zeros((void_dim, void_dim, void_dim))
@@ -106,3 +106,29 @@ class Sculptor:
             )
 
         return self.void, self.color_void
+
+if __name__ == "__main__":
+
+    sculptor = Sculptor(
+                        void_dim=16,
+                        n_edge_elements=1,
+                        n_plane_elements=1,
+                        n_volume_elements=1,
+                        color_edges=None,
+                        color_planes=None,
+                        color_volumes=None,
+                        element_edge_min=2,
+                        element_edge_max=5,
+                        element_grid_min=2,
+                        element_grid_max=5,
+                        element_plane_min=2,
+                        element_plane_max=5,
+                        element_volume_min=2,
+                        element_volume_max=5,
+                        step=1,
+                        verbose=False,
+    )
+
+    sculpt = sculptor.generative_sculpt()
+
+    print(sculpt)

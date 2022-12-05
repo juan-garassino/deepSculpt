@@ -1,39 +1,4 @@
-# packaging
-pip>=9
-setuptools>=26
-twine
-wheel>=0.29
-
-# data science
-tensorflow
 numpy
-pandas
-scikit-learn
-matplotlib
+tensorflow
 
-# tests/linter
-black
-coverage
-flake8
-pytest
-yapf
-
-# API
-gcsfs
-google-cloud-storage
-mlflow
-s3fs
-
-# utilities
-six>=1.14
-joblib
-memoized-property
-termcolor
-
-protobuf<=3.20
-jupyter
-jupyterlab
 colorama
-
-quad-mesh-simplify
-voxelfuse
