@@ -49,24 +49,26 @@ class Curator:
 
         for count, sculpture in enumerate(range(n_samples)):  #
 
-            print(
-                "\n⏹ "
-                + Fore.BLUE
-                + f"Creating sculpture number {count}"
-                + Style.RESET_ALL
-            )
+            if int(os.environ.get("VERBOSE")) == 1:
+                print(
+                    "\n⏹ "
+                    + Fore.BLUE
+                    + f"Creating sculpture number {count}"
+                    + Style.RESET_ALL
+                )
 
             start = time.time()
 
-            if (count + 1) % 25 == 0:
-                print(
-                    "\n⏹ "
-                    + Fore.GREEN
-                    + "{} sculputers where created in {}".format(
-                        (count + 1), time.time() - start
+            if int(os.environ.get("VERBOSE")) == 1:
+                if (count + 1) % 25 == 0:
+                    print(
+                        "\n⏹ "
+                        + Fore.GREEN
+                        + "{} sculputers where created in {}".format(
+                            (count + 1), time.time() - start
+                        )
+                        + Style.RESET_ALL
                     )
-                    + Style.RESET_ALL
-                )
 
                 # print("\r{0}".format(count), end="")
 
@@ -79,7 +81,7 @@ class Curator:
                 ),  # number of elements, minimun, maximun
                 planes=(n_plane_elements, ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX),
                 volumes=(n_volume_elements, ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX),
-                # grid=(2, 5), # minimun height of column, and maximun height
+                grid=(1, int(void_dim / 6)), # minimun height of column, and maximun height
                 materials_edges=COLOR_EDGES,
                 materials_planes=COLOR_PLANES,
                 materials_volumes=COLOR_VOLUMES,
@@ -140,6 +142,36 @@ class Curator:
         )
 
         return (raw_data, color_raw_data)
+
+    def load_locally():
+        raw_data = ''
+        color_raw_data = ''
+        print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just Loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape} from computer"
+            + Style.RESET_ALL
+        )
+
+    def load_from_gcp():
+        raw_data = ''
+        color_raw_data = ''
+        print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just Loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape} from gcp"
+            + Style.RESET_ALL
+        )
+
+    def load_from_query():
+        raw_data = ''
+        color_raw_data = ''
+        print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just Loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape} from Big Query"
+            + Style.RESET_ALL
+        )
 
 
 if __name__ == "__main__":

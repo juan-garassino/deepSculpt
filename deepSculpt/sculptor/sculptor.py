@@ -14,10 +14,10 @@ class Sculptor:
     def __init__(
         self,
         void_dim=16,
-        edges=(1, 3, 5),
-        planes=(1, 3, 5),
-        volumes=(1, 3, 5),
-        # grid=(2, 2),
+        edges=(1, 0.3, 0.5),
+        planes=(1, 0.3, 0.5),
+        volumes=(1, 0.3, 0.5),
+        grid=(1, 4),
         materials_edges=None,
         materials_planes=None,
         materials_volumes=None,
@@ -59,21 +59,26 @@ class Sculptor:
         self.element_volume_max = volumes[2]
 
         self.step = step
+        self.grid = grid
 
     def generative_sculpt(self):
         start = time.time()
 
-        for grid in range(1):
-            if int(os.environ.get("VERBOSE")) == 1:
-                print("\n⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
-            add_grid(
-                volumes_void=self.volumes_void,
-                materials_void=self.materials_void,
-                step=self.step,
-                verbose=int(os.environ.get("VERBOSE")),
-            )
+        if self.grid[0] == 1:
+            for grid in range(1):
+
+                if int(os.environ.get("VERBOSE")) == 1:
+                    print("\n⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
+
+                add_grid(
+                    volumes_void=self.volumes_void,
+                    materials_void=self.materials_void,
+                    step=self.grid[1],
+                    verbose=int(os.environ.get("VERBOSE")),
+                )
 
         for edge in range(self.n_edge_elements):
+
             if int(os.environ.get("VERBOSE")) == 1:
                 print(
                     "\n⏹  "
@@ -81,6 +86,7 @@ class Sculptor:
                     + f"Creating edge number {edge}"
                     + Style.RESET_ALL
                 )
+
             add_edge(
                 self.volumes_void,
                 self.materials_void,
@@ -91,6 +97,7 @@ class Sculptor:
             )
 
         for plane in range(self.n_plane_elements):
+
             if int(os.environ.get("VERBOSE")) == 1:
                 print(
                     "\n⏹  "
@@ -98,6 +105,7 @@ class Sculptor:
                     + f"Creating plane number {plane}"
                     + Style.RESET_ALL
                 )
+
             add_plane(
                 self.volumes_void,
                 self.materials_void,
@@ -108,6 +116,7 @@ class Sculptor:
             )
 
         for volume in range(self.n_volume_elements):
+
             if int(os.environ.get("VERBOSE")) == 1:
                 print(
                     "\n⏹  "

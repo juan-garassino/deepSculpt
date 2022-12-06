@@ -14,16 +14,19 @@ def sampling():  # convert to spare tensor
     # Loads the data
     if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
 
-        data = Curator(
+        curator = Curator(
             path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
             path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
         )
 
-        if int(os.environ.get("INSTANCE")) == 1:
-            volumes, colors = data.load_locally()
+        if int(os.environ.get("INSTANCE")) == 0:
+            volumes, colors = curator.load_locally()
 
-        else:
-            volumes, colors = data.load_from_gcp()
+        if int(os.environ.get("INSTANCE")) == 1:
+            volumes, colors = curator.load_from_gcp()
+
+        if int(os.environ.get("INSTANCE")) == 2:
+            volumes, colors = curator.load_from_query()
 
     # Creates the data
     if int(os.environ.get("CREATE_DATA")) == 1:  # CREATES AND UPLOADS TO BIG QUERY
