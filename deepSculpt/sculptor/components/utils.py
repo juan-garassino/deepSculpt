@@ -27,7 +27,13 @@ def return_axis(void, color_void):
 
 
 def print_information(
-    void=None, element=None, axis_selection=None, delta=None, section=None, top_left_corner=None, bottom_right_corner=None
+    void=None,
+    element=None,
+    axis_selection=None,
+    delta=None,
+    section=None,
+    top_left_corner=None,
+    bottom_right_corner=None,
 ):
     print(void)
     if void != None:
@@ -46,6 +52,6 @@ def print_information(
         print(f"bottom right corner is: {bottom_right_corner}")
     if bottom_right_corner:
         print(
-        f"slices are: {top_left_corner[0]}:{bottom_right_corner[0]} and {top_left_corner[1]}:{bottom_right_corner[1]}"
-    )
+            f"slices are: {top_left_corner[0]}:{bottom_right_corner[0]} and {top_left_corner[1]}:{bottom_right_corner[1]}"
+        )
     print("###############################################################")

@@ -9,7 +9,13 @@ from colorama import Fore, Style
 
 class Plotter(Sculptor):
     def __init__(
-        self, volumes=None, colors=None, figsize=25, style="#ffffff", dpi=100, transparent=False
+        self,
+        volumes=None,
+        colors=None,
+        figsize=25,
+        style="#ffffff",
+        dpi=100,
+        transparent=False,
     ):
 
         self.void = volumes
@@ -48,9 +54,8 @@ class Plotter(Sculptor):
 
         axes = axes.ravel()
 
-
         if type(self.colors).__module__ == np.__name__:
-        #if isinstance(self.colors, list) == True:
+            # if isinstance(self.colors, list) == True:
             for plot in range(1):
                 axes[0].voxels(
                     self.volumes,
@@ -86,26 +91,26 @@ class Plotter(Sculptor):
                     self.volumes,
                     edgecolors="k",
                     linewidth=0.05,
-                    #facecolors=self.colors,
+                    # facecolors=self.colors,
                 )
 
                 axes[1].voxels(
                     np.rot90(self.volumes, 1),
-                    #facecolors=np.rot90(self.colors, 1),
+                    # facecolors=np.rot90(self.colors, 1),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
                 axes[2].voxels(
                     np.rot90(self.volumes, 2),
-                    #facecolors=np.rot90(self.colors, 2),
+                    # facecolors=np.rot90(self.colors, 2),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
                 axes[3].voxels(
                     np.rot90(self.volumes, 3),
-                    #facecolors=np.rot90(self.colors, 3),
+                    # facecolors=np.rot90(self.colors, 3),
                     edgecolors="k",
                     linewidth=0.05,
                 )

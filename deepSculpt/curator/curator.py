@@ -53,11 +53,11 @@ class Curator:
         for count, sculpture in enumerate(range(n_samples)):  #
 
             print(
-                    "\n⏹ "
-                    + Fore.BLUE
-                    + f"Creating sculpture number {count}"
-                    + Style.RESET_ALL
-                )
+                "\n⏹ "
+                + Fore.BLUE
+                + f"Creating sculpture number {count}"
+                + Style.RESET_ALL
+            )
 
             start = time.time()
 
@@ -74,17 +74,21 @@ class Curator:
                 # print("\r{0}".format(count), end="")
 
             sculptor = Sculptor(
-                                void_dim=void_dim,
-                                edges=(n_edge_elements, ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX), # number of elements, minimun, maximun
-                                planes=(n_plane_elements, ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX),
-                                volumes=(n_volume_elements, ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX),
-                                #grid=(2, 5), # minimun height of column, and maximun height
-                                materials_edges=COLOR_EDGES,
-                                materials_planes=COLOR_PLANES,
-                                materials_volumes=COLOR_VOLUMES,
-                                step= int(void_dim / 6),
-                                verbose=verbose,
-                            )
+                void_dim=void_dim,
+                edges=(
+                    n_edge_elements,
+                    ELEMENT_EDGE_MIN,
+                    ELEMENT_EDGE_MAX,
+                ),  # number of elements, minimun, maximun
+                planes=(n_plane_elements, ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX),
+                volumes=(n_volume_elements, ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX),
+                # grid=(2, 5), # minimun height of column, and maximun height
+                materials_edges=COLOR_EDGES,
+                materials_planes=COLOR_PLANES,
+                materials_volumes=COLOR_VOLUMES,
+                step=int(void_dim / 6),
+                verbose=verbose,
+            )
 
             sculpture = sculptor.generative_sculpt()
 
@@ -146,10 +150,7 @@ if __name__ == "__main__":
     curator = Curator()
 
     out_dir = os.path.join(
-                    os.environ.get("HOME"),
-                    "code",
-                    "juan-garassino",
-                    "deepSculpt", "data"
-                )
+        os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+    )
 
     curator.create_sculpts(out_dir)

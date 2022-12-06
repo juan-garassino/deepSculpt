@@ -7,7 +7,12 @@ from deepSculpt.curator.tools.params import COLOR_PLANES
 
 
 def add_plane(
-    void, color_void, element_plane_min_ratio, element_plane_max_ratio, step, verbose=False
+    void,
+    color_void,
+    element_plane_min_ratio,
+    element_plane_max_ratio,
+    step,
+    verbose=False,
 ):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
 
     element_plane_min_index = int(element_plane_min_ratio * void.shape[0])
@@ -24,15 +29,15 @@ def add_plane(
 
     if verbose == True:
         print(
-        "\n⏹ "
-        + Fore.RED
-        + f'The color of the plane is {COLOR_PLANES}'
-        + Style.RESET_ALL
-    )
+            "\n⏹ "
+            + Fore.RED
+            + f"The color of the plane is {COLOR_PLANES}"
+            + Style.RESET_ALL
+        )
 
-    '''if verbose == True:
+    """if verbose == True:
         print(working_plane)
-        print("###############################################################")'''
+        print("###############################################################")"""
 
     # Variables
     element = np.ones(
@@ -66,8 +71,8 @@ def add_plane(
         top_left_corner[1] : bottom_right_corner[1],
     ] = COLOR_PLANES
 
-    '''if verbose == True:
+    """if verbose == True:
         print_information(void=void, element=element, delta=delta, top_left_corner=top_left_corner, bottom_right_corner=bottom_right_corner)
-        print("###############################################################")'''
+        print("###############################################################")"""
 
     return void.astype("int8"), color_void

@@ -16,7 +16,7 @@ class Sculptor:
         edges=(1, 3, 5),
         planes=(1, 3, 5),
         volumes=(1, 3, 5),
-        #grid=(2, 2),
+        # grid=(2, 2),
         materials_edges=None,
         materials_planes=None,
         materials_volumes=None,
@@ -29,9 +29,13 @@ class Sculptor:
         parameters: edges (numbers of elements, minimun size, maximun size)
         """
         self.void_dim = void_dim
-        self.volumes_void = np.zeros((self.void_dim, self.void_dim, self.void_dim))  # Creates a void
-        self.materials_void = np.empty(self.volumes_void.shape, dtype=object)  # Creates a color void
-        #self.colors = np.empty(self.volumes_void.shape, dtype=object)
+        self.volumes_void = np.zeros(
+            (self.void_dim, self.void_dim, self.void_dim)
+        )  # Creates a void
+        self.materials_void = np.empty(
+            self.volumes_void.shape, dtype=object
+        )  # Creates a color void
+        # self.colors = np.empty(self.volumes_void.shape, dtype=object)
 
         self.color_edges = materials_edges  # list of colors for the edges
         self.color_planes = materials_planes  # list of colors for the planes
@@ -42,8 +46,8 @@ class Sculptor:
         self.n_volume_elements = volumes[0]
         self.style = "#ffffff"
 
-        #self.element_grid_min = grid[0]
-        #self.element_grid_max = grid[1]
+        # self.element_grid_min = grid[0]
+        # self.element_grid_max = grid[1]
 
         self.element_edge_min = edges[1]
         self.element_edge_max = edges[2]
@@ -63,13 +67,13 @@ class Sculptor:
 
         for grid in range(1):
             if self.verbose:
-                print(
-                    "\n⏹  "
-                    + Fore.MAGENTA
-                    + "Creating grid"
-                    + Style.RESET_ALL
-                )
-            add_grid(volumes_void=self.volumes_void, materials_void=self.materials_void, step=self.step, verbose=self.verbose)
+                print("\n⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
+            add_grid(
+                volumes_void=self.volumes_void,
+                materials_void=self.materials_void,
+                step=self.step,
+                verbose=self.verbose,
+            )
 
         for edge in range(self.n_edge_elements):
             if self.verbose:
@@ -123,7 +127,6 @@ class Sculptor:
                 verbose=self.verbose,
             )
 
-
         if self.verbose:
             print(
                 "\n⏹  "
@@ -139,10 +142,10 @@ if __name__ == "__main__":
 
     sculptor = Sculptor(
         void_dim=16,
-        edges=(1, 3, 5), # number of elements, minimun, maximun
+        edges=(1, 3, 5),  # number of elements, minimun, maximun
         planes=(1, 3, 5),
         volumes=(1, 0.7, 0.8),
-        grid=(2, 5), # minimun height of column, and maximun height
+        grid=(2, 5),  # minimun height of column, and maximun height
         materials_edges=COLOR_EDGES,
         materials_planes=COLOR_PLANES,
         materials_volumes=COLOR_VOLUMES,

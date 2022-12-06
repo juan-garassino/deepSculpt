@@ -6,7 +6,12 @@ from deepSculpt.curator.tools.params import COLOR_VOLUMES
 
 
 def add_pipe_cantilever(
-    void, color_void, element_volume_min_ratio, element_volume_max_ratio, step, verbose=False
+    void,
+    color_void,
+    element_volume_min_ratio,
+    element_volume_max_ratio,
+    step,
+    verbose=False,
 ):  # THIS IS GOOD!!
 
     element = None
@@ -22,9 +27,9 @@ def add_pipe_cantilever(
 
     depth = random.randrange(element_volume_min_index, element_volume_max, step)
 
-    '''if verbose == True:
+    """if verbose == True:
         print(working_plane)
-        print("###############################################################")'''
+        print("###############################################################")"""
 
     element = np.ones(
         (
@@ -73,11 +78,11 @@ def add_pipe_cantilever(
 
     if verbose == True:
         print(
-        "\n⏹ "
-        + Fore.RED
-        + f'The color of the volume is {COLOR_VOLUMES[color_volume]}'
-        + Style.RESET_ALL
-    )
+            "\n⏹ "
+            + Fore.RED
+            + f"The color of the volume is {COLOR_VOLUMES[color_volume]}"
+            + Style.RESET_ALL
+        )
 
     # creates the floor and ceiling
     void[
@@ -165,8 +170,8 @@ def add_pipe_cantilever(
                 corner_1[0] : corner_4[0], corner_1[1], corner_1[2] : corner_4[2]
             ] = COLOR_VOLUMES[color_volume]
 
-    '''if verbose == True:
+    """if verbose == True:
         print_information()
-        print("###############################################################")'''
+        print("###############################################################")"""
 
     return void.astype("int8"), color_void
