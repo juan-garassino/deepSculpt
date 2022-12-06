@@ -58,10 +58,10 @@ def sampling():  # convert to spare tensor
             n_edge_elements=0,
             n_plane_elements=2,
             n_volume_elements=2,
-            #color_edges="dimgrey",
-            #color_planes="snow",
-            #color_volumes=["crimson", "turquoise", "gold"],
-            verbose=os.environ.get('VERBOSE'),
+            # color_edges="dimgrey",
+            # color_planes="snow",
+            # color_volumes=["crimson", "turquoise", "gold"],
+            verbose=os.environ.get("VERBOSE"),
             void_dim=int(os.environ.get("VOID_DIM")),
         )
 
