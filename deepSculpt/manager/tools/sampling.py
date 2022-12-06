@@ -9,7 +9,7 @@ from tensorflow.data import Dataset
 import tensorflow as tf
 
 
-def sampling(verbose=False):  # convert to spare tensor
+def sampling():  # convert to spare tensor
 
     # Loads the data
     if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
@@ -58,10 +58,10 @@ def sampling(verbose=False):  # convert to spare tensor
             n_edge_elements=0,
             n_plane_elements=2,
             n_volume_elements=2,
-            color_edges="dimgrey",
-            color_planes="snow",
-            color_volumes=["crimson", "turquoise", "gold"],
-            verbose=verbose,
+            #color_edges="dimgrey",
+            #color_planes="snow",
+            #color_volumes=["crimson", "turquoise", "gold"],
+            verbose=os.environ.get('VERBOSE'),
             void_dim=int(os.environ.get("VOID_DIM")),
         )
 

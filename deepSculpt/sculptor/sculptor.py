@@ -7,6 +7,7 @@ from deepSculpt.curator.tools.params import COLOR_EDGES, COLOR_PLANES, COLOR_VOL
 import time
 import numpy as np
 from colorama import Fore, Style
+import os
 
 
 class Sculptor:
@@ -20,8 +21,7 @@ class Sculptor:
         materials_edges=None,
         materials_planes=None,
         materials_volumes=None,
-        step=1,
-        verbose=False,
+        step=1
     ):
         """
         Creates one sculpt
@@ -60,23 +60,21 @@ class Sculptor:
 
         self.step = step
 
-        self.verbose = verbose
-
     def generative_sculpt(self):
         start = time.time()
 
         for grid in range(1):
-            if self.verbose:
+            if int(os.environ.get('VERBOSE')) == 1:
                 print("\n⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
             add_grid(
                 volumes_void=self.volumes_void,
                 materials_void=self.materials_void,
                 step=self.step,
-                verbose=self.verbose,
+                verbose=int(os.environ.get('VERBOSE')),
             )
 
         for edge in range(self.n_edge_elements):
-            if self.verbose:
+            if int(os.environ.get('VERBOSE')) == 1:
                 print(
                     "\n⏹  "
                     + Fore.MAGENTA
@@ -89,11 +87,11 @@ class Sculptor:
                 self.element_edge_min,
                 self.element_edge_max,
                 self.step,
-                verbose=self.verbose,
+                verbose=int(os.environ.get('VERBOSE')),
             )
 
         for plane in range(self.n_plane_elements):
-            if self.verbose:
+            if int(os.environ.get('VERBOSE')) == 1:
                 print(
                     "\n⏹  "
                     + Fore.MAGENTA
@@ -106,11 +104,11 @@ class Sculptor:
                 self.element_plane_min,
                 self.element_plane_max,
                 self.step,
-                verbose=self.verbose,
+                verbose=int(os.environ.get('VERBOSE')),
             )
 
         for volume in range(self.n_volume_elements):
-            if self.verbose:
+            if int(os.environ.get('VERBOSE')) == 1:
                 print(
                     "\n⏹  "
                     + Fore.MAGENTA
@@ -124,10 +122,10 @@ class Sculptor:
                 self.element_volume_min,
                 self.element_volume_max,
                 self.step,
-                verbose=self.verbose,
+                verbose=int(os.environ.get('VERBOSE')),
             )
 
-        if self.verbose:
+        if int(os.environ.get('VERBOSE')) == 1:
             print(
                 "\n⏹  "
                 + Fore.GREEN

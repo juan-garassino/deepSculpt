@@ -37,10 +37,7 @@ class Curator:
         n_edge_elements=N_EDGE_ELEMENTS,
         n_plane_elements=N_PLANE_ELEMENTS,
         n_volume_elements=N_VOLUME_ELEMENTS,
-        color_edges=COLOR_EDGES,
-        color_planes=COLOR_PLANES,
-        color_volumes=COLOR_VOLUMES,
-        verbose=VERBOSE,
+        verbose=os.environ.get("VERBOSE"),
         void_dim=int(os.environ.get("VOID_DIM")),
     ):
 
@@ -87,7 +84,6 @@ class Curator:
                 materials_planes=COLOR_PLANES,
                 materials_volumes=COLOR_VOLUMES,
                 step=int(void_dim / 6),
-                verbose=verbose,
             )
 
             sculpture = sculptor.generative_sculpt()
