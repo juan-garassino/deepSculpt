@@ -1,4 +1,9 @@
 numpy
 tensorflow
-
+black
+ipykernel
+matplotlib
+scikit-learn
 colorama
+google-cloud
+google-cloud-storage

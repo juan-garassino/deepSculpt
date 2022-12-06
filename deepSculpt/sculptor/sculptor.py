@@ -2,6 +2,7 @@ from deepSculpt.sculptor.components.cantilever import add_pipe_cantilever
 from deepSculpt.sculptor.components.edges import add_edge
 from deepSculpt.sculptor.components.grid import add_grid
 from deepSculpt.sculptor.components.planes import add_plane
+from deepSculpt.curator.tools.params import COLOR_EDGES, COLOR_PLANES, COLOR_VOLUMES
 
 import time
 import numpy as np
@@ -12,90 +13,116 @@ class Sculptor:
     def __init__(
         self,
         void_dim=16,
-        n_edge_elements=1,
-        n_plane_elements=1,
-        n_volume_elements=1,
-        color_edges=None,
-        color_planes=None,
-        color_volumes=None,
-        element_edge_min=1,
-        element_edge_max=5,
-        element_grid_min=1,
-        element_grid_max=5,
-        element_plane_min=1,
-        element_plane_max=5,
-        element_volume_min=1,
-        element_volume_max=5,
+        edges=(1, 3, 5),
+        planes=(1, 3, 5),
+        volumes=(1, 3, 5),
+        #grid=(2, 2),
+        materials_edges=None,
+        materials_planes=None,
+        materials_volumes=None,
         step=1,
         verbose=False,
     ):
+        """
+        Creates one sculpt
 
-        self.void = np.zeros((void_dim, void_dim, void_dim))
-        self.color_void = np.empty(self.void.shape, dtype=object)
-        self.colors = np.empty(self.void.shape, dtype=object)
+        parameters: edges (numbers of elements, minimun size, maximun size)
+        """
+        self.void_dim = void_dim
+        self.volumes_void = np.zeros((self.void_dim, self.void_dim, self.void_dim))  # Creates a void
+        self.materials_void = np.empty(self.volumes_void.shape, dtype=object)  # Creates a color void
+        #self.colors = np.empty(self.volumes_void.shape, dtype=object)
 
-        self.color_edges = color_edges
-        self.color_planes = color_planes
-        self.color_volumes = color_volumes
+        self.color_edges = materials_edges  # list of colors for the edges
+        self.color_planes = materials_planes  # list of colors for the planes
+        self.color_volumes = materials_volumes  # list of colors for the volumes
 
-        self.n_edge_elements = n_edge_elements
-        self.n_plane_elements = n_plane_elements
-        self.n_volume_elements = n_volume_elements
+        self.n_edge_elements = edges[0]
+        self.n_plane_elements = planes[0]
+        self.n_volume_elements = volumes[0]
         self.style = "#ffffff"
 
-        self.element_edge_min = element_edge_min
-        self.element_edge_max = element_edge_max
-        self.element_grid_min = element_grid_min
-        self.element_grid_max = element_grid_max
-        self.element_plane_min = element_plane_min
-        self.element_plane_max = element_plane_max
-        self.element_volume_min = element_volume_min
-        self.element_volume_max = element_volume_max
+        #self.element_grid_min = grid[0]
+        #self.element_grid_max = grid[1]
+
+        self.element_edge_min = edges[1]
+        self.element_edge_max = edges[2]
+
+        self.element_plane_min = planes[1]
+        self.element_plane_max = planes[2]
+
+        self.element_volume_min = volumes[1]
+        self.element_volume_max = volumes[2]
+
         self.step = step
 
         self.verbose = verbose
 
     def generative_sculpt(self):
         start = time.time()
+
+        for grid in range(1):
+            if self.verbose:
+                print(
+                    "\n⏹  "
+                    + Fore.MAGENTA
+                    + "Creating grid"
+                    + Style.RESET_ALL
+                )
+            add_grid(volumes_void=self.volumes_void, materials_void=self.materials_void, step=self.step, verbose=self.verbose)
+
         for edge in range(self.n_edge_elements):
+            if self.verbose:
+                print(
+                    "\n⏹  "
+                    + Fore.MAGENTA
+                    + f"Creating edge number {edge}"
+                    + Style.RESET_ALL
+                )
             add_edge(
-                self.void,
-                self.color_void,
+                self.volumes_void,
+                self.materials_void,
                 self.element_edge_min,
                 self.element_edge_max,
                 self.step,
-                self.verbose,
+                verbose=self.verbose,
             )
 
         for plane in range(self.n_plane_elements):
+            if self.verbose:
+                print(
+                    "\n⏹  "
+                    + Fore.MAGENTA
+                    + f"Creating plane number {plane}"
+                    + Style.RESET_ALL
+                )
             add_plane(
-                self.void,
-                self.color_void,
+                self.volumes_void,
+                self.materials_void,
                 self.element_plane_min,
                 self.element_plane_max,
                 self.step,
-                self.verbose,
+                verbose=self.verbose,
             )
 
         for volume in range(self.n_volume_elements):
+            if self.verbose:
+                print(
+                    "\n⏹  "
+                    + Fore.MAGENTA
+                    + f"Creating volume number {volume}"
+                    + Style.RESET_ALL
+                )
+
             add_pipe_cantilever(
-                self.void,
-                self.color_void,
+                self.volumes_void,
+                self.materials_void,
                 self.element_volume_min,
                 self.element_volume_max,
                 self.step,
-                self.verbose,
+                verbose=self.verbose,
             )
 
-        for volume in range(self.n_volume_elements):
-            add_grid(
-                self.void,
-                self.color_void,
-                self.element_grid_min,
-                self.element_grid_max,
-                self.step,
-                self.verbose,
-            )
 
         if self.verbose:
             print(
@@ -105,28 +132,22 @@ class Sculptor:
                 + Style.RESET_ALL
             )
 
-        return self.void, self.color_void
+        return self.volumes_void, self.materials_void
+
 
 if __name__ == "__main__":
 
     sculptor = Sculptor(
-                        void_dim=16,
-                        n_edge_elements=1,
-                        n_plane_elements=1,
-                        n_volume_elements=1,
-                        color_edges=None,
-                        color_planes=None,
-                        color_volumes=None,
-                        element_edge_min=2,
-                        element_edge_max=5,
-                        element_grid_min=2,
-                        element_grid_max=5,
-                        element_plane_min=2,
-                        element_plane_max=5,
-                        element_volume_min=2,
-                        element_volume_max=5,
-                        step=1,
-                        verbose=False,
+        void_dim=16,
+        edges=(1, 3, 5), # number of elements, minimun, maximun
+        planes=(1, 3, 5),
+        volumes=(1, 0.7, 0.8),
+        grid=(2, 5), # minimun height of column, and maximun height
+        materials_edges=COLOR_EDGES,
+        materials_planes=COLOR_PLANES,
+        materials_volumes=COLOR_VOLUMES,
+        step=1,
+        verbose=False,
     )
 
     sculpt = sculptor.generative_sculpt()

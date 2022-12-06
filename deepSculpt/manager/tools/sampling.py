@@ -9,10 +9,10 @@ from tensorflow.data import Dataset
 import tensorflow as tf
 
 
-def sampling():  # convert to spare tensor
+def sampling(verbose=False):  # convert to spare tensor
 
     # Loads the data
-    if int(os.environ.get("CREATE_DATA")) == 0: # LOADS FROM BIG QUERY
+    if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
 
         data = Curator(
             path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
@@ -26,7 +26,7 @@ def sampling():  # convert to spare tensor
             volumes, colors = data.load_from_gcp()
 
     # Creates the data
-    if int(os.environ.get("CREATE_DATA")) == 1: # CREATES AND UPLOADS TO BIG QUERY
+    if int(os.environ.get("CREATE_DATA")) == 1:  # CREATES AND UPLOADS TO BIG QUERY
 
         if int(os.environ.get("INSTANCE")) == 0:
             path = os.path.join(
@@ -61,7 +61,7 @@ def sampling():  # convert to spare tensor
             color_edges="dimgrey",
             color_planes="snow",
             color_volumes=["crimson", "turquoise", "gold"],
-            verbose=False,
+            verbose=verbose,
             void_dim=int(os.environ.get("VOID_DIM")),
         )
 
@@ -97,3 +97,6 @@ def sampling():  # convert to spare tensor
     )
 
     return train_dataset, preprocessing_class_o
+
+if __name__ == "__main__":
+    sampling(verbose=True)

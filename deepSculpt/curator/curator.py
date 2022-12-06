@@ -9,8 +9,6 @@ from deepSculpt.curator.tools.params import (
     COLOR_VOLUMES,
     ELEMENT_EDGE_MIN,
     ELEMENT_EDGE_MAX,
-    ELEMENT_GRID_MIN,
-    ELEMENT_GRID_MAX,
     ELEMENT_PLANE_MIN,
     ELEMENT_PLANE_MAX,
     ELEMENT_VOLUME_MIN,
@@ -54,6 +52,13 @@ class Curator:
 
         for count, sculpture in enumerate(range(n_samples)):  #
 
+            print(
+                    "\n⏹ "
+                    + Fore.BLUE
+                    + f"Creating sculpture number {count}"
+                    + Style.RESET_ALL
+                )
+
             start = time.time()
 
             if (count + 1) % 25 == 0:
@@ -69,24 +74,17 @@ class Curator:
                 # print("\r{0}".format(count), end="")
 
             sculptor = Sculptor(
-                void_dim=void_dim,
-                n_edge_elements=n_edge_elements,
-                n_plane_elements=n_plane_elements,
-                n_volume_elements=n_volume_elements,
-                color_edges=color_edges,
-                color_planes=color_planes,
-                color_volumes=color_volumes,  # ["greenyellow","orange","mediumpurple"]
-                element_edge_min=ELEMENT_EDGE_MIN,
-                element_edge_max=ELEMENT_EDGE_MAX,
-                element_grid_min=ELEMENT_GRID_MIN,
-                element_grid_max=ELEMENT_GRID_MAX,
-                element_plane_min=ELEMENT_PLANE_MIN,
-                element_plane_max=ELEMENT_PLANE_MAX,
-                element_volume_min=ELEMENT_VOLUME_MIN,
-                element_volume_max=ELEMENT_VOLUME_MAX,
-                step=1,
-                verbose=verbose,
-            )
+                                void_dim=void_dim,
+                                edges=(n_edge_elements, ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX), # number of elements, minimun, maximun
+                                planes=(n_plane_elements, ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX),
+                                volumes=(n_volume_elements, ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX),
+                                #grid=(2, 5), # minimun height of column, and maximun height
+                                materials_edges=COLOR_EDGES,
+                                materials_planes=COLOR_PLANES,
+                                materials_volumes=COLOR_VOLUMES,
+                                step= int(void_dim / 6),
+                                verbose=verbose,
+                            )
 
             sculpture = sculptor.generative_sculpt()
 
@@ -146,3 +144,12 @@ class Curator:
 
 if __name__ == "__main__":
     curator = Curator()
+
+    out_dir = os.path.join(
+                    os.environ.get("HOME"),
+                    "code",
+                    "juan-garassino",
+                    "deepSculpt", "data"
+                )
+
+    curator.create_sculpts(out_dir)

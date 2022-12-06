@@ -35,22 +35,14 @@ COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
         "indigo", "mediumvioletred"
     ]"""
 
-ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = int(int(os.environ.get("VOID_DIM")) * 0.8), int(
-    int(os.environ.get("VOID_DIM")) * 0.9
-)
+ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = 0.8, 0.9
 
-ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = int(int(os.environ.get("VOID_DIM")) * 0.8), int(
-    int(os.environ.get("VOID_DIM")) * 0.95
-)
+#ELEMENT_GRID_MIN, ELEMENT_GRID_MAX = 0.8, 0.9
 
-ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = int(int(os.environ.get("VOID_DIM")) * 0.4), int(
-    int(os.environ.get("VOID_DIM")) * 0.8
-)
+ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = 0.6, 0.85
 
-ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = int(
-    int(os.environ.get("VOID_DIM")) * 0.2
-), int(int(os.environ.get("VOID_DIM")) * 0.5)
+ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = 0.3, 0.45
 
 STEP = 1
 
-VERBOSE = False
+VERBOSE = True

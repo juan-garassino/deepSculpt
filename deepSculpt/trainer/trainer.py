@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from IPython import display
 import time
 import warnings
+
 warnings.filterwarnings("ignore")
 
 from colorama import Fore, Style
@@ -402,7 +403,7 @@ def trainer(
 
         # Saves checkpoint and snapshots to MLFOW
         if int(os.environ.get("INSTANCE")) == 2:
-            print('to MLFLOW')
+            print("to MLFLOW")
 
         print(
             "\n📶 "

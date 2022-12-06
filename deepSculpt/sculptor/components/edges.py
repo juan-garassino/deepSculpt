@@ -6,8 +6,11 @@ from deepSculpt.curator.tools.params import COLOR_EDGES
 
 
 def add_edge(
-    void, color_void, element_edge_min, element_edge_max, step, verbose
+    void, color_void, element_edge_min_ratio, element_edge_max_ratio, step, verbose
 ):  # WHAT TO DO WITH THE WORKING PLANE PARAMETER
+
+    element_edge_min_index = int(element_edge_min_ratio * void.shape[0])
+    element_edge_max = int(element_edge_max_ratio * void.shape[0])
 
     working_plane = return_axis(void, color_void)[0]
     color_parameters = return_axis(void, color_void)[1]
@@ -19,7 +22,7 @@ def add_edge(
 
     # Variables
     edge_length = random.randrange(
-        element_edge_min, element_edge_max, step
+        element_edge_min_index, element_edge_max, step
     )  # estas variables quizas no necesiten ser self!!
     edge_plane = np.random.randint(low=0, high=2)
 
