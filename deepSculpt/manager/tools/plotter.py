@@ -54,6 +54,8 @@ class Plotter(Sculptor):
 
         axes = axes.ravel()
 
+        # imprimir en colores in no colores
+
         if type(self.colors).__module__ == np.__name__:
             # if isinstance(self.colors, list) == True:
             for plot in range(1):
@@ -140,5 +142,27 @@ class Plotter(Sculptor):
             "\n🔽 "
             + Fore.BLUE
             + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory}"
+            + Style.RESET_ALL
+        )
+
+        name_volume_array = f"{directory}/volume_array[{now}].svg"
+
+        np.save(name_volume_array, self.volumes)
+
+        print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory}"
+            + Style.RESET_ALL
+        )
+
+        name_material_array = f"{directory}/material_array[{now}].svg"
+
+        np.save(name_material_array, self.colors)
+
+        print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory}"
             + Style.RESET_ALL
         )
