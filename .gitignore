@@ -13,3 +13,4 @@ raw_data/
 
 results/snapshots/*
 results/checkpoints/*
+results/saves/*
