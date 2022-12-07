@@ -46,7 +46,7 @@ def add_grid(volumes_void=None, materials_void=None, step=1, verbose=False):
 
     Y = np.array(sorted(locations)) - 1
 
-    Z = np.array(random.choices(locations[1:], k=len(X) * len(Y))).reshape(
+    Z = np.array(random.choices(locations[2:], k=len(X) * len(Y))).reshape(
         (len(X), len(Y))
     )
 

@@ -35,7 +35,6 @@ class Sculptor:
         self.materials_void = np.empty(
             self.volumes_void.shape, dtype=object
         )  # Creates a color void
-        # self.colors = np.empty(self.volumes_void.shape, dtype=object)
 
         self.color_edges = materials_edges  # list of colors for the edges
         self.color_planes = materials_planes  # list of colors for the planes
@@ -45,9 +44,6 @@ class Sculptor:
         self.n_plane_elements = planes[0]
         self.n_volume_elements = volumes[0]
         self.style = "#ffffff"
-
-        # self.element_grid_min = grid[0]
-        # self.element_grid_max = grid[1]
 
         self.element_edge_min = edges[1]
         self.element_edge_max = edges[2]
@@ -131,7 +127,6 @@ class Sculptor:
                 self.element_volume_min,
                 self.element_volume_max,
                 self.step,
-                # verbose=int(os.environ.get("VERBOSE")),
             )
 
         if int(os.environ.get("VERBOSE")) == 1:
@@ -157,7 +152,6 @@ if __name__ == "__main__":
         materials_planes=COLOR_PLANES,
         materials_volumes=COLOR_VOLUMES,
         step=1,
-        # verbose=False,
     )
 
     sculpt = sculptor.generative_sculpt()

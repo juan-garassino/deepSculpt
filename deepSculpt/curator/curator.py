@@ -1,19 +1,9 @@
 from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.manager.manager import Manager
 from deepSculpt.curator.tools.params import (
-    #    N_EDGE_ELEMENTS,
-    #    N_PLANE_ELEMENTS,
-    #    N_VOLUME_ELEMENTS,
     COLOR_EDGES,
     COLOR_PLANES,
     COLOR_VOLUMES,
-    #    ELEMENT_EDGE_MIN,
-    #    ELEMENT_EDGE_MAX,
-    #    ELEMENT_PLANE_MIN,
-    #    ELEMENT_PLANE_MAX,
-    #    ELEMENT_VOLUME_MIN,
-    #    ELEMENT_VOLUME_MAX,
-    #    VERBOSE,
 )
 from deepSculpt.manager.tools.plotter import Plotter
 
@@ -28,7 +18,7 @@ import random
 class Curator:
     def __init__(
         self,
-        void_dim=32,  # locally=True, path_volumes="", path_colors="",
+        void_dim=32,
         edge_elements=(0, 0.3, 0.5),
         plane_elements=(0, 0.3, 0.5),
         volume_elements=(0, 0.3, 0.5),
@@ -37,11 +27,6 @@ class Curator:
         n_samples=100,
         grid=1,
     ):
-
-        # self.locally = locally
-        # self.create = create
-        # self.path_volumes = path_volumes
-        # self.path_colors = path_colors
 
         self.edge_elements = edge_elements
         self.plane_elements = plane_elements
@@ -55,14 +40,7 @@ class Curator:
         if step is not None:
             self.step = step
 
-    def create_sculpts(
-        self,
-        # n_edge_elements=N_EDGE_ELEMENTS,
-        # n_plane_elements=N_PLANE_ELEMENTS,
-        # n_volume_elements=N_VOLUME_ELEMENTS,
-        # verbose=os.environ.get("VERBOSE"),
-        # void_dim=int(os.environ.get("VOID_DIM")),
-    ):
+    def create_sculpts(self):
 
         raw_data = []
 
@@ -92,8 +70,6 @@ class Curator:
                         )
                         + Style.RESET_ALL
                     )
-
-                # print("\r{0}".format(count), end="")
 
             sculptor = Sculptor(
                 void_dim=self.void_dim,
@@ -230,9 +206,7 @@ if __name__ == "__main__":
     )
 
     curator = Curator(
-        void_dim=int(
-            os.environ.get("VOID_DIM")
-        ),  # locally=True, path_volumes="", path_colors="",
+        void_dim=int(os.environ.get("VOID_DIM")),
         edge_elements=(0, 0.3, 0.5),
         plane_elements=(0, 0.3, 0.5),
         volume_elements=(2, 0.3, 0.5),
