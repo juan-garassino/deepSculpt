@@ -5,6 +5,8 @@ from tensorflow.data import Dataset
 import os
 import numpy as np
 import errno
+import mlflow
+from mlflow.tracking import MlflowClient
 
 
 class Manager:  # make manager work with and with out epochs
@@ -89,6 +91,98 @@ class Manager:  # make manager work with and with out epochs
         )
 
         return (raw_data, color_raw_data)
+
+    def save_mlflow_model(metrics=None, params=None, model=None):
+        # retrieve mlflow env params
+        mlflow_tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+        mlflow_experiment = os.environ.get("MLFLOW_EXPERIMENT")
+        mlflow_model_name = os.environ.get("MLFLOW_MODEL_NAME")
+
+        # configure mlflow
+        mlflow.set_tracking_uri(mlflow_tracking_uri)
+        mlflow.set_experiment(experiment_name=mlflow_experiment)
+
+        with mlflow.start_run():
+
+            # STEP 1: push parameters to mlflow
+            if params is not None:
+                mlflow.log_params(params)
+
+            # STEP 2: push metrics to mlflow
+            if metrics is not None:
+                mlflow.log_metrics(metrics)
+
+            # STEP 3: push model to mlflow
+            if model is not None:
+
+                mlflow.keras.log_model(
+                    keras_model=model,
+                    artifact_path="model",
+                    keras_module="tensorflow.keras",
+                    registered_model_name=mlflow_model_name,
+                )
+
+        print("\n✅ data saved in mlflow")
+
+        return None
+
+    def load_mlflow_model():
+        stage = "Production"
+
+        print(
+            Fore.BLUE + f"\nLoad model {stage} stage from mlflow..." + Style.RESET_ALL
+        )
+
+        # load model from mlflow
+        mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI"))
+
+        mlflow_model_name = os.environ.get("MLFLOW_MODEL_NAME")
+
+        model_uri = f"models:/{mlflow_model_name}/{stage}"
+        print(f"- uri: {model_uri}")
+
+        try:
+            model = mlflow.keras.load_model(model_uri=model_uri)
+            print("\n✅ model loaded from mlflow")
+        except:
+            print(f"\n❌ no model in stage {stage} on mlflow")
+            return None
+
+        return model
+
+    def get_model_version(stage="Production"):
+        """
+        Retrieve the version number of the latest model in the given stage
+        - stages: "None", "Production", "Staging", "Archived"
+        """
+
+        import mlflow
+        from mlflow.tracking import MlflowClient
+
+        if os.environ.get("MODEL_TARGET") == "mlflow":
+
+            mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI"))
+
+            mlflow_model_name = os.environ.get("MLFLOW_MODEL_NAME")
+
+            client = MlflowClient()
+
+            try:
+                version = client.get_latest_versions(
+                    name=mlflow_model_name, stages=[stage]
+                )
+            except:
+                return None
+
+            # check whether a version of the model exists in the given stage
+            if not version:
+                return None
+
+            return int(version[0].version)
+
+        # model version not handled
+
+        return None
 
     def clean_data(df):
         pass

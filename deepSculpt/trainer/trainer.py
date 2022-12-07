@@ -58,6 +58,8 @@ train_dataset, preprocessing_class_o = sampling(
 
 generator = make_three_dimentional_generator()
 
+generator.compile()
+
 print("\n⏹ " + Fore.BLUE + "The Generators summary is" + Fore.YELLOW + "\n")
 
 print(generator.summary())
@@ -65,6 +67,8 @@ print(generator.summary())
 # Initiates the Discriminator
 
 discriminator = make_three_dimentional_critic()
+
+discriminator.compile()
 
 print("\n⏹ " + Fore.BLUE + "The Discriminators summary is" + Fore.YELLOW + "\n")
 
@@ -303,6 +307,30 @@ def trainer(
 
                 checkpoint.step.assign_add(1)
 
+                out_dir = os.path.join(
+                    os.environ.get("HOME"),
+                    "code",
+                    "juan-garassino",
+                    "deepSculpt",
+                    "results",
+                    "saves",
+                )
+
+                generator.save(out_dir)
+
+                metrics = {}
+
+                params = {}
+
+                Manager.save_mlflow_model(metrics=metrics, params=params, model=None)
+
+                print(
+                    "\n🔼 "
+                    + Fore.BLUE
+                    + "Saved checkpoint for step {}: mlfow".format(int(checkpoint.step))
+                    + Style.RESET_ALL
+                )
+
             if (epoch + 1) % int(os.environ.get("PICTURE_SNAPSHOT")) == 0:
 
                 out_dir = os.path.join(
@@ -350,6 +378,33 @@ def trainer(
                 )
 
                 checkpoint.step.assign_add(1)
+
+                out_dir = os.path.join(
+                    os.environ.get("HOME"),
+                    "..",
+                    "content",
+                    "drive",
+                    "MyDrive",
+                    "repositories",
+                    "deepSculpt",
+                    "results",
+                    "saves",
+                )
+
+                generator.save(out_dir)
+
+                metrics = {}
+
+                params = {}
+
+                Manager.save_mlflow_model(metrics=metrics, params=params, model=None)
+
+                print(
+                    "\n🔼 "
+                    + Fore.BLUE
+                    + "Saved checkpoint for step {}: mlfow".format(int(checkpoint.step))
+                    + Style.RESET_ALL
+                )
 
             if (epoch + 1) % int(os.environ.get("PICTURE_SNAPSHOT")) == 0:
 
