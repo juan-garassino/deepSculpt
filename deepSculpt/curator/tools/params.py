@@ -33,7 +33,6 @@ ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = 0.6, 0.85
 ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = 0.3, 0.45
 
 
-
 COLOR_EDGES = "dimgrey"
 
 COLOR_PLANES = "snow"
@@ -46,7 +45,6 @@ COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
         "firebrick", "salmon", "coral", "chartreuse", "steelblue", "lavender", "royalblue",
         "indigo", "mediumvioletred"
     ]"""
-
 
 
 STEP = 1

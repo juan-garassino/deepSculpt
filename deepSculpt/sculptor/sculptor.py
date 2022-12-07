@@ -131,7 +131,7 @@ class Sculptor:
                 self.element_volume_min,
                 self.element_volume_max,
                 self.step,
-                #verbose=int(os.environ.get("VERBOSE")),
+                # verbose=int(os.environ.get("VERBOSE")),
             )
 
         if int(os.environ.get("VERBOSE")) == 1:
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         materials_planes=COLOR_PLANES,
         materials_volumes=COLOR_VOLUMES,
         step=1,
-        #verbose=False,
+        # verbose=False,
     )
 
     sculpt = sculptor.generative_sculpt()

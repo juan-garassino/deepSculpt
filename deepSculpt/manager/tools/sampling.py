@@ -10,27 +10,36 @@ from tensorflow.data import Dataset
 import tensorflow as tf
 
 
-def sampling(edge_elements=None, plane_elements=None, volume_elements=None, void_dim=None, grid=1):  # convert to spare tensor
+def sampling(
+    n_samples=128,
+    edge_elements=None,
+    plane_elements=None,
+    volume_elements=None,
+    void_dim=None,
+    grid=1,
+):  # convert to spare tensor
 
     # Loads the data
     if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
 
+        manager = Manager(
+            model_name="",
+            data_name="",
+            path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
+            path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
+        )
 
-        manager = Manager(model_name='',
-                          data_name='',
-                          path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
-                          path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"))
-
-        '''curator = Curator(
+        """curator = Curator(
             path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
             path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
-        )'''
+        )"""
 
         if int(os.environ.get("INSTANCE")) == 0:
             volumes, colors = manager.load_locally()
 
         if int(os.environ.get("INSTANCE")) == 1:
-            volumes, colors = manager.load_from_gcp()
+            volumes, colors = manager.load_locally()
+            # volumes, colors = manager.load_from_gcp()
 
         if int(os.environ.get("INSTANCE")) == 2:
             volumes, colors = manager.load_from_query()
@@ -61,30 +70,30 @@ def sampling(edge_elements=None, plane_elements=None, volume_elements=None, void
                 os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
             )
 
-        curator = Curator(#create=False,
-                          #locally=True,
-                          #path_volumes="",
-                          #path_colors="",
-                          void_dim=void_dim,
-                          edge_elements=edge_elements,
-                          plane_elements=plane_elements,
-                          volume_elements=volume_elements,
-                          step=None,
-                          grid=grid,
-                          directory=path,
-                          n_samples=int(os.environ.get("N_SAMPLES_CREATE")),)
+        curator = Curator(  # create=False,
+            # locally=True,
+            # path_volumes="",
+            # path_colors="",
+            void_dim=void_dim,
+            edge_elements=edge_elements,
+            plane_elements=plane_elements,
+            volume_elements=volume_elements,
+            step=None,
+            grid=grid,
+            directory=path,
+            n_samples=int(n_samples),
+        )
 
         # Creates the data
         volumes, colors = curator.create_sculpts(
-
-            #n_edge_elements=n_edge_elements,
-            #n_plane_elements=n_plane_elements,
-            #n_volume_elements=n_volume_elements,
+            # n_edge_elements=n_edge_elements,
+            # n_plane_elements=n_plane_elements,
+            # n_volume_elements=n_volume_elements,
             # color_edges="dimgrey",
             # color_planes="snow",
             # color_volumes=["crimson", "turquoise", "gold"],
-            #verbose=os.environ.get("VERBOSE"),
-            #void_dim=int(os.environ.get("VOID_DIM")),
+            # verbose=os.environ.get("VERBOSE"),
+            # void_dim=int(os.environ.get("VOID_DIM")),
         )
 
     if isinstance(colors, np.ndarray) == False:
@@ -122,4 +131,11 @@ def sampling(edge_elements=None, plane_elements=None, volume_elements=None, void
 
 
 if __name__ == "__main__":
-    sampling(edge_elements=(1,0.2,0.6), plane_elements=(1,0.2,0.6), volume_elements=(1,0.2,0.6), void_dim=32, grid=1)
+    sampling(
+        n_samples=128,
+        edge_elements=(1, 0.2, 0.6),
+        plane_elements=(1, 0.2, 0.6),
+        volume_elements=(1, 0.2, 0.6),
+        void_dim=32,
+        grid=1,
+    )

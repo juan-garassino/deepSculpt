@@ -72,8 +72,14 @@ def add_plane(
         top_left_corner[1] : bottom_right_corner[1],
     ] = COLOR_PLANES
 
-    if os.environ.get('VERBOSE') == 1:
-        print_information(void=void, element=element, delta=delta, top_left_corner=top_left_corner, bottom_right_corner=bottom_right_corner)
-        #print("###############################################################")
+    if os.environ.get("VERBOSE") == 1:
+        print_information(
+            void=void,
+            element=element,
+            delta=delta,
+            top_left_corner=top_left_corner,
+            bottom_right_corner=bottom_right_corner,
+        )
+        # print("###############################################################")
 
     return void.astype("int8"), color_void

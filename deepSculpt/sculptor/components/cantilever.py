@@ -29,7 +29,7 @@ def add_pipe_cantilever(
 
     depth = random.randrange(element_volume_min_index, element_volume_max, step)
 
-    if int(os.environ.get('VERBOSE')) == 1:
+    if int(os.environ.get("VERBOSE")) == 1:
         print(working_plane)
 
     element = np.ones(
@@ -77,7 +77,7 @@ def add_pipe_cantilever(
 
     color_volume = np.random.randint(0, len(COLOR_VOLUMES))
 
-    if int(os.environ.get('VERBOSE')) == 1:
+    if int(os.environ.get("VERBOSE")) == 1:
         print(
             "\n⏹ "
             + Fore.RED
@@ -171,7 +171,7 @@ def add_pipe_cantilever(
                 corner_1[0] : corner_4[0], corner_1[1], corner_1[2] : corner_4[2]
             ] = COLOR_VOLUMES[color_volume]
 
-    '''if int(os.environ.get('VERBOSE')) == 1:
+    """if int(os.environ.get('VERBOSE')) == 1:
         print_information(
                         void=void,
                         element=element,
@@ -180,6 +180,6 @@ def add_pipe_cantilever(
                         #section=section,
                         top_left_corner=top_left_corner,
                         bottom_right_corner=bottom_right_corner,
-                    )'''
+                    )"""
 
     return void.astype("int8"), color_void
