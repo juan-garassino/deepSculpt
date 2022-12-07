@@ -39,7 +39,12 @@ def sampling(
         if int(os.environ.get("INSTANCE")) == 0:
 
             path = os.path.join(
-                os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data", "sampling"
+                os.environ.get("HOME"),
+                "code",
+                "juan-garassino",
+                "deepSculpt",
+                "data",
+                "sampling",
             )
 
             volumes, colors = manager.load_locally()
@@ -55,7 +60,7 @@ def sampling(
                 "repositories",
                 "deepSculpt",
                 "data",
-                'sampling',
+                "sampling",
             )
 
             volumes, colors = manager.load_locally()
@@ -64,18 +69,20 @@ def sampling(
         if int(os.environ.get("INSTANCE")) == 2:
             volumes, colors = manager.load_from_query()
 
-        for sample in range(int(os.environ.get('N_SAMPLES_PLOT'))):
+        for sample in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
             index = random.choices(list(np.arange(0, volumes.shape[0], 1)), k=1)[0]
 
-            Plotter(volumes[index], colors[index], figsize=25, style="#ffffff", dpi=200).plot_sculpture(path)
+            Plotter(
+                volumes[index], colors[index], figsize=25, style="#ffffff", dpi=200
+            ).plot_sculpture(path)
 
             print(
-            "\n🔽 "
-            + Fore.BLUE
-            + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
-            + Style.RESET_ALL
-        )
+                "\n🔽 "
+                + Fore.BLUE
+                + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
+                + Style.RESET_ALL
+            )
 
     # Creates the data
     if int(os.environ.get("CREATE_DATA")) == 1:  # CREATES AND UPLOADS TO BIG QUERY
@@ -169,6 +176,6 @@ if __name__ == "__main__":
         edge_elements=(1, 0.2, 0.6),
         plane_elements=(1, 0.2, 0.6),
         volume_elements=(1, 0.2, 0.6),
-        void_dim=os.environ.get('VOID_DIM'),
+        void_dim=os.environ.get("VOID_DIM"),
         grid=1,
     )

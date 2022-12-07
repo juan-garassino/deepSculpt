@@ -170,9 +170,6 @@ class Curator:
             allow_pickle=True,
         )
 
-
-
-
         print(
             "\n🔽 "
             + Fore.BLUE
@@ -183,7 +180,12 @@ class Curator:
         # path
         if int(os.environ.get("INSTANCE")) == 0:
             path = os.path.join(
-                os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data", "sampling"
+                os.environ.get("HOME"),
+                "code",
+                "juan-garassino",
+                "deepSculpt",
+                "data",
+                "sampling",
             )
         # path
         if int(os.environ.get("INSTANCE")) == 1:
@@ -196,22 +198,27 @@ class Curator:
                 "repositories",
                 "deepSculpt",
                 "data",
-                'sampling',
+                "sampling",
             )
 
-        for sample in range(int(os.environ.get('N_SAMPLES_PLOT'))):
+        for sample in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
             index = random.choices(list(np.arange(0, self.n_samples, 1)), k=1)[0]
 
-            Plotter(raw_data[index], color_raw_data[index], figsize=25, style="#ffffff", dpi=200).plot_sculpture(path)
+            Plotter(
+                raw_data[index],
+                color_raw_data[index],
+                figsize=25,
+                style="#ffffff",
+                dpi=200,
+            ).plot_sculpture(path)
 
             print(
-            "\n🔽 "
-            + Fore.BLUE
-            + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
-            + Style.RESET_ALL
-        )
-
+                "\n🔽 "
+                + Fore.BLUE
+                + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
+                + Style.RESET_ALL
+            )
 
         return (raw_data, color_raw_data)
 
@@ -223,14 +230,16 @@ if __name__ == "__main__":
     )
 
     curator = Curator(
-        void_dim=int(os.environ.get('VOID_DIM')),  # locally=True, path_volumes="", path_colors="",
+        void_dim=int(
+            os.environ.get("VOID_DIM")
+        ),  # locally=True, path_volumes="", path_colors="",
         edge_elements=(0, 0.3, 0.5),
         plane_elements=(0, 0.3, 0.5),
         volume_elements=(2, 0.3, 0.5),
         step=None,
         directory=out_dir,
         n_samples=100,
-        grid=1
+        grid=1,
     )
 
     curator.create_sculpts()
