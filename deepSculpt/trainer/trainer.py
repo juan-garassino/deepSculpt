@@ -41,9 +41,9 @@ from deepSculpt.curator.tools.params import SEED, MINIBATCHES
 
 train_dataset, preprocessing_class_o = sampling(
     n_samples=os.environ.get("N_SAMPLES_CREATE"),
-    edge_elements=(1, 0.2, 0.6),
-    plane_elements=(1, 0.2, 0.6),
-    volume_elements=(1, 0.2, 0.6),
+    edge_elements=(0, 0.2, 0.6),
+    plane_elements=(0, 0.2, 0.6),
+    volume_elements=(3, 0.2, 0.6),
     void_dim=os.environ.get("VOID_DIM"),
     grid=1,
 )

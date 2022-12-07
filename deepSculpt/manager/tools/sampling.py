@@ -2,7 +2,9 @@ from deepSculpt.curator.curator import Curator
 from deepSculpt.manager.manager import Manager
 from deepSculpt.curator.tools.preprocessing import OneHotEncoderDecoder
 from deepSculpt.curator.tools.params import BUFFER_SIZE
+from deepSculpt.manager.tools.plotter import Plotter
 
+import random
 import os
 from colorama import Fore, Style
 import numpy as np
@@ -35,14 +37,45 @@ def sampling(
         )"""
 
         if int(os.environ.get("INSTANCE")) == 0:
+
+            path = os.path.join(
+                os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data", "sampling"
+            )
+
             volumes, colors = manager.load_locally()
 
         if int(os.environ.get("INSTANCE")) == 1:
+
+            path = os.path.join(
+                os.environ.get("HOME"),
+                "..",
+                "content",
+                "drive",
+                "MyDrive",
+                "repositories",
+                "deepSculpt",
+                "data",
+                'sampling',
+            )
+
             volumes, colors = manager.load_locally()
             # volumes, colors = manager.load_from_gcp()
 
         if int(os.environ.get("INSTANCE")) == 2:
             volumes, colors = manager.load_from_query()
+
+        for sample in range(int(os.environ.get('N_SAMPLES_PLOT'))):
+
+            index = random.choices(list(np.arange(0, volumes.shape[0], 1)), k=1)[0]
+
+            Plotter(volumes[index], colors[index], figsize=25, style="#ffffff", dpi=200).plot_sculpture(path)
+
+            print(
+            "\n🔽 "
+            + Fore.BLUE
+            + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
+            + Style.RESET_ALL
+        )
 
     # Creates the data
     if int(os.environ.get("CREATE_DATA")) == 1:  # CREATES AND UPLOADS TO BIG QUERY
@@ -74,7 +107,7 @@ def sampling(
             # locally=True,
             # path_volumes="",
             # path_colors="",
-            void_dim=void_dim,
+            void_dim=int(void_dim),
             edge_elements=edge_elements,
             plane_elements=plane_elements,
             volume_elements=volume_elements,
@@ -136,6 +169,6 @@ if __name__ == "__main__":
         edge_elements=(1, 0.2, 0.6),
         plane_elements=(1, 0.2, 0.6),
         volume_elements=(1, 0.2, 0.6),
-        void_dim=32,
+        void_dim=os.environ.get('VOID_DIM'),
         grid=1,
     )
