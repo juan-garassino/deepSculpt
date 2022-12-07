@@ -40,7 +40,7 @@ def generate_and_save_snapshot(
         .astype("int")
         .reshape(
             (
-                int(os.environ.get('SCULPTS_GEN')),
+                int(os.environ.get("SCULPTS_GEN")),
                 int(os.environ.get("VOID_DIM")),
                 int(os.environ.get("VOID_DIM")),
                 int(os.environ.get("VOID_DIM")),
@@ -52,8 +52,12 @@ def generate_and_save_snapshot(
     # Decodes the structure to be plotted
     o_decoded_volumes, o_decoded_colors = preprocessing_class_o.ohe_decoder(predictions)
 
-    for prediction in range(int(os.environ.get('SCULPTS_GEN'))):
-    # Plots the Sculpture
+    for prediction in range(int(os.environ.get("SCULPTS_GEN"))):
+        # Plots the Sculpture
         Plotter(
-            o_decoded_volumes[prediction], o_decoded_colors[prediction], figsize=25, style="#ffffff", dpi=200
+            o_decoded_volumes[prediction],
+            o_decoded_colors[prediction],
+            figsize=25,
+            style="#ffffff",
+            dpi=200,
         ).plot_sculpture(directory)
