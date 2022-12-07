@@ -322,6 +322,7 @@ def trainer(
 
                 params = {}
 
+                # Save the checkpoint mlfow
                 Manager.save_mlflow_model(metrics=metrics, params=params, model=None)
 
                 print(
@@ -364,8 +365,6 @@ def trainer(
                     "checkpoints",
                 )
 
-                # os.chdir(out_dir)
-
                 save_path = manager.save()
 
                 print(
@@ -397,6 +396,7 @@ def trainer(
 
                 params = {}
 
+                # Save the checkpoint mlfow
                 Manager.save_mlflow_model(metrics=metrics, params=params, model=None)
 
                 print(

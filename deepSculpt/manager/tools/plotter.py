@@ -117,7 +117,7 @@ class Plotter(Sculptor):
 
         Manager.make_directory(directory)
 
-        now = datetime.now().strftime("%d-%m-%Y-%H-%M")
+        now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
         name_png = f"{directory}/image[{now}].png"
 
