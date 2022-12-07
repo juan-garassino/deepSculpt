@@ -1,4 +1,5 @@
 from deepSculpt.curator.curator import Curator
+from deepSculpt.manager.manager import Manager
 from deepSculpt.curator.tools.preprocessing import OneHotEncoderDecoder
 from deepSculpt.curator.tools.params import BUFFER_SIZE
 
@@ -9,33 +10,40 @@ from tensorflow.data import Dataset
 import tensorflow as tf
 
 
-def sampling():  # convert to spare tensor
+def sampling(edge_elements=None, plane_elements=None, volume_elements=None, void_dim=None, grid=1):  # convert to spare tensor
 
     # Loads the data
     if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
 
-        curator = Curator(
+
+        manager = Manager(model_name='',
+                          data_name='',
+                          path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
+                          path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"))
+
+        '''curator = Curator(
             path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
             path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
-        )
+        )'''
 
         if int(os.environ.get("INSTANCE")) == 0:
-            volumes, colors = curator.load_locally()
+            volumes, colors = manager.load_locally()
 
         if int(os.environ.get("INSTANCE")) == 1:
-            volumes, colors = curator.load_from_gcp()
+            volumes, colors = manager.load_from_gcp()
 
         if int(os.environ.get("INSTANCE")) == 2:
-            volumes, colors = curator.load_from_query()
+            volumes, colors = manager.load_from_query()
 
     # Creates the data
     if int(os.environ.get("CREATE_DATA")) == 1:  # CREATES AND UPLOADS TO BIG QUERY
 
+        # path
         if int(os.environ.get("INSTANCE")) == 0:
             path = os.path.join(
                 os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
             )
-
+        # path
         if int(os.environ.get("INSTANCE")) == 1:
             path = os.path.join(
                 os.environ.get("HOME"),
@@ -47,25 +55,36 @@ def sampling():  # convert to spare tensor
                 "deepSculpt",
                 "data",
             )
-
+        # path
         if int(os.environ.get("INSTANCE")) == 2:
             path = os.path.join(
                 os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
             )
 
-        curator = Curator()
+        curator = Curator(#create=False,
+                          #locally=True,
+                          #path_volumes="",
+                          #path_colors="",
+                          void_dim=void_dim,
+                          edge_elements=edge_elements,
+                          plane_elements=plane_elements,
+                          volume_elements=volume_elements,
+                          step=None,
+                          grid=grid,
+                          directory=path,
+                          n_samples=int(os.environ.get("N_SAMPLES_CREATE")),)
 
+        # Creates the data
         volumes, colors = curator.create_sculpts(
-            path,
-            n_samples=int(os.environ.get("N_SAMPLES_CREATE")),
-            n_edge_elements=0,
-            n_plane_elements=2,
-            n_volume_elements=2,
+
+            #n_edge_elements=n_edge_elements,
+            #n_plane_elements=n_plane_elements,
+            #n_volume_elements=n_volume_elements,
             # color_edges="dimgrey",
             # color_planes="snow",
             # color_volumes=["crimson", "turquoise", "gold"],
-            verbose=os.environ.get("VERBOSE"),
-            void_dim=int(os.environ.get("VOID_DIM")),
+            #verbose=os.environ.get("VERBOSE"),
+            #void_dim=int(os.environ.get("VOID_DIM")),
         )
 
     if isinstance(colors, np.ndarray) == False:
@@ -103,4 +122,4 @@ def sampling():  # convert to spare tensor
 
 
 if __name__ == "__main__":
-    sampling(verbose=True)
+    sampling(edge_elements=(1,0.2,0.6), plane_elements=(1,0.2,0.6), volume_elements=(1,0.2,0.6), void_dim=32, grid=1)

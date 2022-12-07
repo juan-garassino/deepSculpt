@@ -1,8 +1,10 @@
 import random
 import numpy as np
 from colorama import Style, Fore
+import os
 
 from deepSculpt.curator.tools.params import COLOR_VOLUMES
+from deepSculpt.sculptor.components.utils import print_information
 
 
 def add_pipe_cantilever(
@@ -11,25 +13,24 @@ def add_pipe_cantilever(
     element_volume_min_ratio,
     element_volume_max_ratio,
     step,
-    verbose=False,
 ):  # THIS IS GOOD!!
 
     element = None
-    working_plane = None
     delta = None
-    top_left_corner = None
-    bottom_right_corner = None
     axis_selection = np.random.randint(low=0, high=2)
     shape_selection = np.random.randint(low=0, high=2)
+
+    working_plane = None
+    top_left_corner = None
+    bottom_right_corner = None
 
     element_volume_min_index = int(element_volume_min_ratio * void.shape[0])
     element_volume_max = int(element_volume_max_ratio * void.shape[0])
 
     depth = random.randrange(element_volume_min_index, element_volume_max, step)
 
-    """if verbose == True:
+    if int(os.environ.get('VERBOSE')) == 1:
         print(working_plane)
-        print("###############################################################")"""
 
     element = np.ones(
         (
@@ -76,7 +77,7 @@ def add_pipe_cantilever(
 
     color_volume = np.random.randint(0, len(COLOR_VOLUMES))
 
-    if verbose == True:
+    if int(os.environ.get('VERBOSE')) == 1:
         print(
             "\n⏹ "
             + Fore.RED
@@ -170,8 +171,15 @@ def add_pipe_cantilever(
                 corner_1[0] : corner_4[0], corner_1[1], corner_1[2] : corner_4[2]
             ] = COLOR_VOLUMES[color_volume]
 
-    """if verbose == True:
-        print_information()
-        print("###############################################################")"""
+    '''if int(os.environ.get('VERBOSE')) == 1:
+        print_information(
+                        void=void,
+                        element=element,
+                        axis_selection=axis_selection,
+                        delta=delta,
+                        #section=section,
+                        top_left_corner=top_left_corner,
+                        bottom_right_corner=bottom_right_corner,
+                    )'''
 
     return void.astype("int8"), color_void

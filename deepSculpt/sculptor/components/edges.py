@@ -16,9 +16,9 @@ def add_edge(
     color_parameters = return_axis(void, color_void)[1]
     # selection of the axis to work on
 
-    if verbose == True:
+    '''if verbose == True:
         print(working_plane)
-        print("###############################################################")
+        print("###############################################################")'''
 
     # Variables
     edge_length = random.randrange(
@@ -57,8 +57,8 @@ def add_edge(
         top_left_corner[1] : bottom_right_corner[1],
     ] = COLOR_EDGES
 
-    if verbose == True:
+    '''if verbose == True:
         print(working_plane)
-        print("###############################################################")
+        print("###############################################################")'''
 
     return void.astype("int8"), color_void

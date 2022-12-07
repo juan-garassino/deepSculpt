@@ -23,17 +23,6 @@ N_PLANE_ELEMENTS = 0
 
 N_VOLUME_ELEMENTS = 7
 
-COLOR_EDGES = "dimgrey"
-
-COLOR_PLANES = "snow"
-
-COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
-
-"""[
-        "crimson", "turquoise", "gold", "orange", "mediumpurple", "greenyellow",
-        "firebrick", "salmon", "coral", "chartreuse", "steelblue", "lavender", "royalblue",
-        "indigo", "mediumvioletred"
-    ]"""
 
 ELEMENT_EDGE_MIN, ELEMENT_EDGE_MAX = 0.8, 0.9
 
@@ -43,6 +32,21 @@ ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = 0.6, 0.85
 
 ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = 0.3, 0.45
 
-STEP = 1
 
-VERBOSE = True
+
+COLOR_EDGES = "dimgrey"
+
+COLOR_PLANES = "snow"
+
+COLOR_VOLUMES = ["crimson", "turquoise", "gold"]
+
+
+"""[
+        "crimson", "turquoise", "gold", "orange", "mediumpurple", "greenyellow",
+        "firebrick", "salmon", "coral", "chartreuse", "steelblue", "lavender", "royalblue",
+        "indigo", "mediumvioletred"
+    ]"""
+
+
+
+STEP = 1

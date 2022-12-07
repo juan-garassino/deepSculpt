@@ -131,7 +131,7 @@ class Sculptor:
                 self.element_volume_min,
                 self.element_volume_max,
                 self.step,
-                verbose=int(os.environ.get("VERBOSE")),
+                #verbose=int(os.environ.get("VERBOSE")),
             )
 
         if int(os.environ.get("VERBOSE")) == 1:
@@ -149,15 +149,15 @@ if __name__ == "__main__":
 
     sculptor = Sculptor(
         void_dim=16,
-        edges=(1, 3, 5),  # number of elements, minimun, maximun
-        planes=(1, 3, 5),
+        edges=(1, 0.3, 0.5),  # number of elements, minimun, maximun
+        planes=(1, 0.3, 0.55),
         volumes=(1, 0.7, 0.8),
         grid=(2, 5),  # minimun height of column, and maximun height
         materials_edges=COLOR_EDGES,
         materials_planes=COLOR_PLANES,
         materials_volumes=COLOR_VOLUMES,
         step=1,
-        verbose=False,
+        #verbose=False,
     )
 
     sculpt = sculptor.generative_sculpt()

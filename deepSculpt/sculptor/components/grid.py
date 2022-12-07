@@ -92,4 +92,4 @@ def add_grid(volumes_void=None, materials_void=None, step=1, verbose=False):
 
     materials_void[volumes_void == 1] = COLOR_EDGES # 1
 
-    return volumes_void, materials_void # np.where(materials_void == 1, COLOR_EDGES, 0)
+    return volumes_void.astype("int8"), materials_void # np.where(materials_void == 1, COLOR_EDGES, 0)

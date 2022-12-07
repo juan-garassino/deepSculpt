@@ -35,23 +35,23 @@ def print_information(
     top_left_corner=None,
     bottom_right_corner=None,
 ):
-    print(void)
-    if void != None:
+    if void is not None:
+        print(void)
+    if void is not None:
         print(f"void shape is: {np.array(void[0].shape)}")
-    if element:
+    if element is not None:
         print(f"element shape is : {np.array(element.shape)}")
-    if axis_selection:
+    if axis_selection is not None:
         print(f"the axis selection is: {axis_selection}")
-    if delta:
+    if delta is not None:
         print(f"delta is: {delta}")
-    if section:
+    if section is not None:
         print(f"section is: {section}")
-    if top_left_corner:
+    if top_left_corner is not None:
         print(f"top left corner is: {top_left_corner}")
-    if bottom_right_corner:
+    if bottom_right_corner is not None:
         print(f"bottom right corner is: {bottom_right_corner}")
-    if bottom_right_corner:
+    if bottom_right_corner is not None:
         print(
             f"slices are: {top_left_corner[0]}:{bottom_right_corner[0]} and {top_left_corner[1]}:{bottom_right_corner[1]}"
         )
-    print("###############################################################")

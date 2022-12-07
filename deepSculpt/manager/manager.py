@@ -8,8 +8,12 @@ import errno
 
 
 class Manager:  # make manager work with and with out epochs
-    def __init__(self, model_name, data_name):
+    def __init__(self, model_name=None, data_name=None, path_colors=None, path_volumes=None):
         self.model_name = model_name
+
+        self.path_volumes = path_volumes
+
+        self.path_colors = path_colors
 
         self.data_name = data_name
 
@@ -49,7 +53,7 @@ class Manager:  # make manager work with and with out epochs
         print(
             "\n🔼 "
             + Fore.BLUE
-            + f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            + f"Just loaded 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
             + Style.RESET_ALL
         )
 
@@ -78,7 +82,7 @@ class Manager:  # make manager work with and with out epochs
         print(
             "\n🔼 "
             + Fore.BLUE
-            + f"Just loaded 'raw_data' shaped {raw_data.shape} and 'color_raw_data' shaped{color_raw_data.shape}"
+            + f"Just loaded 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
             + Style.RESET_ALL
         )
 
