@@ -29,8 +29,8 @@ def add_pipe_cantilever(
 
     depth = random.randrange(element_volume_min_index, element_volume_max, step)
 
-    if int(os.environ.get("VERBOSE")) == 1:
-        print(working_plane)
+    """if int(os.environ.get("VERBOSE")) == 1:
+        print(working_plane)"""
 
     element = np.ones(
         (
