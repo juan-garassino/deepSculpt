@@ -313,7 +313,7 @@ def trainer(
                     "juan-garassino",
                     "deepSculpt",
                     "results",
-                    "saves",
+                    "network",
                 )
 
                 generator.save(out_dir)
@@ -387,7 +387,7 @@ def trainer(
                     "repositories",
                     "deepSculpt",
                     "results",
-                    "saves",
+                    "network",
                 )
 
                 generator.save(out_dir)
