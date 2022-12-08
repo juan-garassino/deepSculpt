@@ -117,11 +117,17 @@ class Plotter(Sculptor):
                     linewidth=0.05,
                 )
 
-        Manager.make_directory(directory)
+        Manager.make_directory(directory + '/picture')
+
+        Manager.make_directory(directory + '/vectorial')
+
+        Manager.make_directory(directory + '/volume_array')
+
+        Manager.make_directory(directory + '/material_array')
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
-        name_png = f"{directory}/image[{now}].png"
+        name_png = f"{directory}/picture/image[{now}].png"
 
         plt.savefig(
             name_png, transparent=self.transparent
@@ -130,39 +136,39 @@ class Plotter(Sculptor):
         print(
             "\n🔽 "
             + Fore.BLUE
-            + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory}"
+            + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
             + Style.RESET_ALL
         )
 
-        name_svg = f"{directory}/vectorial[{now}].svg"
+        name_svg = f"{directory}/vectorial/vectorial[{now}].svg"
 
         plt.savefig(name_svg, transparent=self.transparent)
 
         print(
             "\n🔽 "
             + Fore.BLUE
-            + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory}"
+            + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
             + Style.RESET_ALL
         )
 
-        name_volume_array = f"{directory}/volume_array[{now}].svg"
+        name_volume_array = f"{directory}/volume_array/volume_array[{now}]"
 
         np.save(name_volume_array, self.volumes)
 
         print(
             "\n🔽 "
             + Fore.BLUE
-            + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory}"
+            + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
             + Style.RESET_ALL
         )
 
-        name_material_array = f"{directory}/material_array[{now}].svg"
+        name_material_array = f"{directory}/material_array/material_array[{now}]"
 
         np.save(name_material_array, self.colors)
 
         print(
             "\n🔽 "
             + Fore.BLUE
-            + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory}"
+            + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
             + Style.RESET_ALL
         )

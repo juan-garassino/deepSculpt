@@ -75,7 +75,7 @@ def sampling(
 
             Plotter(
                 volumes[index], colors[index], figsize=25, style="#ffffff", dpi=200
-            ).plot_sculpture(path)
+            ).plot_sculpture(path + f'[{sample}]')
 
             print(
                 "\n🔽 "

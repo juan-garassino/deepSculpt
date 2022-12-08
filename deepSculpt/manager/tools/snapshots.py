@@ -60,4 +60,4 @@ def generate_and_save_snapshot(
             figsize=25,
             style="#ffffff",
             dpi=200,
-        ).plot_sculpture(directory)
+        ).plot_sculpture(directory + f'[{prediction}]')
