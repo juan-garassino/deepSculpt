@@ -74,8 +74,8 @@ def sampling(
             index = random.choices(list(np.arange(0, volumes.shape[0], 1)), k=1)[0]
 
             Plotter(
-                volumes[index], colors[index], figsize=25, style="#ffffff", dpi=200
-            ).plot_sculpture(path + f'[{sample}]')
+                volumes[index], colors[index], figsize=25, style="#ffffff", dpi=int(os.environ.get('DPI'))
+            ).plot_sculpture(path + f'[{index}]')
 
             print(
                 "\n🔽 "

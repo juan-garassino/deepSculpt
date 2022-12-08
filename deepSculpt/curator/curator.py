@@ -186,7 +186,7 @@ class Curator:
                 color_raw_data[index],
                 figsize=25,
                 style="#ffffff",
-                dpi=200,
+                dpi=int(os.environ.get('DPI')),
             ).plot_sculpture(path)
 
             print(

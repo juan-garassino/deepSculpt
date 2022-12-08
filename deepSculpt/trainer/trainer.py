@@ -439,14 +439,14 @@ def trainer(
 
                 snapshot_name = "{}/image_at_epoch_{:04d}.png".format(out_dir, epoch)
 
-                plt.savefig(snapshot_name)
+                # plt.savefig(snapshot_name)
 
-                print(
+                """print(
                     "\n🔽 "
                     + Fore.BLUE
                     + f"Just created a snapshot {snapshot_name.split('/')[-1]} @ {out_dir}"
                     + Style.RESET_ALL
-                )
+                )"""
 
                 if int(os.environ.get("INSTANCE")) == 0:
                     upload_snapshot_to_gcp(snapshot_name)
