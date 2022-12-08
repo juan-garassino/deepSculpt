@@ -191,7 +191,7 @@ class Curator:
 
             print(
                 "\n🔽 "
-                + Fore.BLUE
+                + Fore.YELLOW
                 + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                 + Style.RESET_ALL
             )

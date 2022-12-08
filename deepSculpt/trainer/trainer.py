@@ -60,7 +60,7 @@ generator = make_three_dimentional_generator()
 
 generator.compile()
 
-print("\n⏹ " + Fore.BLUE + "The Generators summary is" + Fore.YELLOW + "\n")
+print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n")
 
 print(generator.summary())
 
@@ -70,7 +70,7 @@ discriminator = make_three_dimentional_critic()
 
 discriminator.compile()
 
-print("\n⏹ " + Fore.BLUE + "The Discriminators summary is" + Fore.YELLOW + "\n")
+print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n")
 
 print(discriminator.summary())
 
@@ -433,20 +433,22 @@ def trainer(
                     "predictions",
                 )
 
+                Manager.make_directory(out_dir)
+
                 generate_and_save_snapshot(
                     generator, epoch + 1, preprocessing_class_o, SEED, out_dir
                 )
 
                 snapshot_name = "{}/image_at_epoch_{:04d}.png".format(out_dir, epoch)
 
-                # plt.savefig(snapshot_name)
+                plt.savefig(snapshot_name)
 
-                """print(
+                print(
                     "\n🔽 "
                     + Fore.BLUE
                     + f"Just created a snapshot {snapshot_name.split('/')[-1]} @ {out_dir}"
                     + Style.RESET_ALL
-                )"""
+                )
 
                 if int(os.environ.get("INSTANCE")) == 0:
                     upload_snapshot_to_gcp(snapshot_name)

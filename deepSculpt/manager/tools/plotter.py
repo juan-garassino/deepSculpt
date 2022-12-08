@@ -127,6 +127,13 @@ class Plotter(Sculptor):
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
+        print(
+            "\n🔽 "
+            + Fore.GREEN
+            + f"Plotting [{now}]"
+            + Style.RESET_ALL
+        )
+
         name_png = f"{directory}/picture/image[{now}].png"
 
         plt.savefig(
