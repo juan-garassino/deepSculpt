@@ -39,7 +39,7 @@ from deepSculpt.curator.tools.params import SEED, MINIBATCHES
 
 
 
-if os.environ.get("COLOR") == 1:
+if int(os.environ.get("COLOR")) == 1:
 
     # Loads Data
 

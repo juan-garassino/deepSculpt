@@ -196,7 +196,8 @@ class Manager:  # make manager work with and with out epochs
             os.makedirs(directory)
 
             print(
-                "\n⏹ "
+                "\n⏹"
+                + ' '
                 + Fore.GREEN
                 + f"This directory has been created {directory}"
                 + Style.RESET_ALL
