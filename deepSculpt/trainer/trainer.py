@@ -37,105 +37,210 @@ from deepSculpt.manager.tools.checkpoint import (
 )
 from deepSculpt.curator.tools.params import SEED, MINIBATCHES
 
-# Loads Data
 
-train_dataset, preprocessing_class_o = sampling(
-    n_samples=os.environ.get("N_SAMPLES_CREATE"),
-    edge_elements=(0, 0.2, 0.6),
-    plane_elements=(0, 0.2, 0.6),
-    volume_elements=(3, 0.2, 0.6),
-    void_dim=os.environ.get("VOID_DIM"),
-    grid=1,
-)
 
-# add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
+if os.environ.get("COLOR") == 1:
 
-# ADD MLFLOW I PREFECT
+    # Loads Data
 
-# ARREGLAR PLOTER CAMBIANDO LOS 1 POR EL COLOR!
-
-# Initiates the Generator
-
-generator = make_three_dimentional_generator()
-
-generator.compile()
-
-print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n")
-
-print(generator.summary())
-
-# Initiates the Discriminator
-
-discriminator = make_three_dimentional_critic()
-
-discriminator.compile()
-
-print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n")
-
-print(discriminator.summary())
-
-print(Style.RESET_ALL)
-
-## Local instance enviroment on COMPUTER
-
-if int(os.environ.get("INSTANCE")) == 0:
-
-    checkpoint_dir = os.path.join(
-        os.environ.get("HOME"),
-        "code",
-        "juan-garassino",
-        "deepSculpt",
-        "results",
-        "checkpoints",
+    train_dataset, preprocessing_class_o = sampling(
+        n_samples=os.environ.get("N_SAMPLES_CREATE"),
+        edge_elements=(0, 0.2, 0.6),
+        plane_elements=(0, 0.2, 0.6),
+        volume_elements=(3, 0.2, 0.6),
+        void_dim=os.environ.get("VOID_DIM"),
+        grid=1,
     )
 
-    Manager.make_directory(checkpoint_dir)
+    # add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
 
-## Local instance eviroment on COLAB
+    # ADD MLFLOW I PREFECT
 
-if int(os.environ.get("INSTANCE")) == 1:
+    # ARREGLAR PLOTER CAMBIANDO LOS 1 POR EL COLOR!
 
-    checkpoint_dir = os.path.join(
-        os.environ.get("HOME"),
-        "..",
-        "content",
-        "drive",
-        "MyDrive",
-        "repositories",
-        "deepSculpt",
-        "results",
-        "checkpoints",
+    # Initiates the Generator
+
+    generator = make_three_dimentional_generator()
+
+    generator.compile()
+
+    print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n")
+
+    print(generator.summary())
+
+    # Initiates the Discriminator
+
+    discriminator = make_three_dimentional_critic()
+
+    discriminator.compile()
+
+    print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n")
+
+    print(discriminator.summary())
+
+    print(Style.RESET_ALL)
+
+    ## Local instance enviroment on COMPUTER
+
+    if int(os.environ.get("INSTANCE")) == 0:
+
+        checkpoint_dir = os.path.join(
+            os.environ.get("HOME"),
+            "code",
+            "juan-garassino",
+            "deepSculpt",
+            "results",
+            "checkpoints",
+        )
+
+        Manager.make_directory(checkpoint_dir)
+
+    ## Local instance eviroment on COLAB
+
+    if int(os.environ.get("INSTANCE")) == 1:
+
+        checkpoint_dir = os.path.join(
+            os.environ.get("HOME"),
+            "..",
+            "content",
+            "drive",
+            "MyDrive",
+            "repositories",
+            "deepSculpt",
+            "results",
+            "checkpoints",
+        )
+
+        Manager.make_directory(checkpoint_dir)
+
+    ## Cloud instance enviroment in GCP
+
+    if int(os.environ.get("INSTANCE")) == 2:
+
+        checkpoint_dir = "gs://deepsculpt/checkpoints"
+
+        bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
+
+    # Initiates a Checkpoint Object
+
+    checkpoint = Checkpoint(
+        step=Variable(1),
+        generator_optimizer=generator_optimizer,
+        discriminator_optimizer=discriminator_optimizer,
+        generator=generator,
+        discriminator=discriminator,
     )
 
-    Manager.make_directory(checkpoint_dir)
+    # Initiates a Checkpoint Manager Object
 
-## Cloud instance enviroment in GCP
+    manager = CheckpointManager(
+        checkpoint=checkpoint,
+        directory=checkpoint_dir,
+        max_to_keep=3,
+        checkpoint_name="checkpoint",
+    )
 
-if int(os.environ.get("INSTANCE")) == 2:
+if os.environ.get("COLOR") == 0: # MONOCHROME
 
-    checkpoint_dir = "gs://deepsculpt/checkpoints"
+    # Loads Data
 
-    bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
+    train_dataset, preprocessing_class_o = sampling(
+        n_samples=os.environ.get("N_SAMPLES_CREATE"),
+        edge_elements=(0, 0.2, 0.6),
+        plane_elements=(0, 0.2, 0.6),
+        volume_elements=(3, 0.2, 0.6),
+        void_dim=os.environ.get("VOID_DIM"),
+        grid=1,
+    )
 
-# Initiates a Checkpoint Object
+    # add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
 
-checkpoint = Checkpoint(
-    step=Variable(1),
-    generator_optimizer=generator_optimizer,
-    discriminator_optimizer=discriminator_optimizer,
-    generator=generator,
-    discriminator=discriminator,
-)
+    # ADD MLFLOW I PREFECT
 
-# Initiates a Checkpoint Manager Object
+    # ARREGLAR PLOTER CAMBIANDO LOS 1 POR EL COLOR!
 
-manager = CheckpointManager(
-    checkpoint=checkpoint,
-    directory=checkpoint_dir,
-    max_to_keep=3,
-    checkpoint_name="checkpoint",
-)
+    # Initiates the Generator
 
+    generator = make_three_dimentional_generator()
+
+    generator.compile()
+
+    print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n")
+
+    print(generator.summary())
+
+    # Initiates the Discriminator
+
+    discriminator = make_three_dimentional_critic()
+
+    discriminator.compile()
+
+    print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW +
+          "\n")
+
+    print(discriminator.summary())
+
+    print(Style.RESET_ALL)
+
+    ## Local instance enviroment on COMPUTER
+
+    if int(os.environ.get("INSTANCE")) == 0:
+
+        checkpoint_dir = os.path.join(
+            os.environ.get("HOME"),
+            "code",
+            "juan-garassino",
+            "deepSculpt",
+            "results",
+            "checkpoints",
+        )
+
+        Manager.make_directory(checkpoint_dir)
+
+    ## Local instance eviroment on COLAB
+
+    if int(os.environ.get("INSTANCE")) == 1:
+
+        checkpoint_dir = os.path.join(
+            os.environ.get("HOME"),
+            "..",
+            "content",
+            "drive",
+            "MyDrive",
+            "repositories",
+            "deepSculpt",
+            "results",
+            "checkpoints",
+        )
+
+        Manager.make_directory(checkpoint_dir)
+
+    ## Cloud instance enviroment in GCP
+
+    if int(os.environ.get("INSTANCE")) == 2:
+
+        checkpoint_dir = "gs://deepsculpt/checkpoints"
+
+        bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
+
+    # Initiates a Checkpoint Object
+
+    checkpoint = Checkpoint(
+        step=Variable(1),
+        generator_optimizer=generator_optimizer,
+        discriminator_optimizer=discriminator_optimizer,
+        generator=generator,
+        discriminator=discriminator,
+    )
+
+    # Initiates a Checkpoint Manager Object
+
+    manager = CheckpointManager(
+        checkpoint=checkpoint,
+        directory=checkpoint_dir,
+        max_to_keep=3,
+        checkpoint_name="checkpoint",
+    )
 
 @function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
