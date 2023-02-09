@@ -74,11 +74,15 @@ def sampling(
             index = random.choices(list(np.arange(0, volumes.shape[0], 1)), k=1)[0]
 
             Plotter(
-                volumes[index], colors[index], figsize=25, style="#ffffff", dpi=int(os.environ.get('DPI'))
-            ).plot_sculpture(path + f'[{index}]')
+                volumes[index],
+                colors[index],
+                figsize=25,
+                style="#ffffff",
+                dpi=int(os.environ.get("DPI")),
+            ).plot_sculpture(path + f"[{index}]")
 
             print(
-                "\n🔽 "
+                "\n 🔽 "
                 + Fore.YELLOW
                 + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                 + Style.RESET_ALL
@@ -145,7 +149,7 @@ def sampling(
     o_encode, o_classes = preprocessing_class_o.ohe_encoder()
 
     print(
-        "\n⏹ "
+        "\n ⏹ "
         + Fore.YELLOW
         + "Just preproccess data from shape {} to {}".format(
             colors.shape, o_encode.shape
@@ -154,7 +158,10 @@ def sampling(
     )
 
     print(
-        "\n⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes) + Style.RESET_ALL
+        "\n ⏹ "
+        + Fore.YELLOW
+        + "The classes are: {}".format(o_classes)
+        + Style.RESET_ALL
     )
 
     # o_encode = tf.sparse.from_dense(o_encode)

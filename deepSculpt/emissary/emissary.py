@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     print("\n---- IMAGE MEDIA OBJECT -----\n")  # title
     print("\tID:")  # label
-    print("\t" + imageMediaObjectId)  # id of the object
+    print(" " + imageMediaObjectId)  # id of the object
 
     while (
         imageMediaStatusCode != "FINISHED"
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
         print("\n---- IMAGE MEDIA OBJECT STATUS -----\n")  # display status response
         print("\tStatus Code:")  # label
-        print("\t" + imageMediaStatusCode)  # status code of the object
+        print(" " + imageMediaStatusCode)  # status code of the object
 
         time.sleep(5)  # wait 5 seconds if the media object is still being processed
 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
     print("\n---- VIDEO MEDIA OBJECT -----\n")  # title
     print("\tID:")  # label
-    print("\t" + videoMediaObjectId)  # id of the object
+    print(" " + videoMediaObjectId)  # id of the object
 
     while (
         videoMediaStatusCode != "FINISHED"
@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
         print("\n---- VIDEO MEDIA OBJECT STATUS -----\n")  # display status response
         print("\tStatus Code:")  # label
-        print("\t" + videoMediaStatusCode)  # status code of the object
+        print(" " + videoMediaStatusCode)  # status code of the object
 
         time.sleep(5)  # wait 5 seconds if the media object is still being processed
 

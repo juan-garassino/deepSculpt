@@ -27,9 +27,9 @@ def evaluate_production_model(status):
 
     print(
         Fore.GREEN
-        + "\n🔥 Ran task: EVAL PERF:"
+        + "\n 🔥 Ran task: EVAL PERF:"
         + Style.RESET_ALL
-        + f"\n- Past model performance: {eval_mae}"
+        + f"\n - Past model performance: {eval_mae}"
     )
 
     return eval_mae
@@ -46,9 +46,9 @@ def re_train(status):
 
     print(
         Fore.GREEN
-        + "\n🔥 Ran task: TRAIN MODEL:"
+        + "\n 🔥 Ran task: TRAIN MODEL:"
         + Style.RESET_ALL
-        + f"\n- New model performance: {train_mae}"
+        + f"\n - New model performance: {train_mae}"
     )
 
     return train_mae
@@ -68,10 +68,10 @@ def notify(eval_mae, train_mae):
     response.raise_for_status()
     print(
         Fore.GREEN
-        + f"\n🔥 Run task: NOTIF"
+        + f"\n 🔥 Run task: NOTIF"
         + Style.RESET_ALL
-        + f"\n- Past performance: {eval_mae}"
-        + f"\n- New performance: {train_mae}"
+        + f"\n - Past performance: {eval_mae}"
+        + f"\n - New performance: {train_mae}"
     )
 
 

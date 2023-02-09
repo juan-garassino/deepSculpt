@@ -64,7 +64,7 @@ class Sculptor:
             for grid in range(1):
 
                 if int(os.environ.get("VERBOSE")) == 1:
-                    print("\n⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
+                    print("\n ⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
 
                 add_grid(
                     volumes_void=self.volumes_void,
@@ -77,7 +77,7 @@ class Sculptor:
 
             if int(os.environ.get("VERBOSE")) == 1:
                 print(
-                    "\n⏹  "
+                    "\n ⏹  "
                     + Fore.MAGENTA
                     + f"Creating edge number {edge}"
                     + Style.RESET_ALL
@@ -96,7 +96,7 @@ class Sculptor:
 
             if int(os.environ.get("VERBOSE")) == 1:
                 print(
-                    "\n⏹  "
+                    "\n ⏹  "
                     + Fore.MAGENTA
                     + f"Creating plane number {plane}"
                     + Style.RESET_ALL
@@ -115,7 +115,7 @@ class Sculptor:
 
             if int(os.environ.get("VERBOSE")) == 1:
                 print(
-                    "\n⏹  "
+                    "\n ⏹  "
                     + Fore.MAGENTA
                     + f"Creating volume number {volume}"
                     + Style.RESET_ALL
@@ -131,7 +131,7 @@ class Sculptor:
 
         if int(os.environ.get("VERBOSE")) == 1:
             print(
-                "\n⏹  "
+                "\n ⏹  "
                 + Fore.GREEN
                 + "Time for sculptures is {} sec".format(time.time() - start)
                 + Style.RESET_ALL

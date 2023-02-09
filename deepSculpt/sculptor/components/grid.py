@@ -11,7 +11,7 @@ def add_grid(volumes_void=None, materials_void=None, step=1, verbose=False):
 
     if verbose == True:
         print(
-            "\n⏹ "
+            "\n ⏹ "
             + Fore.RED
             + f"The color of the grid is {COLOR_EDGES}"
             + Style.RESET_ALL

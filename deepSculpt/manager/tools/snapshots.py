@@ -22,7 +22,7 @@ def upload_snapshot_to_gcp(snapshot_name):
     blob.upload_from_filename(STORAGE_FILENAME)
 
     print(
-        "\n🔼 "
+        "\n 🔼 "
         + Fore.BLUE
         + f"Just uploaded a snapshot to gcp {STORAGE_FILENAME} @ {storage_location}"
         + Style.RESET_ALL
@@ -59,5 +59,5 @@ def generate_and_save_snapshot(
             o_decoded_colors[prediction],
             figsize=25,
             style="#ffffff",
-            dpi=int(os.environ.get('DPI')),
-        ).plot_sculpture(directory + f'[{prediction}]')
+            dpi=int(os.environ.get("DPI")),
+        ).plot_sculpture(directory + f"[{prediction}]")

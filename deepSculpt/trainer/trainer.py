@@ -19,7 +19,7 @@ from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
 from deepSculpt.manager.tools.sampling import sampling
 
-from deepSculpt.trainer.tools.model import (
+from deepSculpt.trainer.tools.skipmodel import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
@@ -36,7 +36,6 @@ from deepSculpt.manager.tools.checkpoint import (
     load_model_from_cgp,
 )
 from deepSculpt.curator.tools.params import SEED, MINIBATCHES
-
 
 
 if int(os.environ.get("COLOR")) == 1:
@@ -64,7 +63,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     generator.compile()
 
-    print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n")
+    print("\n \t⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
     print(generator.summary())
 
@@ -74,7 +73,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     discriminator.compile()
 
-    print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n")
+    print("\n \t⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
     print(discriminator.summary())
 
@@ -140,7 +139,7 @@ if int(os.environ.get("COLOR")) == 1:
         checkpoint_name="checkpoint",
     )
 
-if os.environ.get("COLOR") == 0: # MONOCHROME
+if os.environ.get("COLOR") == 0:  # MONOCHROME
 
     # Loads Data
 
@@ -165,7 +164,7 @@ if os.environ.get("COLOR") == 0: # MONOCHROME
 
     generator.compile()
 
-    print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n")
+    print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
     print(generator.summary())
 
@@ -175,8 +174,7 @@ if os.environ.get("COLOR") == 0: # MONOCHROME
 
     discriminator.compile()
 
-    print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW +
-          "\n")
+    print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
     print(discriminator.summary())
 
@@ -241,6 +239,7 @@ if os.environ.get("COLOR") == 0: # MONOCHROME
         max_to_keep=3,
         checkpoint_name="checkpoint",
     )
+
 
 @function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
@@ -336,17 +335,17 @@ def trainer(
                 minibatch_start = time.time()
 
                 print(
-                    "\n⏩ "
+                    "\n ⏩ "
                     + Fore.MAGENTA
                     + f"Minibatch number {index + 1} epoch {epoch + 1}"
                     + Style.RESET_ALL
-                    + "\n"
+                    + "\n "
                 )
 
                 print(
-                    "\nℹ️ "
+                    "\n ℹ️ "
                     + Fore.CYAN
-                    + "Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
+                    + " Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
                         disc_loss, gen_loss
                     )
                     + Style.RESET_ALL
@@ -402,7 +401,7 @@ def trainer(
                 save_path = manager.save()
 
                 print(
-                    "\n🔼 "
+                    "\n 🔼 "
                     + Fore.BLUE
                     + "Saved checkpoint for step {}: {}".format(
                         int(checkpoint.step), save_path

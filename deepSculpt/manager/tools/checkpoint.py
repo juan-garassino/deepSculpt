@@ -26,7 +26,7 @@ def generate_and_save_checkpoint(checkpoint, manager, bucket):
         save_path = manager.save()
 
         print(
-            "\n🔼 "
+            "\n 🔼 "
             + Fore.BLUE
             + "Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path)
             + Style.RESET_ALL
@@ -37,7 +37,7 @@ def generate_and_save_checkpoint(checkpoint, manager, bucket):
         save_path = manager.save()
 
         print(
-            "\n🔼 "
+            "\n 🔼 "
             + Fore.BLUE
             + "Saved checkpoint for step {}: {}".format(int(checkpoint.step), save_path)
             + Style.RESET_ALL

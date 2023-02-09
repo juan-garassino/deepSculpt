@@ -30,7 +30,7 @@ def add_plane(
 
     if verbose == True:
         print(
-            "\n⏹ "
+            "\n ⏹ "
             + Fore.RED
             + f"The color of the plane is {COLOR_PLANES}"
             + Style.RESET_ALL

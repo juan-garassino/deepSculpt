@@ -52,7 +52,7 @@ class Curator:
 
             if int(os.environ.get("VERBOSE")) == 1:
                 print(
-                    "\n⏹ "
+                    "\n\t⏹ "
                     + Fore.BLUE
                     + f"Creating sculpture number {count}"
                     + Style.RESET_ALL
@@ -63,7 +63,7 @@ class Curator:
             if int(os.environ.get("VERBOSE")) == 1:
                 if (count + 1) % 25 == 0:
                     print(
-                        "\n⏹ "
+                        "\n\t⏹ "
                         + Fore.GREEN
                         + "{} sculputers where created in {}".format(
                             (count + 1), time.time() - start
@@ -147,7 +147,7 @@ class Curator:
         )
 
         print(
-            "\n🔽 "
+            "\n 🔽 "
             + Fore.BLUE
             + f"Just created 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
             + Style.RESET_ALL
@@ -186,11 +186,11 @@ class Curator:
                 color_raw_data[index],
                 figsize=25,
                 style="#ffffff",
-                dpi=int(os.environ.get('DPI')),
+                dpi=int(os.environ.get("DPI")),
             ).plot_sculpture(path)
 
             print(
-                "\n🔽 "
+                "\n 🔽 "
                 + Fore.YELLOW
                 + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                 + Style.RESET_ALL

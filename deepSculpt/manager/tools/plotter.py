@@ -117,22 +117,17 @@ class Plotter(Sculptor):
                     linewidth=0.05,
                 )
 
-        Manager.make_directory(directory + '/picture')
+        Manager.make_directory(directory + "/picture")
 
-        Manager.make_directory(directory + '/vectorial')
+        Manager.make_directory(directory + "/vectorial")
 
-        Manager.make_directory(directory + '/volume_array')
+        Manager.make_directory(directory + "/volume_array")
 
-        Manager.make_directory(directory + '/material_array')
+        Manager.make_directory(directory + "/material_array")
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
-        print(
-            "\n🔽 "
-            + Fore.GREEN
-            + f"Plotting [{now}]"
-            + Style.RESET_ALL
-        )
+        print("\n 🔽 " + Fore.GREEN + f"Plotting [{now}]" + Style.RESET_ALL)
 
         name_png = f"{directory}/picture/image[{now}].png"
 
@@ -141,7 +136,7 @@ class Plotter(Sculptor):
         )  # agregar tiempo de impresion y exportar 3D y bounding box
 
         print(
-            "\n🔽 "
+            "\n 🔽 "
             + Fore.BLUE
             + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
             + Style.RESET_ALL
@@ -152,7 +147,7 @@ class Plotter(Sculptor):
         plt.savefig(name_svg, transparent=self.transparent)
 
         print(
-            "\n🔽 "
+            "\n 🔽 "
             + Fore.BLUE
             + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
             + Style.RESET_ALL
@@ -163,7 +158,7 @@ class Plotter(Sculptor):
         np.save(name_volume_array, self.volumes)
 
         print(
-            "\n🔽 "
+            "\n 🔽 "
             + Fore.BLUE
             + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
             + Style.RESET_ALL
@@ -174,7 +169,7 @@ class Plotter(Sculptor):
         np.save(name_material_array, self.colors)
 
         print(
-            "\n🔽 "
+            "\n 🔽 "
             + Fore.BLUE
             + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
             + Style.RESET_ALL

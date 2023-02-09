@@ -79,7 +79,7 @@ def add_pipe_cantilever(
 
     if int(os.environ.get("VERBOSE")) == 1:
         print(
-            "\n⏹ "
+            "\n ⏹ "
             + Fore.RED
             + f"The color of the volume is {COLOR_VOLUMES[color_volume]}"
             + Style.RESET_ALL

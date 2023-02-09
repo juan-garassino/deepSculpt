@@ -38,7 +38,7 @@ class Manager:  # make manager work with and with out epochs
         blob.upload_from_filename(STORAGE_FILENAME)
 
         print(
-            "\n🔼 "
+            "\n 🔼 "
             + Fore.BLUE
             + f"Just uploaded a snapshot to gcp {STORAGE_FILENAME} @ {storage_location}"
             + Style.RESET_ALL
@@ -84,7 +84,7 @@ class Manager:  # make manager work with and with out epochs
         ]
 
         print(
-            "\n🔼 "
+            "\n 🔼 "
             + Fore.BLUE
             + f"Just loaded 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
             + Style.RESET_ALL
@@ -196,10 +196,9 @@ class Manager:  # make manager work with and with out epochs
             os.makedirs(directory)
 
             print(
-                "\n⏹"
-                + ' '
+                "\n ⏹ "
                 + Fore.GREEN
-                + f"This directory has been created {directory}"
+                + f" This directory has been created {directory}"
                 + Style.RESET_ALL
             )
 

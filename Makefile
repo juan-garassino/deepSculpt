@@ -25,11 +25,8 @@ clean:
 	@rm -fr build dist
 	@rm -fr deepSculpt-*.dist-info
 	@rm -fr deepSculpt.egg-info
-	@rm -fr results/checkpoints/*
-	@rm -fr results/snapshots/*
-	@rm -fr deepSculpt/results/*.svg
-	@rm -fr deepSculpt/results/*.png
-	@rm -fr deepSculpt/data/*.npy
+	@rm -fr results
+	@rm -fr data
 
 install:
 	@pip install . -U
@@ -211,6 +208,7 @@ test_api_root:
 # TESTS
 test_api_predict:
 	TEST_ENV=development pytest tests/api -k 'test_predict' --asyncio-mode=strict -W "ignore"
+	
 # GOOGLE SETUP
 gcpsetup_00_login:
 	@gcloud auth login --cred-file=${GOOGLE_APPLICATION_CREDENTIALS}
