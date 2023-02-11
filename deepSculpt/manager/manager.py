@@ -7,8 +7,7 @@ import numpy as np
 import errno
 import mlflow
 from mlflow.tracking import MlflowClient
-from PIL import Image, ImageDraw
-import glob
+import imageio
 
 
 class Manager:  # make manager work with and with out epochs
@@ -193,29 +192,19 @@ class Manager:  # make manager work with and with out epochs
         pass
 
     @staticmethod
-    def gif_gen(folders):
+    def create_animation(frames_path, output_name='animation' ,fps=30):
+        # Get a list of all image files in the directory
+        image_files = sorted([f for f in os.listdir(frames_path) if f.endswith('.png') or f.endswith('.jpg')])
 
-        #folders = ['square', 'horizontal']
+        # Load the image files into an array of image arrays
+        images = [imageio.imread(os.path.join(frames_path, f)) for f in image_files]
 
-        for folder in folders:
+        # Create the animation and save it as a GIF file
+        animation_path = os.path.join(frames_path, f'{output_name}.gif')
 
-            images = []
+        imageio.mimsave(animation_path, images, fps=fps)
 
-            sourcedir = os.path.join('..', 'results', 'images', folder, 'vgan',
-                                    'mnist')
 
-            frames = [
-                Image.open(image) for image in glob.glob(f"{sourcedir}/*.png")
-            ]
-            frame_one = frames[0]
-            frame_one.save(os.path.join('..', 'results', 'gif', f'{folder}.gif'),
-                        format="GIF",
-                        append_images=frames,
-                        save_all=True,
-                        duration=len(frames),
-                        loop=0)
-
-        return None
 
     @staticmethod
     def make_directory(directory):
