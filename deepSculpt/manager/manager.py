@@ -7,6 +7,8 @@ import numpy as np
 import errno
 import mlflow
 from mlflow.tracking import MlflowClient
+from PIL import Image, ImageDraw
+import glob
 
 
 class Manager:  # make manager work with and with out epochs
@@ -189,6 +191,31 @@ class Manager:  # make manager work with and with out epochs
 
     def holdout(df):
         pass
+
+    @staticmethod
+    def gif_gen(folders):
+
+        #folders = ['square', 'horizontal']
+
+        for folder in folders:
+
+            images = []
+
+            sourcedir = os.path.join('..', 'results', 'images', folder, 'vgan',
+                                    'mnist')
+
+            frames = [
+                Image.open(image) for image in glob.glob(f"{sourcedir}/*.png")
+            ]
+            frame_one = frames[0]
+            frame_one.save(os.path.join('..', 'results', 'gif', f'{folder}.gif'),
+                        format="GIF",
+                        append_images=frames,
+                        save_all=True,
+                        duration=len(frames),
+                        loop=0)
+
+        return None
 
     @staticmethod
     def make_directory(directory):
