@@ -19,8 +19,8 @@ from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
 from deepSculpt.manager.tools.sampling import sampling
 
-from deepSculpt.trainer.tools.skipmodel import (
-    make_three_dimentional_generator,
+from deepSculpt.trainer.tools.complexmodel import (
+    make_three_dimensional_generator,
     make_three_dimentional_critic,
 )
 from deepSculpt.trainer.tools.optimizers import (
@@ -46,7 +46,7 @@ if int(os.environ.get("COLOR")) == 1:
         n_samples=os.environ.get("N_SAMPLES_CREATE"),
         edge_elements=(0, 0.2, 0.6),
         plane_elements=(0, 0.2, 0.6),
-        volume_elements=(3, 0.2, 0.6),
+        volume_elements=(2, 0.6, 0.9),
         void_dim=os.environ.get("VOID_DIM"),
         grid=1,
     )
@@ -59,7 +59,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     # Initiates the Generator
 
-    generator = make_three_dimentional_generator()
+    generator = make_three_dimensional_generator()
 
     generator.compile()
 
@@ -241,7 +241,7 @@ if os.environ.get("COLOR") == 0:  # MONOCHROME
     )
 
 
-@function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
+"""@function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
     with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
@@ -280,7 +280,33 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     discriminator_optimizer.apply_gradients(
         zip(gradients_of_discriminator, discriminator.trainable_variables)
     )
-    # applying the gradients on the trainable variables of the generator to update the parameters
+    # applying the gradients on the trainable variables of the generator to update the parameters"""
+
+
+@function
+def train_step(images, gen_steps=1, disc_steps=1):
+
+    for i in range(gen_steps):
+        with GradientTape() as gen_tape:
+            generated_images = generator(SEED, training=True)
+            fake_output = discriminator(generated_images, training=True)
+            gen_loss = generator_loss(fake_output)
+
+        gradients_of_generator = gen_tape.gradient(
+            gen_loss, generator.trainable_variables)
+        generator_optimizer.apply_gradients(
+            zip(gradients_of_generator, generator.trainable_variables))
+
+    for i in range(disc_steps):
+        with GradientTape() as disc_tape:
+            real_output = discriminator(images, training=True)
+            fake_output = discriminator(generated_images, training=True)
+            disc_loss = discriminator_loss(real_output, fake_output)
+
+        gradients_of_discriminator = disc_tape.gradient(
+            disc_loss, discriminator.trainable_variables)
+        discriminator_optimizer.apply_gradients(
+            zip(gradients_of_discriminator, discriminator.trainable_variables))
 
 
 def trainer(
