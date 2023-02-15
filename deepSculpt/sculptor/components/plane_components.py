@@ -6,6 +6,7 @@ import numpy as np
 from colorama import Fore, Style
 import os
 
+
 def attach_plane(
     void: np.ndarray,
     color_void: np.ndarray,
@@ -38,12 +39,15 @@ def attach_plane(
     element, delta, top_left_corner, bottom_right_corner = (None, None, None, None)
 
     # Get the working plane and color parameters.
-    working_plane, color_parameters, section = Manager.return_axis(
-        void, color_void)
+    working_plane, color_parameters, section = Manager.return_axis(void, color_void)
 
     if verbose == True:
-        print("\n ⏹ " + Fore.RED +
-              f"The color of the plane is {COLORS['planes']}" + Style.RESET_ALL)
+        print(
+            "\n ⏹ "
+            + Fore.RED
+            + f"The color of the plane is {COLORS['planes']}"
+            + Style.RESET_ALL
+        )
 
     # Create the element to be inserted.
     element = np.ones(
@@ -75,8 +79,9 @@ def attach_plane(
 
     # Set the color of the added plane.
     color_parameters[
-        top_left_corner[0]:bottom_right_corner[0],
-        top_left_corner[1]:bottom_right_corner[1], ] = COLORS['planes']
+        top_left_corner[0] : bottom_right_corner[0],
+        top_left_corner[1] : bottom_right_corner[1],
+    ] = COLORS["planes"]
 
     if os.environ.get("VERBOSE") == 1:
         Manager.verbose(

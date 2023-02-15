@@ -5,6 +5,7 @@ import random
 import numpy as np
 from colorama import Fore, Style
 
+
 def attach_edge(
     void: np.ndarray,
     color_void: np.ndarray,
@@ -33,8 +34,7 @@ def attach_edge(
     element_edge_max = int(element_edge_max_ratio * void.shape[0])
 
     # Select the axis to work on
-    working_plane, color_parameters, section = Manager.return_axis(
-        void, color_void)
+    working_plane, color_parameters, section = Manager.return_axis(void, color_void)
 
     # Print the working axis and the input array
     if verbose == True:
@@ -79,8 +79,9 @@ def attach_edge(
 
     # Update the color array with the color information of the added edge
     color_parameters[
-        top_left_corner[0]:bottom_right_corner[0],
-        top_left_corner[1]:bottom_right_corner[1], ] = COLORS['edges']
+        top_left_corner[0] : bottom_right_corner[0],
+        top_left_corner[1] : bottom_right_corner[1],
+    ] = COLORS["edges"]
 
     # Print the updated array
     if verbose:
@@ -100,7 +101,9 @@ if __name__ == "__main__":
     materials_void = np.empty(volumes_void.shape, dtype=object)
 
     # Add an edge to the void
-    void, color_void = attach_edge(volumes_void, materials_void, 0.1, 0.9, 3, verbose=True)
+    void, color_void = attach_edge(
+        volumes_void, materials_void, 0.1, 0.9, 3, verbose=True
+    )
 
     print(void)
 

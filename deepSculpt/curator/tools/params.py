@@ -32,9 +32,7 @@ ELEMENT_PLANE_MIN, ELEMENT_PLANE_MAX = 0.6, 0.85
 
 ELEMENT_VOLUME_MIN, ELEMENT_VOLUME_MAX = 0.3, 0.45
 
-COLORS = dict(edges="dimgrey",
-              planes="snow",
-              volumes=["crimson", "turquoise", "gold"])
+COLORS = dict(edges="dimgrey", planes="snow", volumes=["crimson", "turquoise", "gold"])
 
 
 """[

@@ -5,6 +5,7 @@ import random
 import numpy as np
 from colorama import Fore, Style
 
+
 def attach_grid(volumes_void, materials_void, step=1, verbose=False):
     """
     Adds a grid structure to a given 3D volume.
@@ -70,8 +71,7 @@ def attach_grid(volumes_void, materials_void, step=1, verbose=False):
     )
 
     if verbose:
-        Manager.verbose(bases, heights, column_base_coordinates
-        )
+        Manager.verbose(bases, heights, column_base_coordinates)
 
     for column_base_coordinate, column_top_coordinate in zip(
         list(column_base_coordinates), list(column_top_coordinates)
@@ -83,7 +83,7 @@ def attach_grid(volumes_void, materials_void, step=1, verbose=False):
         ] = 1
 
     volumes_void[:, :, 0] = 1
-    materials_void[volumes_void == 1] = COLORS['edges']
+    materials_void[volumes_void == 1] = COLORS["edges"]
 
     return volumes_void.astype("int8"), materials_void
 

@@ -139,6 +139,7 @@ class Sculptor:
 
         return self.volumes_void, self.materials_void
 
+
 if __name__ == "__main__":
 
     sculptor = Sculptor(
@@ -147,9 +148,9 @@ if __name__ == "__main__":
         planes=(1, 0.3, 0.55),
         volumes=(1, 0.7, 0.8),
         grid=(2, 5),  # minimun height of column, and maximun height
-        materials_edges=COLORS['edges'],
-        materials_planes=COLORS['planes'],
-        materials_volumes=COLORS['volumes'],
+        materials_edges=COLORS["edges"],
+        materials_planes=COLORS["planes"],
+        materials_volumes=COLORS["volumes"],
         step=1,
     )
 
