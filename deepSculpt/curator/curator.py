@@ -1,46 +1,70 @@
+import os
+import random
+from datetime import date
+from typing import List, Tuple
+import time
+import numpy as np
+from colorama import Fore, Style
+
 from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.manager.manager import Manager
 from deepSculpt.manager.tools.plotter import Plotter
 from deepSculpt.curator.tools.params import COLORS
 
-from datetime import date
-import numpy as np
-import os
-import time
-from colorama import Fore, Style
-import random
-
 
 class Curator:
     def __init__(
         self,
-        void_dim=32,
-        edge_elements=(0, 0.3, 0.5),
-        plane_elements=(0, 0.3, 0.5),
-        volume_elements=(0, 0.3, 0.5),
-        step=None,
-        directory=None,
-        n_samples=100,
-        grid=1,
-    ):
+        void_dim: int = 32,
+        edge_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
+        plane_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
+        volume_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
+        step: int = None,
+        directory: str = None,
+        n_samples: int = 100,
+        grid: int = 1,
+    ) -> None:
+        """Initialize the Curator instance.
 
+        Args:
+            void_dim (int, optional): The size of the 3D grid in each dimension.
+                Defaults to 32.
+            edge_elements (Tuple[float, float, float], optional): The tuple containing
+                the number of edges and the minimum and maximum number of edges for a shape.
+                Defaults to (0, 0.3, 0.5).
+            plane_elements (Tuple[float, float, float], optional): The tuple containing
+                the number of planes and the minimum and maximum number of planes for a shape.
+                Defaults to (0, 0.3, 0.5).
+            volume_elements (Tuple[float, float, float], optional): The tuple containing
+                the number of volumes and the minimum and maximum number of volumes for a shape.
+                Defaults to (0, 0.3, 0.5).
+            step (int, optional): The step size for the 3D grid. Defaults to None.
+            directory (str, optional): The directory path where the data files will be saved.
+                Defaults to None.
+            n_samples (int, optional): The number of samples to generate. Defaults to 100.
+            grid (int, optional): The minimum height of a column and the maximum height of a column
+                on the 3D grid. Defaults to 1.
+        """
+        self.void_dim = void_dim
         self.edge_elements = edge_elements
         self.plane_elements = plane_elements
         self.volume_elements = volume_elements
-        self.void_dim = void_dim
         self.grid = grid
-        self.step = int(self.void_dim / 6)
-        self.directory = (str(directory),)
+        self.step = int(self.void_dim / 6) if step is None else step
+        self.directory = str(directory) if directory is not None else None
         self.n_samples = n_samples
 
-        if step is not None:
-            self.step = step
+    def create_sculpts(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Generate the 3D sculpted shapes.
 
-    def create_sculpts(self):
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: A tuple containing two NumPy arrays, the first one is a
+            4D NumPy array of the volume data, and the second one is a 4D NumPy array of the material
+            data of the generated shapes.
+        """
+        raw_data: List[np.ndarray] = []
 
-        raw_data = []
-
-        color_raw_data = []
+        color_raw_data: List[np.ndarray] = []
 
         count = 0
 
@@ -128,16 +152,16 @@ class Curator:
             .astype("object")
         )
 
-        Manager.make_directory(self.directory[0])
+        Manager.make_directory(self.directory)
 
         np.save(
-            f"{self.directory[0]}/volume_data[{date.today()}]",
+            f"{self.directory}/volume_data[{date.today()}]",
             raw_data,
             allow_pickle=True,
         )
 
         np.save(
-            f"{self.directory[0]}/material_data[{date.today()}]",
+            f"{self.directory}/material_data[{date.today()}]",
             color_raw_data,
             allow_pickle=True,
         )
@@ -208,7 +232,7 @@ if __name__ == "__main__":
         volume_elements=(2, 0.3, 0.5),
         step=None,
         directory=out_dir,
-        n_samples=100,
+        n_samples=50,
         grid=1,
     )
 
