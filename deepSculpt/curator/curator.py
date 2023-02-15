@@ -27,23 +27,22 @@ class Curator:
         """Initialize the Curator instance.
 
         Args:
-            void_dim (int, optional): The size of the 3D grid in each dimension.
-                Defaults to 32.
-            edge_elements (Tuple[float, float, float], optional): The tuple containing
-                the number of edges and the minimum and maximum number of edges for a shape.
-                Defaults to (0, 0.3, 0.5).
-            plane_elements (Tuple[float, float, float], optional): The tuple containing
-                the number of planes and the minimum and maximum number of planes for a shape.
-                Defaults to (0, 0.3, 0.5).
-            volume_elements (Tuple[float, float, float], optional): The tuple containing
-                the number of volumes and the minimum and maximum number of volumes for a shape.
-                Defaults to (0, 0.3, 0.5).
-            step (int, optional): The step size for the 3D grid. Defaults to None.
-            directory (str, optional): The directory path where the data files will be saved.
-                Defaults to None.
-            n_samples (int, optional): The number of samples to generate. Defaults to 100.
-            grid (int, optional): The minimum height of a column and the maximum height of a column
-                on the 3D grid. Defaults to 1.
+            void_dim (int, optional):
+            The size of the 3D grid in each dimension. Defaults to 32.
+            edge_elements (Tuple[float, float, float], optional):
+            The tuple containing the number of edges and the minimum and maximum number of edges for a shape. Defaults to (0, 0.3, 0.5).
+            plane_elements (Tuple[float, float, float], optional):
+            The tuple containing the number of planes and the minimum and maximum number of planes for a shape. Defaults to (0, 0.3, 0.5).
+            volume_elements (Tuple[float, float, float], optional):
+            The tuple containing the number of volumes and the minimum and maximum number of volumes for a shape. Defaults to (0, 0.3, 0.5).
+            step (int, optional):
+            The step size for the 3D grid. Defaults to None.
+            directory (str, optional):
+            The directory path where the data files will be saved. Defaults to None.
+            n_samples (int, optional):
+            The number of samples to generate. Defaults to 100.
+            grid (int, optional):
+            The minimum height of a column and the maximum height of a column on the 3D grid. Defaults to 1.
         """
         self.void_dim = void_dim
         self.edge_elements = edge_elements

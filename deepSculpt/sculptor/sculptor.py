@@ -12,7 +12,6 @@ from deepSculpt.curator.tools.params import COLORS
 
 
 class Sculptor:
-
     def __init__(
         self,
         void_dim: int = 16,
@@ -75,7 +74,6 @@ class Sculptor:
         self.step = step
         self.grid = grid
 
-
     def generative_sculpt(self) -> tuple[np.ndarray, np.ndarray]:
         """
         Generates a sculpture by attaching edge, plane and volume components
@@ -91,8 +89,7 @@ class Sculptor:
             for grid in range(1):
                 # Print status if verbose is on
                 if int(os.environ.get("VERBOSE")) == 1:
-                    print("\n ⏹  " + Fore.MAGENTA + "Creating grid" +
-                        Style.RESET_ALL)
+                    print("\n ⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
 
                 # Attach grid components
                 attach_grid(
@@ -106,8 +103,12 @@ class Sculptor:
         for edge in range(self.n_edge_elements):
             # Print status if verbose is on
             if int(os.environ.get("VERBOSE")) == 1:
-                print("\n ⏹  " + Fore.MAGENTA + f"Creating edge number {edge}" +
-                    Style.RESET_ALL)
+                print(
+                    "\n ⏹  "
+                    + Fore.MAGENTA
+                    + f"Creating edge number {edge}"
+                    + Style.RESET_ALL
+                )
 
             # Attach edge components
             attach_edge(
@@ -123,8 +124,12 @@ class Sculptor:
         for plane in range(self.n_plane_elements):
             # Print status if verbose is on
             if int(os.environ.get("VERBOSE")) == 1:
-                print("\n ⏹  " + Fore.MAGENTA + f"Creating plane number {plane}" +
-                    Style.RESET_ALL)
+                print(
+                    "\n ⏹  "
+                    + Fore.MAGENTA
+                    + f"Creating plane number {plane}"
+                    + Style.RESET_ALL
+                )
 
             # Attach plane components
             attach_plane(
@@ -140,8 +145,12 @@ class Sculptor:
         for volume in range(self.n_volume_elements):
             # Print status if verbose is on
             if int(os.environ.get("VERBOSE")) == 1:
-                print("\n ⏹  " + Fore.MAGENTA +
-                    f"Creating volume number {volume}" + Style.RESET_ALL)
+                print(
+                    "\n ⏹  "
+                    + Fore.MAGENTA
+                    + f"Creating volume number {volume}"
+                    + Style.RESET_ALL
+                )
 
             # Attach volume components
             attach_pipe(
@@ -154,13 +163,15 @@ class Sculptor:
 
         # Print elapsed time if verbose is on
         if int(os.environ.get("VERBOSE")) == 1:
-            print("\n ⏹  " + Fore.GREEN +
-                "Time for sculptures is {} sec".format(time.time() - start) +
-                Style.RESET_ALL)
+            print(
+                "\n ⏹  "
+                + Fore.GREEN
+                + "Time for sculptures is {} sec".format(time.time() - start)
+                + Style.RESET_ALL
+            )
 
         # Return the numpy arrays of volumes and materials
         return self.volumes_void, self.materials_void
-
 
 
 if __name__ == "__main__":
