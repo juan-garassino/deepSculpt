@@ -1,12 +1,12 @@
-from deepSculpt.sculptor.components.cantilever import add_pipe_cantilever
-from deepSculpt.sculptor.components.edges import add_edge
-from deepSculpt.sculptor.components.grid import add_grid
-from deepSculpt.sculptor.components.planes import add_plane
-from deepSculpt.curator.tools.params import COLOR_EDGES, COLOR_PLANES, COLOR_VOLUMES
+from deepSculpt.sculptor.components.cantilever import attach_pipe
+from deepSculpt.sculptor.components.edge_components import attach_edge
+from deepSculpt.sculptor.components.grid_components import attach_grid
+from deepSculpt.sculptor.components.plane_components import attach_plane
+from deepSculpt.curator.tools.params import COLORS
 
-import time
 import numpy as np
 from colorama import Fore, Style
+import time
 import os
 
 
@@ -66,7 +66,7 @@ class Sculptor:
                 if int(os.environ.get("VERBOSE")) == 1:
                     print("\n ⏹  " + Fore.MAGENTA + "Creating grid" + Style.RESET_ALL)
 
-                add_grid(
+                attach_grid(
                     volumes_void=self.volumes_void,
                     materials_void=self.materials_void,
                     step=self.grid[1],
@@ -83,12 +83,12 @@ class Sculptor:
                     + Style.RESET_ALL
                 )
 
-            add_edge(
+            attach_edge(
                 self.volumes_void,
                 self.materials_void,
-                self.element_edge_min,
-                self.element_edge_max,
-                self.step,
+                element_edge_min_ratio=self.element_edge_min,
+                element_edge_max_ratio=self.element_edge_max,
+                step=self.step,
                 verbose=int(os.environ.get("VERBOSE")),
             )
 
@@ -102,12 +102,12 @@ class Sculptor:
                     + Style.RESET_ALL
                 )
 
-            add_plane(
+            attach_plane(
                 self.volumes_void,
                 self.materials_void,
-                self.element_plane_min,
-                self.element_plane_max,
-                self.step,
+                element_plane_min_ratio=self.element_plane_min,
+                element_plane_max_ratio=self.element_plane_max,
+                step=self.step,
                 verbose=int(os.environ.get("VERBOSE")),
             )
 
@@ -121,7 +121,7 @@ class Sculptor:
                     + Style.RESET_ALL
                 )
 
-            add_pipe_cantilever(
+            attach_pipe(
                 self.volumes_void,
                 self.materials_void,
                 self.element_volume_min,
@@ -139,7 +139,6 @@ class Sculptor:
 
         return self.volumes_void, self.materials_void
 
-
 if __name__ == "__main__":
 
     sculptor = Sculptor(
@@ -148,9 +147,9 @@ if __name__ == "__main__":
         planes=(1, 0.3, 0.55),
         volumes=(1, 0.7, 0.8),
         grid=(2, 5),  # minimun height of column, and maximun height
-        materials_edges=COLOR_EDGES,
-        materials_planes=COLOR_PLANES,
-        materials_volumes=COLOR_VOLUMES,
+        materials_edges=COLORS['edges'],
+        materials_planes=COLORS['planes'],
+        materials_volumes=COLORS['volumes'],
         step=1,
     )
 

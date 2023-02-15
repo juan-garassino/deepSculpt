@@ -2,7 +2,16 @@ import os
 import tensorflow as tf
 from tensorflow.keras import layers, Sequential
 
-from tensorflow.keras.layers import Input, Dense, Reshape, Concatenate, BatchNormalization, Activation, LeakyReLU, Conv3DTranspose
+from tensorflow.keras.layers import (
+    Input,
+    Dense,
+    Reshape,
+    Concatenate,
+    BatchNormalization,
+    Activation,
+    LeakyReLU,
+    Conv3DTranspose,
+)
 from tensorflow.keras.models import Model
 import os
 
@@ -11,14 +20,13 @@ def make_three_dimensional_generator():
     void_dim = int(os.environ.get("VOID_DIM"))
     noise_dim = int(os.environ.get("NOISE_DIM"))
 
-    inputs = Input(shape=(noise_dim, ))
-    x = Dense((void_dim // 8)**3 * noise_dim, use_bias=False)(inputs)
+    inputs = Input(shape=(noise_dim,))
+    x = Dense((void_dim // 8) ** 3 * noise_dim, use_bias=False)(inputs)
     x = BatchNormalization()(x)
     x = LeakyReLU(alpha=0.2)(x)
 
     x = Reshape((void_dim // 8, void_dim // 8, void_dim // 8, noise_dim))(x)
-    assert x.shape == (None, void_dim // 8, void_dim // 8, void_dim // 8,
-                       noise_dim)
+    assert x.shape == (None, void_dim // 8, void_dim // 8, void_dim // 8, noise_dim)
 
     skip_connections = []
     filters = [noise_dim, noise_dim // 2, noise_dim // 4, 6]
@@ -27,24 +35,21 @@ def make_three_dimensional_generator():
         if i > 0:
             x = Concatenate()([x, skip_connections[-1]])
 
-        x = Conv3DTranspose(filters[i], (3, 3, 3),
-                            strides=strides[i],
-                            padding="same",
-                            use_bias=False)(x)
+        x = Conv3DTranspose(
+            filters[i], (3, 3, 3), strides=strides[i], padding="same", use_bias=False
+        )(x)
         x = BatchNormalization()(x)
         x = LeakyReLU(alpha=0.2)(x)
         if i != 3:
             skip_connections.append(x)
         else:
-            x = Activation('tanh')(x)
+            x = Activation("tanh")(x)
 
     x = Reshape((void_dim, void_dim, void_dim, 6))(x)
     assert x.shape == (None, void_dim, void_dim, void_dim, 6)
 
     model = Model(inputs=inputs, outputs=x)
     return model
-
-
 
 
 def make_three_dimentional_critic():
@@ -61,7 +66,8 @@ def make_three_dimentional_critic():
                 int(os.environ.get("VOID_DIM")),
                 6,
             ],
-        ))
+        )
+    )
     model.add(layers.LeakyReLU())
     model.add(layers.Dropout(0.3))
 
@@ -72,7 +78,8 @@ def make_three_dimentional_critic():
             strides=(2, 2, 2),
             padding="same",
             activation="relu",
-        ))
+        )
+    )
     model.add(layers.LeakyReLU())
     model.add(layers.Dropout(0.3))
 
@@ -83,7 +90,8 @@ def make_three_dimentional_critic():
             strides=(2, 2, 2),
             padding="same",
             activation="relu",
-        ))
+        )
+    )
     model.add(layers.LeakyReLU())
     model.add(layers.Dropout(0.3))
 
@@ -94,7 +102,8 @@ def make_three_dimentional_critic():
             strides=(2, 2, 2),
             padding="same",
             activation="relu",
-        ))
+        )
+    )
     model.add(layers.LeakyReLU())
     model.add(layers.Dropout(0.3))
 

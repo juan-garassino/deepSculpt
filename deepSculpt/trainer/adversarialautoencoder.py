@@ -14,24 +14,23 @@ train_dataset = tf.data.Dataset.from_tensor_slices(train_tensor)
 # Define the generator network
 def generator(latent_dim):
     model = tf.keras.Sequential()
-    model.add(
-        tf.keras.layers.Dense(256, activation='relu', input_dim=latent_dim))
+    model.add(tf.keras.layers.Dense(256, activation="relu", input_dim=latent_dim))
     model.add(tf.keras.layers.Reshape((8, 8, 8, 16)))
     model.add(
-        tf.keras.layers.Conv3DTranspose(128, (5, 5, 5),
-                                        strides=(2, 2, 2),
-                                        padding='same',
-                                        activation='relu'))
+        tf.keras.layers.Conv3DTranspose(
+            128, (5, 5, 5), strides=(2, 2, 2), padding="same", activation="relu"
+        )
+    )
     model.add(
-        tf.keras.layers.Conv3DTranspose(64, (5, 5, 5),
-                                        strides=(2, 2, 2),
-                                        padding='same',
-                                        activation='relu'))
+        tf.keras.layers.Conv3DTranspose(
+            64, (5, 5, 5), strides=(2, 2, 2), padding="same", activation="relu"
+        )
+    )
     model.add(
-        tf.keras.layers.Conv3DTranspose(32, (5, 5, 5),
-                                        strides=(2, 2, 2),
-                                        padding='same',
-                                        activation='sigmoid'))
+        tf.keras.layers.Conv3DTranspose(
+            32, (5, 5, 5), strides=(2, 2, 2), padding="same", activation="sigmoid"
+        )
+    )
     return model
 
 
@@ -39,23 +38,27 @@ def generator(latent_dim):
 def encoder(latent_dim):
     model = tf.keras.Sequential()
     model.add(
-        tf.keras.layers.Conv3D(32, (5, 5, 5),
-                               strides=(2, 2, 2),
-                               padding='same',
-                               activation='relu',
-                               input_shape=(32, 32, 32, 1)))
+        tf.keras.layers.Conv3D(
+            32,
+            (5, 5, 5),
+            strides=(2, 2, 2),
+            padding="same",
+            activation="relu",
+            input_shape=(32, 32, 32, 1),
+        )
+    )
     model.add(
-        tf.keras.layers.Conv3D(64, (5, 5, 5),
-                               strides=(2, 2, 2),
-                               padding='same',
-                               activation='relu'))
+        tf.keras.layers.Conv3D(
+            64, (5, 5, 5), strides=(2, 2, 2), padding="same", activation="relu"
+        )
+    )
     model.add(
-        tf.keras.layers.Conv3D(128, (5, 5, 5),
-                               strides=(2, 2, 2),
-                               padding='same',
-                               activation='relu'))
+        tf.keras.layers.Conv3D(
+            128, (5, 5, 5), strides=(2, 2, 2), padding="same", activation="relu"
+        )
+    )
     model.add(tf.keras.layers.Flatten())
-    model.add(tf.keras.layers.Dense(256, activation='relu'))
+    model.add(tf.keras.layers.Dense(256, activation="relu"))
     model.add(tf.keras.layers.Dense(latent_dim, activation=None))
     return model
 
@@ -63,9 +66,8 @@ def encoder(latent_dim):
 # Define the discriminator network
 def discriminator(latent_dim):
     model = tf.keras.Sequential()
-    model.add(
-        tf.keras.layers.Dense(256, activation='relu', input_dim=latent_dim))
-    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+    model.add(tf.keras.layers.Dense(256, activation="relu", input_dim=latent_dim))
+    model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
     return model
 
 
@@ -122,21 +124,26 @@ def train_step(inputs):
         fake_reconstructed = generator_model(fake_latent)
         discriminator_fake_logits = discriminator_model(fake_latent)
         adversarial_fake_loss = adversarial_loss(
-            tf.ones_like(discriminator_fake_logits), discriminator_fake_logits)
+            tf.ones_like(discriminator_fake_logits), discriminator_fake_logits
+        )
         disc_loss = adversarial_fake_loss
         latent_recon_logits = discriminator_model(latent)
         adversarial_latent_recon_loss = adversarial_loss(
-            tf.zeros_like(latent_recon_logits), latent_recon_logits)
+            tf.zeros_like(latent_recon_logits), latent_recon_logits
+        )
         disc_loss += adversarial_latent_recon_loss
     gradients_of_generator = gen_tape.gradient(
-        gen_loss, generator_model.trainable_variables)
+        gen_loss, generator_model.trainable_variables
+    )
     gradients_of_discriminator = disc_tape.gradient(
-        disc_loss, discriminator_model.trainable_variables)
+        disc_loss, discriminator_model.trainable_variables
+    )
     generator_optimizer.apply_gradients(
-        zip(gradients_of_generator, generator_model.trainable_variables))
+        zip(gradients_of_generator, generator_model.trainable_variables)
+    )
     discriminator_optimizer.apply_gradients(
-        zip(gradients_of_discriminator,
-            discriminator_model.trainable_variables))
+        zip(gradients_of_discriminator, discriminator_model.trainable_variables)
+    )
 
     return gen_loss, disc_loss
 
@@ -147,6 +154,6 @@ batch_size = 128
 
 lr_schedule = tf.keras.callbacks.LearningRateScheduler(schedule)
 
-history = aae_model.fit(train_dataset.batch(batch_size),
-                        epochs=num_epochs,
-                        callbacks=[lr_schedule])
+history = aae_model.fit(
+    train_dataset.batch(batch_size), epochs=num_epochs, callbacks=[lr_schedule]
+)

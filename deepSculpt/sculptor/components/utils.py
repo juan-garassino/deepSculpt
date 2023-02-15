@@ -1,10 +1,20 @@
 import numpy as np
 
+def return_axis(void: np.ndarray, color_void: np.ndarray) -> tuple:
+    """
+    Selects a random plane from a 3D numpy array along a random axis.
 
-def return_axis(void, color_void):
+    Args:
+        void (np.ndarray): The 3D numpy array to select a plane from.
+        color_void (np.ndarray): The 3D numpy array that holds the color information.
 
-    section = np.random.randint(low=0 - 1, high=void[0].shape[0])
-
+    Returns:
+        tuple: A tuple containing:
+            - working_plane (np.ndarray): The randomly selected plane.
+            - color_parameters (np.ndarray): The color information of the selected plane.
+            - section (int): The index of the selected plane.
+    """
+    section = np.random.randint(low=0, high=void.shape[0])
     axis_selection = np.random.randint(low=0, high=3)
 
     if axis_selection == 0:
@@ -17,41 +27,38 @@ def return_axis(void, color_void):
         working_plane = void[:, :, section]
         color_parameters = color_void[:, :, section]
     else:
-        print("error")
+        print("Error: axis_selection value out of range.")
 
-    return (
-        working_plane,
-        color_parameters,
-        section,
-    )
+    return working_plane, color_parameters, section
 
 
-def print_information(
-    void=None,
-    element=None,
-    axis_selection=None,
-    delta=None,
-    section=None,
-    top_left_corner=None,
-    bottom_right_corner=None,
-):
-    if void is not None:
-        print(void)
-    if void is not None:
-        print(f"void shape is: {np.array(void[0].shape)}")
-    if element is not None:
-        print(f"element shape is : {np.array(element.shape)}")
-    if axis_selection is not None:
-        print(f"the axis selection is: {axis_selection}")
-    if delta is not None:
-        print(f"delta is: {delta}")
-    if section is not None:
-        print(f"section is: {section}")
-    if top_left_corner is not None:
-        print(f"top left corner is: {top_left_corner}")
-    if bottom_right_corner is not None:
-        print(f"bottom right corner is: {bottom_right_corner}")
-    if bottom_right_corner is not None:
-        print(
-            f"slices are: {top_left_corner[0]}:{bottom_right_corner[0]} and {top_left_corner[1]}:{bottom_right_corner[1]}"
-        )
+def print_information(*args, **kwargs):
+    """
+    Print input arguments and keyword arguments in a formatted way.
+
+    Args:
+        *args: Positional arguments to be printed.
+        **kwargs: Keyword arguments to be printed.
+
+    Returns:
+        None.
+    """
+    # Print separator and header for verbose output
+    print("=" * 50)
+    print("Verbose output:")
+    print("-" * 50)
+
+    # Print positional arguments, if any
+    if args:
+        print("Arguments:")
+        for arg in args:
+            print(f"  {arg}")
+
+    # Print keyword arguments, if any
+    if kwargs:
+        print("Keyword arguments:")
+        for key, value in kwargs.items():
+            print(f"  {key}: {value}")
+
+    # Print separator at end of verbose output
+    print("=" * 50)

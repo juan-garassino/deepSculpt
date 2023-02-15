@@ -293,9 +293,11 @@ def train_step(images, gen_steps=1, disc_steps=1):
             gen_loss = generator_loss(fake_output)
 
         gradients_of_generator = gen_tape.gradient(
-            gen_loss, generator.trainable_variables)
+            gen_loss, generator.trainable_variables
+        )
         generator_optimizer.apply_gradients(
-            zip(gradients_of_generator, generator.trainable_variables))
+            zip(gradients_of_generator, generator.trainable_variables)
+        )
 
     for i in range(disc_steps):
         with GradientTape() as disc_tape:
@@ -304,9 +306,11 @@ def train_step(images, gen_steps=1, disc_steps=1):
             disc_loss = discriminator_loss(real_output, fake_output)
 
         gradients_of_discriminator = disc_tape.gradient(
-            disc_loss, discriminator.trainable_variables)
+            disc_loss, discriminator.trainable_variables
+        )
         discriminator_optimizer.apply_gradients(
-            zip(gradients_of_discriminator, discriminator.trainable_variables))
+            zip(gradients_of_discriminator, discriminator.trainable_variables)
+        )
 
 
 def trainer(

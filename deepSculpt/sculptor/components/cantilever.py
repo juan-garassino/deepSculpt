@@ -1,13 +1,12 @@
+from deepSculpt.manager.manager import Manager
+from deepSculpt.curator.tools.params import COLORS
+
 import random
 import numpy as np
-from colorama import Style, Fore
+from colorama import Fore, Style
 import os
 
-from deepSculpt.curator.tools.params import COLOR_VOLUMES
-from deepSculpt.sculptor.components.utils import print_information
-
-
-def add_pipe_cantilever(
+def attach_pipe(
     void,
     color_void,
     element_volume_min_ratio,
@@ -75,30 +74,25 @@ def add_pipe_cantilever(
     corner_7 = np.array((corner_3[0], corner_3[1] + element.shape[1], corner_3[2]))
     corner_8 = np.array((corner_4[0], corner_4[1] + element.shape[1], corner_4[2]))
 
-    color_volume = np.random.randint(0, len(COLOR_VOLUMES))
+    color_volume = np.random.randint(0, len(COLORS['volumes']))
 
     if int(os.environ.get("VERBOSE")) == 1:
-        print(
-            "\n ⏹ "
-            + Fore.RED
-            + f"The color of the volume is {COLOR_VOLUMES[color_volume]}"
-            + Style.RESET_ALL
-        )
+        print("\n ⏹ " + Fore.RED +
+              f"The color of the volume is {COLORS['volumes'][color_volume]}" +
+              Style.RESET_ALL)
 
     # creates the floor and ceiling
     void[
         corner_3[0] : corner_8[0], corner_3[1] : corner_8[1], corner_3[2] - 1
     ] = element[:, :, 0]
-    color_void[
-        corner_3[0] : corner_8[0], corner_3[1] : corner_8[1], corner_3[2] - 1
-    ] = COLOR_VOLUMES[color_volume]
+    color_void[corner_3[0]:corner_8[0], corner_3[1]:corner_8[1],
+               corner_3[2] - 1] = COLORS['volumes'][color_volume]
 
     void[corner_1[0] : corner_6[0], corner_1[1] : corner_6[1], corner_1[2]] = element[
         :, :, 1
     ]
-    color_void[
-        corner_1[0] : corner_6[0], corner_1[1] : corner_6[1], corner_1[2]
-    ] = COLOR_VOLUMES[color_volume]
+    color_void[corner_1[0]:corner_6[0], corner_1[1]:corner_6[1],
+               corner_1[2]] = COLORS['volumes'][color_volume]
 
     # creates de walls
     if shape_selection == 0:
@@ -107,8 +101,8 @@ def add_pipe_cantilever(
                 corner_1[0], corner_1[1] : corner_7[1], corner_1[2] : corner_7[2]
             ] = element[0, :, :]
             color_void[
-                corner_1[0], corner_1[1] : corner_7[1], corner_1[2] : corner_7[2]
-            ] = COLOR_VOLUMES[color_volume]
+                corner_1[0], corner_1[1]:corner_7[1],
+                corner_1[2]:corner_7[2]] = COLORS['volumes'][color_volume]
 
             void[
                 corner_2[0] - 1,
@@ -116,24 +110,22 @@ def add_pipe_cantilever(
                 corner_2[2] : corner_8[2],
             ] = element[1, :, :]
             color_void[
-                corner_2[0] - 1,
-                corner_2[1] : corner_8[1],
-                corner_2[2] : corner_8[2],
-            ] = COLOR_VOLUMES[color_volume]
+                corner_2[0] - 1, corner_2[1]:corner_8[1],
+                corner_2[2]:corner_8[2], ] = COLORS['volumes'][color_volume]
         else:
             void[
                 corner_5[0] : corner_8[0], corner_5[1], corner_5[2] : corner_8[2]
             ] = element[:, 0, :]
             color_void[
-                corner_5[0] : corner_8[0], corner_5[1], corner_5[2] : corner_8[2]
-            ] = COLOR_VOLUMES[color_volume]
+                corner_5[0]:corner_8[0], corner_5[1],
+                corner_5[2]:corner_8[2]] = COLORS['volumes'][color_volume]
 
             void[
                 corner_1[0] : corner_4[0], corner_1[1], corner_1[2] : corner_4[2]
             ] = element[:, 0, :]
             color_void[
-                corner_1[0] : corner_4[0], corner_1[1], corner_1[2] : corner_4[2]
-            ] = COLOR_VOLUMES[color_volume]
+                corner_1[0]:corner_4[0], corner_1[1],
+                corner_1[2]:corner_4[2]] = COLORS['volumes'][color_volume]
 
     else:
         if axis_selection == 0:
@@ -141,15 +133,15 @@ def add_pipe_cantilever(
                 corner_1[0], corner_1[1] : corner_7[1], corner_1[2] : corner_7[2]
             ] = element[0, :, :]
             color_void[
-                corner_1[0], corner_1[1] : corner_7[1], corner_1[2] : corner_7[2]
-            ] = COLOR_VOLUMES[color_volume]
+                corner_1[0], corner_1[1]:corner_7[1],
+                corner_1[2]:corner_7[2]] = COLORS['volumes'][color_volume]
 
             void[
                 corner_5[0] : corner_8[0], corner_5[1], corner_5[2] : corner_8[2]
             ] = element[:, 0, :]
             color_void[
-                corner_5[0] : corner_8[0], corner_5[1], corner_5[2] : corner_8[2]
-            ] = COLOR_VOLUMES[color_volume]
+                corner_5[0]:corner_8[0], corner_5[1],
+                corner_5[2]:corner_8[2]] = COLORS['volumes'][color_volume]
         else:
             void[
                 corner_2[0] - 1,
@@ -158,28 +150,24 @@ def add_pipe_cantilever(
             ] = element[1, :, :]
 
             color_void[
-                corner_2[0] - 1,
-                corner_2[1] : corner_8[1],
-                corner_2[2] : corner_8[2],
-            ] = COLOR_VOLUMES[color_volume]
+                corner_2[0] - 1, corner_2[1]:corner_8[1],
+                corner_2[2]:corner_8[2], ] = COLORS['volumes'][color_volume]
 
             void[
                 corner_1[0] : corner_4[0], corner_1[1], corner_1[2] : corner_4[2]
             ] = element[:, 0, :]
 
             color_void[
-                corner_1[0] : corner_4[0], corner_1[1], corner_1[2] : corner_4[2]
-            ] = COLOR_VOLUMES[color_volume]
+                corner_1[0]:corner_4[0], corner_1[1],
+                corner_1[2]:corner_4[2]] = COLORS['volumes'][color_volume]
 
-    """if int(os.environ.get('VERBOSE')) == 1:
-        print_information(
-                        void=void,
-                        element=element,
-                        axis_selection=axis_selection,
-                        delta=delta,
-                        #section=section,
-                        top_left_corner=top_left_corner,
-                        bottom_right_corner=bottom_right_corner,
-                    )"""
+    if int(os.environ.get('VERBOSE')) == 1:
+        Manager.verbose(
+            void=void,
+            element=element,
+            delta=delta,
+            top_left_corner=top_left_corner,
+            bottom_right_corner=bottom_right_corner,
+        )
 
     return void.astype("int8"), color_void

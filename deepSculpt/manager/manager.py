@@ -192,19 +192,74 @@ class Manager:  # make manager work with and with out epochs
         pass
 
     @staticmethod
-    def create_animation(frames_path, output_name='animation' ,fps=30):
+    def return_axis(void: np.ndarray, color_void: np.ndarray) -> tuple:
+        """
+        Selects a random plane from a 3D numpy array along a random axis.
+
+        Args:
+            void (np.ndarray): The 3D numpy array to select a plane from.
+            color_void (np.ndarray): The 3D numpy array that holds the color information.
+
+        Returns:
+            tuple: A tuple containing:
+                - working_plane (np.ndarray): The randomly selected plane.
+                - color_parameters (np.ndarray): The color information of the selected plane.
+                - section (int): The index of the selected plane.
+        """
+        section = np.random.randint(low=0, high=void.shape[0])
+        axis_selection = np.random.randint(low=0, high=3)
+
+        if axis_selection == 0:
+            working_plane = void[section, :, :]
+            color_parameters = color_void[section, :, :]
+        elif axis_selection == 1:
+            working_plane = void[:, section, :]
+            color_parameters = color_void[:, section, :]
+        elif axis_selection == 2:
+            working_plane = void[:, :, section]
+            color_parameters = color_void[:, :, section]
+        else:
+            print("Error: axis_selection value out of range.")
+
+        return working_plane, color_parameters, section
+
+    @staticmethod
+    def verbose(*args, **kwargs):
+        """Prints input arguments and keyword arguments in a nice, formatted way."""
+        print("=" * 50)
+        print("Verbose output:")
+        print("-" * 50)
+
+        if args:
+            print("Arguments:")
+            for arg in args:
+                print(f"  {arg}")
+
+        if kwargs:
+            print("Keyword arguments:")
+            for key, value in kwargs.items():
+                print(f"  {key}: {value}")
+
+        print("=" * 50)
+
+    @staticmethod
+    def create_animation(frames_path, output_name="animation", fps=30):
         # Get a list of all image files in the directory
-        image_files = sorted([f for f in os.listdir(frames_path) if f.endswith('.png') or f.endswith('.jpg')])
+        image_files = sorted(
+            [
+                f
+                for f in os.listdir(frames_path)
+                if f.endswith(".png") or f.endswith(".jpg")
+            ]
+        )
 
         # Load the image files into an array of image arrays
         images = [imageio.imread(os.path.join(frames_path, f)) for f in image_files]
 
         # Create the animation and save it as a GIF file
-        animation_path = os.path.join(frames_path, f'{output_name}.gif')
+        animation_path = os.path.join(frames_path, f"{output_name}.gif")
 
         imageio.mimsave(animation_path, images, fps=fps)
-
-
 
     @staticmethod
     def make_directory(directory):
