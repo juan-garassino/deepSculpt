@@ -1,7 +1,7 @@
 from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.manager.manager import Manager
-from deepSculpt.curator.tools.params import COLORS
 from deepSculpt.manager.tools.plotter import Plotter
+from deepSculpt.curator.tools.params import COLORS
 
 from datetime import date
 import numpy as np
@@ -88,9 +88,9 @@ class Curator:
                     self.grid,
                     self.step,
                 ),  # minimun height of column, and maximun height
-                materials_edges=COLORS['edges'],
-                materials_planes=COLORS['planes'],
-                materials_volumes=COLORS['volumes'],
+                materials_edges=COLORS["edges"],
+                materials_planes=COLORS["planes"],
+                materials_volumes=COLORS["volumes"],
                 step=self.step,
             )
 
