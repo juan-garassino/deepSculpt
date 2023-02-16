@@ -328,7 +328,8 @@ def trainer(
             + Style.RESET_ALL
         )
     else:
-        print("\n ⏹ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
+        print("\n ✅ " + Fore.GREEN + "Initializing from scratch" +
+              Style.RESET_ALL)
 
     for epoch in range(epochs):
 
