@@ -23,7 +23,7 @@ class Curator:
         directory: str = None,
         n_samples: int = 100,
         grid: int = 1,
-    ) -> None:
+    ):  # -> None:
         """Initialize the Curator instance.
 
         Args:
@@ -53,7 +53,7 @@ class Curator:
         self.directory = str(directory) if directory is not None else None
         self.n_samples = n_samples
 
-    def create_sculpts(self) -> Tuple[np.ndarray, np.ndarray]:
+    def create_sculpts(self):  # -> Tuple[np.ndarray, np.ndarray]:
         """Generate the 3D sculpted shapes.
 
         Returns:

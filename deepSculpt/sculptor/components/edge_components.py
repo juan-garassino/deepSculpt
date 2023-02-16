@@ -13,7 +13,7 @@ def attach_edge(
     element_edge_max_ratio: float = 0.9,
     step: int = 4,
     verbose: bool = False,
-) -> tuple[np.ndarray, np.ndarray]:
+):  # -> tuple[np.ndarray, np.ndarray]:
     """
     This function adds an edge of random length to the input array.
     Args:

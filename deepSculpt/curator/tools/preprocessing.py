@@ -65,7 +65,7 @@ class OneHotEncoderDecoder:
         )
         self.verbose = verbose
 
-    def ohe_encode(self) -> np.ndarray:
+    def ohe_encode(self):  # -> np.ndarray:
         """
         Encodes the color and material labels into one-hot encoded arrays.
 
@@ -183,7 +183,7 @@ class BinaryEncoderDecoder:
         self.binarizer_encoder = LabelEncoder()
         self.verbose = verbose
 
-    def binary_encode(self) -> tuple:
+    def binary_encode(self):  # -> tuple:
         """
         Encodes the input color array into binary format.
 
@@ -222,7 +222,7 @@ class BinaryEncoderDecoder:
 
         return binary_encoded_colors, self.classes
 
-    def binary_decode(self, binary_encoded_colors: np.ndarray) -> tuple:
+    def binary_decode(self, binary_encoded_colors: np.ndarray):  # -> tuple:
         """
         Decodes the input binary-encoded color array into label format.
 

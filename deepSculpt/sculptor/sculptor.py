@@ -23,7 +23,7 @@ class Sculptor:
         materials_planes: List[str] = None,
         materials_volumes: List[str] = None,
         step: int = 1,
-    ) -> None:
+    ):  # -> None:
         """
         Initializes a new Sculptor instance.
 
@@ -74,7 +74,7 @@ class Sculptor:
         self.step = step
         self.grid = grid
 
-    def generative_sculpt(self) -> tuple[np.ndarray, np.ndarray]:
+    def generative_sculpt(self):  # -> tuple[np.ndarray, np.ndarray]:
         """
         Generates a sculpture by attaching edge, plane and volume components
 

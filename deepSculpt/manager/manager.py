@@ -192,7 +192,7 @@ class Manager:  # make manager work with and with out epochs
         pass
 
     @staticmethod
-    def return_axis(void: np.ndarray, color_void: np.ndarray) -> tuple:
+    def return_axis(void: np.ndarray, color_void: np.ndarray):  # -> tuple:
         """
         Selects a random plane from a 3D numpy array along a random axis.
 

@@ -14,7 +14,7 @@ def attach_plane(
     element_plane_max_ratio: float = 0.9,
     step: int = 4,
     verbose: bool = False,
-) -> tuple[np.ndarray, np.ndarray]:
+):  # :# -> tuple[np.ndarray, np.ndarray]:
     """
     Adds a plane of ones to a given 2D numpy array.
 
