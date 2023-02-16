@@ -1,36 +1,106 @@
+import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 
-import numpy as np
+from colorama import Fore, Style
 
 
 class OneHotEncoderDecoder:
-    def __init__(self, colors_labels_array):
+    """
+    This class encodes color and material labels into one-hot encoded arrays and can also decode the one-hot encoded
+    arrays back into the original labels.
 
-        self.colors_labels_array = colors_labels_array
-        self.void_dim = colors_labels_array.shape[1]
-        self.n_sample = colors_labels_array.shape[0]
+    Parameters:
+    -----------
+    colors_labels_array : numpy.ndarray
+        A 4D numpy array of shape (n_samples, void_dim, void_dim, void_dim) representing the color labels for each sample.
+    materials : list
+        A list of strings representing the possible values for the material label.
+
+    Attributes:
+    -----------
+    colors_labels_array : numpy.ndarray
+        The input color labels array.
+    void_dim : int
+        The dimension of the void (3D space).
+    n_samples : int
+        The number of samples in the color labels array.
+    n_classes : int
+        The number of unique values in the materials list.
+    classes : numpy.ndarray
+        The unique values in the materials list.
+    one_hot_encoder : sklearn.preprocessing.OneHotEncoder
+        The OneHotEncoder object used to perform one-hot encoding.
+
+    Methods:
+    --------
+    encode()
+        Encodes the color and material labels into one-hot encoded arrays.
+    decode(encoded_array)
+        Decodes the one-hot encoded arrays back into the original color and material labels.
+
+    Examples:
+    ---------
+    # Create an instance of OneHotEncoderDecoder
+    ohe = OneHotEncoderDecoder(colors_labels_array, materials)
+
+    # Encode the color and material labels
+    encoded_array = ohe.encode()
+
+    # Decode the one-hot encoded array
+    decoded_labels = ohe.decode(encoded_array)
+    """
+
+    def __init__(
+        self, colors_labels_array: np.ndarray, materials: list, verbose: int = 1
+    ):
+        self.materials_labels_array = colors_labels_array
+        self.void_dim = self.materials_labels_array.shape[1]
+        self.n_samples = self.materials_labels_array.shape[0]
         self.n_classes = None
         self.classes = None
+        self.materials = materials
         self.one_hot_encoder = OneHotEncoder(
-            categories=[["crimson", "dimgrey", "gold", "snow", "turquoise", None]],
-            handle_unknown="ignore",
+            categories=[self.materials], handle_unknown="ignore"
         )
+        self.verbose = verbose
 
-    def ohe_encoder(self):
+    def ohe_encode(self) -> np.ndarray:
+        """
+        Encodes the color and material labels into one-hot encoded arrays.
 
-        encode = self.one_hot_encoder.fit_transform(
-            self.colors_labels_array.reshape(-1, 1)
+        Returns:
+        --------
+        encoded_array : numpy.ndarray
+            A 5D numpy array of shape (n_samples, void_dim, void_dim, void_dim, n_classes) representing the
+            one-hot encoded arrays for each sample and material.
+
+        Raises:
+        -------
+        ValueError:
+            If the input materials list is empty.
+        """
+        if not self.materials:
+            raise ValueError("The list of materials cannot be empty.")
+
+        encoded_array = self.one_hot_encoder.fit_transform(
+            self.materials_labels_array.reshape(-1, 1)
         )
 
         self.classes = self.one_hot_encoder.categories_[0]
 
         self.n_classes = self.classes.size
 
+        if self.verbose == 1:
+            print(
+                "\n ℹ️ " + Fore.RED +
+                f"A number of {self.n_samples} samples shaped {self.materials_labels_array.shape} have been encoded in {self.n_classes} classes: {self.classes}"
+                + Style.RESET_ALL)
+
         return (
-            encode.toarray().reshape(
+            encoded_array.toarray().reshape(
                 (
-                    self.n_sample,
+                    self.n_samples,
                     self.void_dim,
                     self.void_dim,
                     self.void_dim,
@@ -38,9 +108,24 @@ class OneHotEncoderDecoder:
                 )
             ),
             self.classes,
-        )  # returns encode (samples, shape, shape, shape, classes), classes
+        )
 
-    def ohe_decoder(self, one_hot_encoded_array):
+    def ohe_decode(self, one_hot_encoded_array):
+        """
+        Decodes the one-hot encoded arrays back into the original color and material labels.
+
+        Parameters:
+        -----------
+        encoded_array : numpy.ndarray
+            A 5D numpy array of shape (n_samples, void_dim, void_dim, void_dim, n_classes) representing the
+            one-hot encoded arrays for each sample and material.
+
+        Returns:
+        --------
+        decoded_labels : tuple
+            A tuple of two numpy arrays. The first array has shape (n_samples, void_dim, void_dim, void_dim) and
+            represents the color labels. The second array has shape (n_samples,) and represents the material labels.
+        """
 
         self.n_sample = one_hot_encoded_array.shape[0]
 
@@ -55,6 +140,12 @@ class OneHotEncoderDecoder:
 
         decoded_void = np.where(decoded_color == None, 0, 1)  # where None = 0 else 1
 
+        if self.verbose == 1:
+            print(
+                "\n ℹ️ " + Fore.RED +
+                f"A number of {self.n_samples} samples shaped {one_hot_encoded_array.shape} have been decoded in {self.n_classes} classes: {self.classes}"
+                + Style.RESET_ALL)
+
         return decoded_void.reshape(
             (self.n_sample, self.void_dim, self.void_dim, self.void_dim)
         ), decoded_color.reshape(
@@ -63,79 +154,103 @@ class OneHotEncoderDecoder:
 
 
 class BinaryEncoderDecoder:
-    def __init__(self, colors_labels_array):
+    def __init__(self, materials_labels_array: np.ndarray, verbose: int = 1):
+        """
+        A class that encodes and decodes colors into binary format.
 
-        self.colors_labels_array = colors_labels_array
-        self.void_dim = colors_labels_array.shape[1]
-        self.n_sample = colors_labels_array.shape[0]
+        Args:
+        colors_labels_array (np.ndarray): A 4D numpy array representing colors in
+            label format (integers).
+
+        Attributes:
+        colors_labels_array (np.ndarray): The input color array.
+        void_dim (int): The shape of the input color array.
+        n_sample (int): The number of color samples.
+        classes (np.ndarray): The unique color classes.
+        n_bit (int): The number of bits required to represent all the color classes.
+        binarizer_encoder (LabelEncoder): The label encoder used to encode the colors.
+
+        """
+        self.materials_labels_array = materials_labels_array
+        self.void_dim = materials_labels_array.shape[1]
+        self.n_samples = materials_labels_array.shape[0]
         self.classes = None
         self.n_bit = None
         self.binarizer_encoder = LabelEncoder()
+        self.verbose = verbose
 
-    def binary_encoder(self):
+    def binary_encode(self) -> tuple:
+        """
+        Encodes the input color array into binary format.
 
-        self.binarizer_encoder = LabelEncoder()
+        Returns:
+        tuple: A tuple of binary encoded color array and unique color classes.
 
+        """
         label_encoded_colors = self.binarizer_encoder.fit_transform(
-            self.colors_labels_array.reshape(-1, 1)
+            self.materials_labels_array.reshape(-1, 1)
         )
 
         self.classes = self.binarizer_encoder.classes_
+        self.n_bit = int(
+            np.ceil(np.log2(self.classes.size))
+        )  # round up to the nearest integer
+        binary_format = f"{{:0{self.n_bit}b}}"
 
-        self.n_bit = len(bin(self.classes.size - 1)[2:])
-
-        binary_format = "{:" + f"{self.n_bit}" + "b}"
-
+        # Convert the label-encoded colors to binary-encoded colors
         binary_encoded_colors = np.array(
             [
-                [
-                    int(char)
-                    for char in binary_format.format(color).replace(
-                        " ", "0"
-                    )  # crea [0,0,0] desde el string
-                ]  # el 03b tiene como output el binario en 3 digitos
-                for color in label_encoded_colors  # por cada uno de los flattened samples
+                [int(char) for char in binary_format.format(color)]
+                for color in label_encoded_colors
             ],
             dtype=object,
         ).reshape(
-            (self.n_sample, self.void_dim, self.void_dim, self.void_dim, self.n_bit)
+            (self.n_samples, self.void_dim, self.void_dim, self.void_dim, self.n_bit)
         )
 
-        print(
-            f"The output is 'binary_encoded_colors' shaped{binary_encoded_colors.shape} and classes {self.classes}"
-        )
+        if self.verbose == 1:
+            print(
+                "\n ℹ️ " + Fore.RED +
+                f"A number of {self.n_samples} samples shaped {self.materials_labels_array.shape} have been encoded to {binary_encoded_colors.shape} in {len(self.classes)} classes: {self.classes}"
+                + Style.RESET_ALL)
+
         return binary_encoded_colors, self.classes
 
-    def binary_decoder(self, binary_encoded_colors):
+    def binary_decode(self, binary_encoded_colors: np.ndarray) -> tuple:
+        """
+        Decodes the input binary-encoded color array into label format.
 
+        Args:
+        binary_encoded_colors (np.ndarray): A 5D numpy array representing binary-encoded colors.
+
+        Returns:
+        tuple: A tuple of decoded void array, decoded color array, unique binary codes,
+            and unique decimal codes.
+
+        """
         self.n_sample = binary_encoded_colors.shape[0]
 
         flatten_list = binary_encoded_colors.reshape(
-            (self.n_sample * self.void_dim * self.void_dim * self.void_dim, self.n_bit)
+            (self.n_samples * self.void_dim**3, self.n_bit)
         ).tolist()
 
-        decode_preprocess_binary = []
-
-        for pixel in flatten_list:
-            decode_preprocess_binary.append("".join(list(str(bit) for bit in pixel)))
-
+        decode_preprocess_binary = [
+            "".join(str(bit) for bit in pixel) for pixel in flatten_list
+        ]
         decode_preprocess_decimal = [
             int(encode, base=2) for encode in decode_preprocess_binary
         ]
 
         decoded_color = self.binarizer_encoder.inverse_transform(
             decode_preprocess_decimal
-        ).reshape((self.n_sample, self.void_dim, self.void_dim, self.void_dim))
+        ).reshape((self.n_samples, self.void_dim, self.void_dim, self.void_dim))
 
         decoded_void = np.where(decoded_color == None, 0, 1)
 
-        print(
-            f"Just decoded 'decoded_void' shaped {decoded_void.shape} and 'decoded_color' shaped{decoded_color.shape}"
-        )
+        if self.verbose == 1:
+            print(
+                "\n ℹ️ " + Fore.RED +
+                f"A number of {self.n_samples} samples shaped {binary_encoded_colors.shape} have been decoded to {decoded_void.shape} in {len(self.classes)} classes: {self.classes}"
+                + Style.RESET_ALL)
 
-        return (
-            decoded_void,
-            decoded_color,
-            np.unique(decode_preprocess_binary),
-            np.unique(decode_preprocess_decimal),
-        )
+        return (decoded_void, decoded_color)

@@ -50,7 +50,7 @@ def generate_and_save_snapshot(
     )
 
     # Decodes the structure to be plotted
-    o_decoded_volumes, o_decoded_colors = preprocessing_class_o.ohe_decoder(predictions)
+    o_decoded_volumes, o_decoded_colors = preprocessing_class_o.ohe_decode(predictions)
 
     for prediction in range(int(os.environ.get("SCULPTS_GEN"))):
         # Plots the Sculpture
