@@ -74,6 +74,10 @@ run_sculptor:
 
 # PACKAGE RUNS
 run_curator:
+	python -m deepSculpt.collector.collector
+
+# PACKAGE RUNS
+run_curator:
 	python -m deepSculpt.curator.curator
 
 # PACKAGE RUNS
@@ -208,7 +212,7 @@ test_api_root:
 # TESTS
 test_api_predict:
 	TEST_ENV=development pytest tests/api -k 'test_predict' --asyncio-mode=strict -W "ignore"
-	
+
 # GOOGLE SETUP
 gcpsetup_00_login:
 	@gcloud auth login --cred-file=${GOOGLE_APPLICATION_CREDENTIALS}

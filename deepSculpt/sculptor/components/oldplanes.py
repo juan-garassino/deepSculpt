@@ -4,7 +4,7 @@ from colorama import Fore, Style
 import os
 
 from deepSculpt.sculptor.components.utils import return_axis, print_information
-from deepSculpt.curator.tools.params import COLOR_PLANES
+from deepSculpt.collector.tools.params import COLOR_PLANES
 
 
 def add_plane(

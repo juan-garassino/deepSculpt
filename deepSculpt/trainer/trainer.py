@@ -17,7 +17,7 @@ from tensorflow.train import Checkpoint, CheckpointManager
 
 from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
-from deepSculpt.manager.tools.sampling import sampling
+from deepSculpt.curator.curator import sampling
 
 from deepSculpt.trainer.tools.complexmodel import (
     make_three_dimensional_generator,
@@ -35,7 +35,7 @@ from deepSculpt.manager.tools.checkpoint import (
     generate_and_save_checkpoint,
     load_model_from_cgp,
 )
-from deepSculpt.curator.tools.params import SEED, MINIBATCHES
+from deepSculpt.collector.tools.params import SEED, MINIBATCHES
 
 
 if int(os.environ.get("COLOR")) == 1:
@@ -328,8 +328,7 @@ def trainer(
             + Style.RESET_ALL
         )
     else:
-        print("\n ✅ " + Fore.GREEN + "Initializing from scratch" +
-              Style.RESET_ALL)
+        print("\n ✅ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
 
     for epoch in range(epochs):
 

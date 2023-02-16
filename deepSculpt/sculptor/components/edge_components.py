@@ -1,5 +1,5 @@
 from deepSculpt.manager.manager import Manager
-from deepSculpt.curator.tools.params import COLORS
+from deepSculpt.collector.tools.params import COLORS
 
 import random
 import numpy as np
