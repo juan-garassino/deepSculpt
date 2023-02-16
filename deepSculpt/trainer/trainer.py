@@ -17,7 +17,6 @@ from tensorflow.train import Checkpoint, CheckpointManager
 
 from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
-from deepSculpt.curator.curator import sampling
 
 from deepSculpt.trainer.tools.complexmodel import (
     make_three_dimensional_generator,
@@ -35,21 +34,38 @@ from deepSculpt.manager.tools.checkpoint import (
     generate_and_save_checkpoint,
     load_model_from_cgp,
 )
-from deepSculpt.collector.tools.params import SEED, MINIBATCHES
+from deepSculpt.manager.tools.params import SEED, MINIBATCHES
+from deepSculpt.curator.curator import Curator
 
+if os.environ.get("COLOR") == 0:  # MONOCHROME
 
-if int(os.environ.get("COLOR")) == 1:
-
-    # Loads Data
-
-    train_dataset, preprocessing_class_o = sampling(
+    curator = Curator(
         n_samples=os.environ.get("N_SAMPLES_CREATE"),
         edge_elements=(0, 0.2, 0.6),
         plane_elements=(0, 0.2, 0.6),
         volume_elements=(2, 0.6, 0.9),
         void_dim=os.environ.get("VOID_DIM"),
         grid=1,
+        binary=0,
     )
+
+    train_dataset, preprocessing_class_o = curator.sampling()
+
+if int(os.environ.get("COLOR")) == 1: # COLOR
+
+    # Loads Data
+
+    curator = Curator(
+        n_samples=os.environ.get("N_SAMPLES_CREATE"),
+        edge_elements=(0, 0.2, 0.6),
+        plane_elements=(0, 0.2, 0.6),
+        volume_elements=(2, 0.6, 0.9),
+        void_dim=os.environ.get("VOID_DIM"),
+        grid=1,
+        binary=0,
+    )
+
+    train_dataset, preprocessing_class_o = curator.sampling()
 
     # add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
 
@@ -79,7 +95,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     print(Style.RESET_ALL)
 
-    ## Local instance enviroment on COMPUTER
+    ## Path local instance enviroment on COMPUTER
 
     if int(os.environ.get("INSTANCE")) == 0:
 
@@ -94,7 +110,7 @@ if int(os.environ.get("COLOR")) == 1:
 
         Manager.make_directory(checkpoint_dir)
 
-    ## Local instance eviroment on COLAB
+    ## Path local instance eviroment on COLAB
 
     if int(os.environ.get("INSTANCE")) == 1:
 
@@ -112,7 +128,7 @@ if int(os.environ.get("COLOR")) == 1:
 
         Manager.make_directory(checkpoint_dir)
 
-    ## Cloud instance enviroment in GCP
+    ## Path cloud instance enviroment in GCP
 
     if int(os.environ.get("INSTANCE")) == 2:
 
@@ -139,109 +155,8 @@ if int(os.environ.get("COLOR")) == 1:
         checkpoint_name="checkpoint",
     )
 
-if os.environ.get("COLOR") == 0:  # MONOCHROME
-
-    # Loads Data
-
-    train_dataset, preprocessing_class_o = sampling(
-        n_samples=os.environ.get("N_SAMPLES_CREATE"),
-        edge_elements=(0, 0.2, 0.6),
-        plane_elements=(0, 0.2, 0.6),
-        volume_elements=(3, 0.2, 0.6),
-        void_dim=os.environ.get("VOID_DIM"),
-        grid=1,
-    )
-
-    # add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
-
-    # ADD MLFLOW I PREFECT
-
-    # ARREGLAR PLOTER CAMBIANDO LOS 1 POR EL COLOR!
-
-    # Initiates the Generator
-
-    generator = make_three_dimentional_generator()
-
-    generator.compile()
-
-    print("\n ❎ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
-
-    print(generator.summary())
-
-    # Initiates the Discriminator
-
-    discriminator = make_three_dimentional_critic()
-
-    discriminator.compile()
-
-    print("\n ❎ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
-
-    print(discriminator.summary())
-
-    print(Style.RESET_ALL)
-
-    ## Local instance enviroment on COMPUTER
-
-    if int(os.environ.get("INSTANCE")) == 0:
-
-        checkpoint_dir = os.path.join(
-            os.environ.get("HOME"),
-            "code",
-            "juan-garassino",
-            "deepSculpt",
-            "results",
-            "checkpoints",
-        )
-
-        Manager.make_directory(checkpoint_dir)
-
-    ## Local instance eviroment on COLAB
-
-    if int(os.environ.get("INSTANCE")) == 1:
-
-        checkpoint_dir = os.path.join(
-            os.environ.get("HOME"),
-            "..",
-            "content",
-            "drive",
-            "MyDrive",
-            "repositories",
-            "deepSculpt",
-            "results",
-            "checkpoints",
-        )
-
-        Manager.make_directory(checkpoint_dir)
-
-    ## Cloud instance enviroment in GCP
-
-    if int(os.environ.get("INSTANCE")) == 2:
-
-        checkpoint_dir = "gs://deepsculpt/checkpoints"
-
-        bucket = storage.Client().bucket(os.environ.get("BUCKET_NAME"))
-
-    # Initiates a Checkpoint Object
-
-    checkpoint = Checkpoint(
-        step=Variable(1),
-        generator_optimizer=generator_optimizer,
-        discriminator_optimizer=discriminator_optimizer,
-        generator=generator,
-        discriminator=discriminator,
-    )
-
-    # Initiates a Checkpoint Manager Object
-
-    manager = CheckpointManager(
-        checkpoint=checkpoint,
-        directory=checkpoint_dir,
-        max_to_keep=3,
-        checkpoint_name="checkpoint",
-    )
-
-
-"""@function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
+"""
+@function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
     with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
@@ -280,8 +195,9 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     discriminator_optimizer.apply_gradients(
         zip(gradients_of_discriminator, discriminator.trainable_variables)
     )
-    # applying the gradients on the trainable variables of the generator to update the parameters"""
+    # applying the gradients on the trainable variables of the generator to update the parameters
 
+"""
 
 @function
 def train_step(images, gen_steps=1, disc_steps=1):
