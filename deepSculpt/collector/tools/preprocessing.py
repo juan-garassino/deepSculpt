@@ -192,7 +192,7 @@ class BinaryEncoderDecoder:
 
         """
         label_encoded_colors = self.binarizer_encoder.fit_transform(
-            self.materials_labels_array.reshape(-1, 1)
+            self.materials_labels_array.reshape(-1, 1).flatten()
         )
 
         self.classes = self.binarizer_encoder.classes_

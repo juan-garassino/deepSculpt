@@ -73,7 +73,7 @@ run_sculptor:
 	python -m deepSculpt.sculptor.sculptor
 
 # PACKAGE RUNS
-run_curator:
+run_collector:
 	python -m deepSculpt.collector.collector
 
 # PACKAGE RUNS
