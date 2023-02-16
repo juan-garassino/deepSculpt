@@ -1,4 +1,4 @@
-from deepSculpt.curator.tools.params import COLOR_EDGES
+from deepSculpt.collector.tools.params import COLOR_EDGES
 from colorama import Fore, Style
 
 import random

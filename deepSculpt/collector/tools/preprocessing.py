@@ -220,7 +220,7 @@ class BinaryEncoderDecoder:
                 + Style.RESET_ALL
             )
 
-        return binary_encoded_colors, self.classes
+        return binary_encoded_colors.astype(float), list(self.classes)
 
     def binary_decode(self, binary_encoded_colors: np.ndarray):  # -> tuple:
         """
@@ -237,8 +237,8 @@ class BinaryEncoderDecoder:
         self.n_sample = binary_encoded_colors.shape[0]
 
         flatten_list = binary_encoded_colors.reshape(
-            (self.n_samples * self.void_dim**3, self.n_bit)
-        ).tolist()
+            (self.n_samples * self.void_dim**3,
+             self.n_bit)).astype(int).tolist()
 
         decode_preprocess_binary = [
             "".join(str(bit) for bit in pixel) for pixel in flatten_list

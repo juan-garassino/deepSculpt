@@ -2,7 +2,7 @@ import random
 import numpy as np
 
 from deepSculpt.sculptor.components.utils import return_axis
-from deepSculpt.curator.tools.params import COLOR_EDGES
+from deepSculpt.collector.tools.params import COLOR_EDGES
 
 
 def add_edge(

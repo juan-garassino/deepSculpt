@@ -8,7 +8,7 @@ from deepSculpt.sculptor.components.cantilever import attach_pipe
 from deepSculpt.sculptor.components.edge_components import attach_edge
 from deepSculpt.sculptor.components.grid_components import attach_grid
 from deepSculpt.sculptor.components.plane_components import attach_plane
-from deepSculpt.curator.tools.params import COLORS
+from deepSculpt.collector.tools.params import COLORS
 
 
 class Sculptor:

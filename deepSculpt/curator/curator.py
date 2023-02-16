@@ -1,238 +1,247 @@
-import os
-import random
-from datetime import date
-from typing import List, Tuple
-import time
-import numpy as np
-from colorama import Fore, Style
-
-from deepSculpt.sculptor.sculptor import Sculptor
+from deepSculpt.collector.collector import Collector
 from deepSculpt.manager.manager import Manager
+from deepSculpt.collector.tools.preprocessing import OneHotEncoderDecoder
+from deepSculpt.collector.tools.preprocessing import BinaryEncoderDecoder
+from deepSculpt.collector.tools.params import BUFFER_SIZE, COLORS
 from deepSculpt.manager.tools.plotter import Plotter
-from deepSculpt.curator.tools.params import COLORS
 
+import random
+import os
+from colorama import Fore, Style
+import numpy as np
+from tensorflow.data import Dataset
+import tensorflow as tf
 
-class Curator:
+class Curator:  # make manager work with and with out epochs
+
     def __init__(
-        self,
-        void_dim: int = 32,
-        edge_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
-        plane_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
-        volume_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
-        step: int = None,
-        directory: str = None,
-        n_samples: int = 100,
-        grid: int = 1,
-    ):  # -> None:
-        """Initialize the Curator instance.
-
-        Args:
-            void_dim (int, optional):
-            The size of the 3D grid in each dimension. Defaults to 32.
-            edge_elements (Tuple[float, float, float], optional):
-            The tuple containing the number of edges and the minimum and maximum number of edges for a shape. Defaults to (0, 0.3, 0.5).
-            plane_elements (Tuple[float, float, float], optional):
-            The tuple containing the number of planes and the minimum and maximum number of planes for a shape. Defaults to (0, 0.3, 0.5).
-            volume_elements (Tuple[float, float, float], optional):
-            The tuple containing the number of volumes and the minimum and maximum number of volumes for a shape. Defaults to (0, 0.3, 0.5).
-            step (int, optional):
-            The step size for the 3D grid. Defaults to None.
-            directory (str, optional):
-            The directory path where the data files will be saved. Defaults to None.
-            n_samples (int, optional):
-            The number of samples to generate. Defaults to 100.
-            grid (int, optional):
-            The minimum height of a column and the maximum height of a column on the 3D grid. Defaults to 1.
-        """
-        self.void_dim = void_dim
+        self, n_samples=128,
+        edge_elements=None,
+        plane_elements=None,
+        volume_elements=None,
+        void_dim=None,
+        grid=1,
+        binary=1
+    ):
+        self.n_samples = n_samples
         self.edge_elements = edge_elements
         self.plane_elements = plane_elements
         self.volume_elements = volume_elements
+        self.void_dim = void_dim
         self.grid = grid
-        self.step = int(self.void_dim / 6) if step is None else step
-        self.directory = str(directory) if directory is not None else None
-        self.n_samples = n_samples
+        self.binary=binary
 
-    def create_sculpts(self):  # -> Tuple[np.ndarray, np.ndarray]:
-        """Generate the 3D sculpted shapes.
+    def sampling(self):  # convert to spare tensor
 
-        Returns:
-            Tuple[np.ndarray, np.ndarray]: A tuple containing two NumPy arrays, the first one is a
-            4D NumPy array of the volume data, and the second one is a 4D NumPy array of the material
-            data of the generated shapes.
-        """
-        raw_data: List[np.ndarray] = []
+        # Loads the data
+        if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
 
-        color_raw_data: List[np.ndarray] = []
+            manager = Manager(
+                model_name="",
+                data_name="",
+                path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
+                path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
+            )
 
-        count = 0
+            # Local path
+            if int(os.environ.get("INSTANCE")) == 0:
 
-        for count, sculpture in enumerate(range(self.n_samples)):  #
+                path = os.path.join(
+                    os.environ.get("HOME"),
+                    "code",
+                    "juan-garassino",
+                    "deepSculpt",
+                    "data",
+                    "sampling",
+                )
 
-            if int(os.environ.get("VERBOSE")) == 1:
+                volumes_void, materials_void = manager.load_locally()
+
+            # Colab path
+            if int(os.environ.get("INSTANCE")) == 1:
+
+                path = os.path.join(
+                    os.environ.get("HOME"),
+                    "..",
+                    "content",
+                    "drive",
+                    "MyDrive",
+                    "repositories",
+                    "deepSculpt",
+                    "data",
+                    "sampling",
+                )
+
+                volumes_void, materials_void = manager.load_locally()
+                # volumes_void,  materials_void = manager.load_from_gcp()
+
+            # GCP path
+            if int(os.environ.get("INSTANCE")) == 2:
+                volumes_void, materials_void = manager.load_from_query()
+
+            for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
+
+                index = random.choices(list(np.arange(0, volumes_void.shape[0], 1)), k=1)[0]
+
+                Plotter(
+                    volumes_void[index],
+                    materials_void[index],
+                    figsize=25,
+                    style="#ffffff",
+                    dpi=int(os.environ.get("DPI")),
+                ).plot_sculpture(path + f"[{index}]")
+
                 print(
-                    "\n\t⏹ "
-                    + Fore.BLUE
-                    + f"Creating sculpture number {count}"
+                    "\n 🆗 "
+                    + Fore.YELLOW
+                    + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                     + Style.RESET_ALL
                 )
 
-            start = time.time()
+        # Creates the data
+        elif int(os.environ.get("CREATE_DATA")) == 1:  # CREATES AND UPLOADS TO BIG QUERY
 
-            if int(os.environ.get("VERBOSE")) == 1:
-                if (count + 1) % 25 == 0:
-                    print(
-                        "\n\t⏹ "
-                        + Fore.GREEN
-                        + "{} sculputers where created in {}".format(
-                            (count + 1), time.time() - start
-                        )
-                        + Style.RESET_ALL
-                    )
-
-            sculptor = Sculptor(
-                void_dim=self.void_dim,
-                edges=(
-                    self.edge_elements[0],
-                    self.edge_elements[1],
-                    self.edge_elements[2],
-                ),  # number of elements, minimun, maximun
-                planes=(
-                    self.plane_elements[0],
-                    self.plane_elements[1],
-                    self.plane_elements[2],
-                ),
-                volumes=(
-                    self.volume_elements[0],
-                    self.volume_elements[1],
-                    self.volume_elements[2],
-                ),
-                grid=(
-                    self.grid,
-                    self.step,
-                ),  # minimun height of column, and maximun height
-                materials_edges=COLORS["edges"],
-                materials_planes=COLORS["planes"],
-                materials_volumes=COLORS["volumes"],
-                step=self.step,
-            )
-
-            sculpture = sculptor.generative_sculpt()
-
-            raw_data.append(
-                sculpture[0].astype("int8")
-            )  # NOT APPEND BUT SAVE IN DIFF FILES!!
-
-            color_raw_data.append(sculpture[1])
-
-        raw_data = (
-            np.asarray(raw_data)
-            .reshape(
-                (
-                    int(self.n_samples),
-                    int(self.void_dim),
-                    int(self.void_dim),
-                    int(self.void_dim),
+            # Local path
+            if int(os.environ.get("INSTANCE")) == 0:
+                path = os.path.join(
+                    os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
                 )
-            )
-            .astype("int8")
-        )
 
-        color_raw_data = (
-            np.asarray(color_raw_data)
-            .reshape(
-                (
-                    int(self.n_samples),
-                    int(self.void_dim),
-                    int(self.void_dim),
-                    int(self.void_dim),
+            # Colab path
+            if int(os.environ.get("INSTANCE")) == 1:
+                path = os.path.join(
+                    os.environ.get("HOME"),
+                    "..",
+                    "content",
+                    "drive",
+                    "MyDrive",
+                    "repositories",
+                    "deepSculpt",
+                    "data",
                 )
-            )
-            .astype("object")
-        )
 
-        Manager.make_directory(self.directory)
+            # GCP path
+            if int(os.environ.get("INSTANCE")) == 2:
+                path = os.path.join(
+                    os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+                )
 
-        np.save(
-            f"{self.directory}/volume_data[{date.today()}]",
-            raw_data,
-            allow_pickle=True,
-        )
-
-        np.save(
-            f"{self.directory}/material_data[{date.today()}]",
-            color_raw_data,
-            allow_pickle=True,
-        )
-
-        print(
-            "\n 🔽 "
-            + Fore.BLUE
-            + f"Just created 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
-            + Style.RESET_ALL
-        )
-
-        # path
-        if int(os.environ.get("INSTANCE")) == 0:
-            path = os.path.join(
-                os.environ.get("HOME"),
-                "code",
-                "juan-garassino",
-                "deepSculpt",
-                "data",
-                "sampling",
-            )
-        # path
-        if int(os.environ.get("INSTANCE")) == 1:
-            path = os.path.join(
-                os.environ.get("HOME"),
-                "..",
-                "content",
-                "drive",
-                "MyDrive",
-                "repositories",
-                "deepSculpt",
-                "data",
-                "sampling",
+            # Initiates
+            curator = Collector(
+                void_dim=int(self.void_dim),
+                edge_elements=self.edge_elements,
+                plane_elements=self.plane_elements,
+                volume_elements=self.volume_elements,
+                step=None,
+                grid=self.grid,
+                directory=path,
+                n_samples=int(self.n_samples),
             )
 
-        for sample in range(int(os.environ.get("N_SAMPLES_PLOT"))):
+            # Creates the data
+            volumes_void, materials_void = curator.create_collection()
 
-            index = random.choices(list(np.arange(0, self.n_samples, 1)), k=1)[0]
+        # No data
+        elif int(os.environ.get("CREATE_DATA")) != 0 and int(os.environ.get("CREATE_DATA")) != 1:
+            print('How do i get data?!')
 
-            Plotter(
-                raw_data[index],
-                color_raw_data[index],
-                figsize=25,
-                style="#ffffff",
-                dpi=int(os.environ.get("DPI")),
-            ).plot_sculpture(path)
+        else:
+            print('Big Error')
+
+        # Returns onehot encoded data
+        if self.binary == 0:
+
+            if isinstance(materials_void, np.ndarray) == False:
+                print("error")
+
+            materials = [COLORS["edges"], COLORS["planes"]
+                            ] + COLORS["volumes"] + [None]
+
+            # Preproccess the data
+            preprocessing_class_o = OneHotEncoderDecoder(
+                materials_void, materials=materials, verbose=1)
+
+            o_encode, o_classes = preprocessing_class_o.ohe_encode()
+
+            print("\n 🔀 " + Fore.YELLOW +
+                    "Just preproccess data from shape {} to {}".format(
+                        materials_void.shape, o_encode.shape) +
+                    Style.RESET_ALL)
+
+            print("\n 🔠 " + Fore.YELLOW +
+                    "The classes are: {}".format(o_classes) +
+                    Style.RESET_ALL)
+
+            # o_encode = tf.sparse.from_dense(o_encode)
+
+            # Creates the dataset
+            train_dataset = (Dataset.from_tensor_slices(o_encode).shuffle(
+                BUFFER_SIZE).take(int(os.environ.get("TRAIN_SIZE"))).batch(
+                    int(os.environ.get("BATCH_SIZE"))))
+
+            return train_dataset, preprocessing_class_o
+
+        # Returns binary encoded data
+        elif self.binary == 1:
+
+            if isinstance(materials_void, np.ndarray) == False:
+                print("error")
+
+            #materials = [COLORS["edges"], COLORS["planes"]] + COLORS["volumes"] + [None]
+
+            # Preproccess the data
+            preprocessing_class_b = BinaryEncoderDecoder(
+                materials_void
+            )
+
+            b_encode, b_classes = preprocessing_class_b.binary_encode()
 
             print(
-                "\n 🆗 "
+                "\n 🔀 "
                 + Fore.YELLOW
-                + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
+                + "Just preproccess data from shape {} to {}".format(
+                    materials_void.shape, b_encode.shape
+                )
                 + Style.RESET_ALL
             )
 
-        return (raw_data, color_raw_data)
+            print(
+                "\n 🔠 "
+                + Fore.YELLOW
+                + "The classes are: {}".format(b_classes)
+                + Style.RESET_ALL
+            )
+
+            # o_encode = tf.sparse.from_dense(o_encode)
+
+            # Creates the dataset
+            train_dataset = (
+                Dataset.from_tensor_slices(b_encode)
+                .shuffle(BUFFER_SIZE)
+                .take(int(os.environ.get("TRAIN_SIZE")))
+                .batch(int(os.environ.get("BATCH_SIZE")))
+            )
+
+            return train_dataset, preprocessing_class_b
+
+        # No encoder
+        elif self.binary != 0 and self.binary != 1:
+            print('broken')
+
+        else:
+            print('Big Error')
 
 
 if __name__ == "__main__":
 
-    out_dir = os.path.join(
-        os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
-    )
-
     curator = Curator(
-        void_dim=int(os.environ.get("VOID_DIM")),
-        edge_elements=(0, 0.3, 0.5),
-        plane_elements=(0, 0.3, 0.5),
-        volume_elements=(2, 0.3, 0.5),
-        step=None,
-        directory=out_dir,
-        n_samples=50,
+        n_samples=128,
+        edge_elements=(1, 0.2, 0.6),
+        plane_elements=(1, 0.2, 0.6),
+        volume_elements=(1, 0.2, 0.6),
+        void_dim=os.environ.get("VOID_DIM"),
         grid=1,
+        binary=1
     )
 
-    curator.create_sculpts()
+    curator.sampling()
