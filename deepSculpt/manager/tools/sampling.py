@@ -1,7 +1,7 @@
 from deepSculpt.curator.curator import Curator
 from deepSculpt.manager.manager import Manager
 from deepSculpt.curator.tools.preprocessing import OneHotEncoderDecoder
-from deepSculpt.curator.tools.params import BUFFER_SIZE
+from deepSculpt.curator.tools.params import BUFFER_SIZE, COLORS
 from deepSculpt.manager.tools.plotter import Plotter
 
 import random
@@ -47,7 +47,7 @@ def sampling(
                 "sampling",
             )
 
-            volumes, colors = manager.load_locally()
+            volumes_void, materials_void = manager.load_locally()
 
         if int(os.environ.get("INSTANCE")) == 1:
 
@@ -63,19 +63,19 @@ def sampling(
                 "sampling",
             )
 
-            volumes, colors = manager.load_locally()
-            # volumes, colors = manager.load_from_gcp()
+            volumes_void, materials_void = manager.load_locally()
+            # volumes_void,  materials_void = manager.load_from_gcp()
 
         if int(os.environ.get("INSTANCE")) == 2:
-            volumes, colors = manager.load_from_query()
+            volumes_void, materials_void = manager.load_from_query()
 
         for sample in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
-            index = random.choices(list(np.arange(0, volumes.shape[0], 1)), k=1)[0]
+            index = random.choices(list(np.arange(0, volumes_void.shape[0], 1)), k=1)[0]
 
             Plotter(
-                volumes[index],
-                colors[index],
+                volumes_void[index],
+                materials_void[index],
                 figsize=25,
                 style="#ffffff",
                 dpi=int(os.environ.get("DPI")),
@@ -114,10 +114,7 @@ def sampling(
                 os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
             )
 
-        curator = Curator(  # create=False,
-            # locally=True,
-            # path_volumes="",
-            # path_colors="",
+        curator = Curator(
             void_dim=int(void_dim),
             edge_elements=edge_elements,
             plane_elements=plane_elements,
@@ -129,40 +126,26 @@ def sampling(
         )
 
         # Creates the data
-        volumes, colors = curator.create_sculpts(
-            # n_edge_elements=n_edge_elements,
-            # n_plane_elements=n_plane_elements,
-            # n_volume_elements=n_volume_elements,
-            # color_edges="dimgrey",
-            # color_planes="snow",
-            # color_volumes=["crimson", "turquoise", "gold"],
-            # verbose=os.environ.get("VERBOSE"),
-            # void_dim=int(os.environ.get("VOID_DIM")),
-        )
+        volumes_void, materials_void = curator.create_sculpts()
 
-    if isinstance(colors, np.ndarray) == False:
+    if isinstance(materials_void, np.ndarray) == False:
         print("error")
 
+    materials = [COLORS["edges"], COLORS["planes"]] + COLORS["volumes"] + [None]
+
     # Preproccess the data
-    preprocessing_class_o = OneHotEncoderDecoder(colors)
-
-    o_encode, o_classes = preprocessing_class_o.ohe_encoder()
-
-    print(
-        "\n ⏹ "
-        + Fore.YELLOW
-        + "Just preproccess data from shape {} to {}".format(
-            colors.shape, o_encode.shape
-        )
-        + Style.RESET_ALL
+    preprocessing_class_o = OneHotEncoderDecoder(
+        materials_void, materials=materials, verbose=1
     )
 
-    print(
-        "\n ⏹ "
-        + Fore.YELLOW
-        + "The classes are: {}".format(o_classes)
-        + Style.RESET_ALL
-    )
+    o_encode, o_classes = preprocessing_class_o.ohe_encode()
+
+    print("\n ⏹ " + Fore.YELLOW +
+          "Just preproccess data from shape {} to {}".format(
+              materials_void.shape, o_encode.shape) + Style.RESET_ALL)
+
+    print("\n ⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes) +
+          Style.RESET_ALL)
 
     # o_encode = tf.sparse.from_dense(o_encode)
 

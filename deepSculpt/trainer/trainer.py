@@ -63,7 +63,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     generator.compile()
 
-    print("\n \t⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
+    print("\n ⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
     print(generator.summary())
 
@@ -73,7 +73,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     discriminator.compile()
 
-    print("\n \t⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
+    print("\n ⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
     print(discriminator.summary())
 
@@ -164,7 +164,7 @@ if os.environ.get("COLOR") == 0:  # MONOCHROME
 
     generator.compile()
 
-    print("\n⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
+    print("\n ⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
     print(generator.summary())
 
@@ -174,7 +174,7 @@ if os.environ.get("COLOR") == 0:  # MONOCHROME
 
     discriminator.compile()
 
-    print("\n⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
+    print("\n ⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
     print(discriminator.summary())
 
@@ -322,19 +322,19 @@ def trainer(
 
     if manager.latest_checkpoint:
         print(
-            "\n🔽 "
+            "\n 🔽 "
             + Fore.YELLOW
             + "Restored from {}...".format(manager.latest_checkpoint)
             + Style.RESET_ALL
         )
     else:
-        print("\n⏹ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
+        print("\n ⏹ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
 
     for epoch in range(epochs):
 
         start = time.time()
 
-        print("\n⏩ " + Fore.RED + "Epoch number %d" % (epoch + 1,) + Style.RESET_ALL)
+        print("\n ⏩ " + Fore.RED + "Epoch number %d" % (epoch + 1,) + Style.RESET_ALL)
 
         for index, image_batch in enumerate(dataset):
             noise = normal(
@@ -382,7 +382,7 @@ def trainer(
                 )
 
                 print(
-                    "\n📶 "
+                    "\n 📶 "
                     + Fore.MAGENTA
                     + "Time for minibatches between {} and {} is {} sec".format(
                         (index * int(os.environ.get("BATCH_SIZE"))),
@@ -460,7 +460,7 @@ def trainer(
                 Manager.save_mlflow_model(metrics=metrics, params=params, model=None)
 
                 print(
-                    "\n🔼 "
+                    "\n 🔼 "
                     + Fore.BLUE
                     + "Saved checkpoint for step {}: mlfow".format(int(checkpoint.step))
                     + Style.RESET_ALL
@@ -502,7 +502,7 @@ def trainer(
                 save_path = manager.save()
 
                 print(
-                    "\n🔼 "
+                    "\n 🔼 "
                     + Fore.BLUE
                     + "Saved checkpoint for step {}: {}".format(
                         int(checkpoint.step), save_path
@@ -534,7 +534,7 @@ def trainer(
                 Manager.save_mlflow_model(metrics=metrics, params=params, model=None)
 
                 print(
-                    "\n🔼 "
+                    "\n 🔼 "
                     + Fore.BLUE
                     + "Saved checkpoint for step {}: mlfow".format(int(checkpoint.step))
                     + Style.RESET_ALL
@@ -578,7 +578,7 @@ def trainer(
                 plt.savefig(snapshot_name)
 
                 print(
-                    "\n🔽 "
+                    "\n 🔽 "
                     + Fore.BLUE
                     + f"Just created a snapshot {snapshot_name.split('/')[-1]} @ {out_dir}"
                     + Style.RESET_ALL
@@ -604,7 +604,7 @@ def trainer(
             print("to MLFLOW")
 
         print(
-            "\n📶 "
+            "\n 📶 "
             + Fore.MAGENTA
             + "Time for epoch {} is {} sec".format(epoch + 1, time.time() - start)
             + Style.RESET_ALL
