@@ -61,9 +61,9 @@ class Collector:
             4D NumPy array of the volume data, and the second one is a 4D NumPy array of the material
             data of the generated shapes.
         """
-        raw_data: List[np.ndarray] = []
+        volumes_raw_data: List[np.ndarray] = []
 
-        color_raw_data: List[np.ndarray] = []
+        materials_raw_data: List[np.ndarray] = []
 
         count = 0
 
@@ -119,14 +119,14 @@ class Collector:
 
             sculpture = sculptor.generative_sculpt()
 
-            raw_data.append(
+            volumes_raw_data.append(
                 sculpture[0].astype("int8")
             )  # NOT APPEND BUT SAVE IN DIFF FILES!!
 
-            color_raw_data.append(sculpture[1])
+            materials_raw_data.append(sculpture[1])
 
-        raw_data = (
-            np.asarray(raw_data)
+        volumes_raw_data = (
+            np.asarray(volumes_raw_data)
             .reshape(
                 (
                     int(self.n_samples),
@@ -138,8 +138,8 @@ class Collector:
             .astype("int8")
         )
 
-        color_raw_data = (
-            np.asarray(color_raw_data)
+        materials_raw_data = (
+            np.asarray(materials_raw_data)
             .reshape(
                 (
                     int(self.n_samples),
@@ -155,20 +155,20 @@ class Collector:
 
         np.save(
             f"{self.directory}/volume_data[{date.today()}]",
-            raw_data,
+            volumes_raw_data,
             allow_pickle=True,
         )
 
         np.save(
             f"{self.directory}/material_data[{date.today()}]",
-            color_raw_data,
+            materials_raw_data,
             allow_pickle=True,
         )
 
         print(
             "\n 🔽 "
             + Fore.BLUE
-            + f"Just created 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
+            + f"Just created 'volume_data' shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
             + Style.RESET_ALL
         )
 
@@ -201,8 +201,8 @@ class Collector:
             index = random.choices(list(np.arange(0, self.n_samples, 1)), k=1)[0]
 
             Plotter(
-                raw_data[index],
-                color_raw_data[index],
+                volumes_raw_data[index],
+                materials_raw_data[index],
                 figsize=25,
                 style="#ffffff",
                 dpi=int(os.environ.get("DPI")),
@@ -215,7 +215,7 @@ class Collector:
                 + Style.RESET_ALL
             )
 
-        return (raw_data, color_raw_data)
+        return (volumes_raw_data, materials_raw_data)
 
 
 if __name__ == "__main__":

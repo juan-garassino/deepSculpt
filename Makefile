@@ -88,10 +88,6 @@ run_emissary:
 run_manager:
 	python -m deepSculpt.manager.manager
 
-# PACKAGE RUNS
-run_sampler:
-	python -m deepSculpt.manager.tools.sampling
-
 
 # ----------------------------------
 #      UPLOAD PACKAGE TO PYPI
