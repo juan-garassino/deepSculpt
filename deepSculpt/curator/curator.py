@@ -1,9 +1,13 @@
-from deepSculpt.collector.collector import Collector
 from deepSculpt.manager.manager import Manager
-from deepSculpt.collector.tools.preprocessing import OneHotEncoderDecoder
-from deepSculpt.collector.tools.preprocessing import BinaryEncoderDecoder
-from deepSculpt.collector.tools.params import BUFFER_SIZE, COLORS
+from deepSculpt.manager.tools.params import BUFFER_SIZE, COLORS
 from deepSculpt.manager.tools.plotter import Plotter
+
+from deepSculpt.collector.collector import Collector
+
+from deepSculpt.curator.tools.preprocessing import (
+    OneHotEncoderDecoder,
+    BinaryEncoderDecoder,
+)
 
 import random
 import os

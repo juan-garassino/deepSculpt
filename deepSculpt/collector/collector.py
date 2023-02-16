@@ -1,3 +1,9 @@
+from deepSculpt.manager.manager import Manager
+from deepSculpt.manager.tools.plotter import Plotter
+from deepSculpt.manager.tools.params import COLORS
+
+from deepSculpt.sculptor.sculptor import Sculptor
+
 import os
 import random
 from datetime import date
@@ -5,11 +11,6 @@ from typing import List, Tuple
 import time
 import numpy as np
 from colorama import Fore, Style
-
-from deepSculpt.sculptor.sculptor import Sculptor
-from deepSculpt.manager.manager import Manager
-from deepSculpt.manager.tools.plotter import Plotter
-from deepSculpt.collector.tools.params import COLORS
 
 
 class Collector:

@@ -27,6 +27,8 @@ clean:
 	@rm -fr deepSculpt.egg-info
 	@rm -fr results
 	@rm -fr data
+	@rm -fr notebooks/results
+	@rm -fr notebooks/*.npy
 
 install:
 	@pip install . -U
