@@ -82,7 +82,7 @@ def sampling(
             ).plot_sculpture(path + f"[{index}]")
 
             print(
-                "\n 🔽 "
+                "\n 🆗 "
                 + Fore.YELLOW
                 + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                 + Style.RESET_ALL
@@ -140,12 +140,21 @@ def sampling(
 
     o_encode, o_classes = preprocessing_class_o.ohe_encode()
 
-    print("\n ⏹ " + Fore.YELLOW +
-          "Just preproccess data from shape {} to {}".format(
-              materials_void.shape, o_encode.shape) + Style.RESET_ALL)
+    print(
+        "\n 🔀 "
+        + Fore.YELLOW
+        + "Just preproccess data from shape {} to {}".format(
+            materials_void.shape, o_encode.shape
+        )
+        + Style.RESET_ALL
+    )
 
-    print("\n ⏹ " + Fore.YELLOW + "The classes are: {}".format(o_classes) +
-          Style.RESET_ALL)
+    print(
+        "\n 🔠 "
+        + Fore.YELLOW
+        + "The classes are: {}".format(o_classes)
+        + Style.RESET_ALL
+    )
 
     # o_encode = tf.sparse.from_dense(o_encode)
 

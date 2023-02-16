@@ -136,7 +136,7 @@ class Plotter(Sculptor):
         )  # agregar tiempo de impresion y exportar 3D y bounding box
 
         print(
-            "\n 🔽 "
+            "\n ✅ "
             + Fore.BLUE
             + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
             + Style.RESET_ALL
@@ -147,7 +147,7 @@ class Plotter(Sculptor):
         plt.savefig(name_svg, transparent=self.transparent)
 
         print(
-            "\n 🔽 "
+            "\n ✅ "
             + Fore.BLUE
             + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
             + Style.RESET_ALL
@@ -158,7 +158,7 @@ class Plotter(Sculptor):
         np.save(name_volume_array, self.volumes)
 
         print(
-            "\n 🔽 "
+            "\n ✅ "
             + Fore.BLUE
             + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
             + Style.RESET_ALL
@@ -169,7 +169,7 @@ class Plotter(Sculptor):
         np.save(name_material_array, self.colors)
 
         print(
-            "\n 🔽 "
+            "\n ✅ "
             + Fore.BLUE
             + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
             + Style.RESET_ALL

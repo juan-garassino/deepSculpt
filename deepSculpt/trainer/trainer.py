@@ -63,7 +63,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     generator.compile()
 
-    print("\n ⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
+    print("\n ❎ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
     print(generator.summary())
 
@@ -73,7 +73,7 @@ if int(os.environ.get("COLOR")) == 1:
 
     discriminator.compile()
 
-    print("\n ⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
+    print("\n ❎ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
     print(discriminator.summary())
 
@@ -164,7 +164,7 @@ if os.environ.get("COLOR") == 0:  # MONOCHROME
 
     generator.compile()
 
-    print("\n ⏹ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
+    print("\n ❎ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
     print(generator.summary())
 
@@ -174,7 +174,7 @@ if os.environ.get("COLOR") == 0:  # MONOCHROME
 
     discriminator.compile()
 
-    print("\n ⏹ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
+    print("\n ❎ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
     print(discriminator.summary())
 

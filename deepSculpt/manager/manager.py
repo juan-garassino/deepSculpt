@@ -123,7 +123,7 @@ class Manager:  # make manager work with and with out epochs
                     registered_model_name=mlflow_model_name,
                 )
 
-        print("\n✅ data saved in mlflow")
+        print("\n ✅ Data saved in mlflow")
 
         return None
 
