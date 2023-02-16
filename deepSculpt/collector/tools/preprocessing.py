@@ -236,9 +236,13 @@ class BinaryEncoderDecoder:
         """
         self.n_sample = binary_encoded_colors.shape[0]
 
-        flatten_list = binary_encoded_colors.reshape(
-            (self.n_samples * self.void_dim**3,
-             self.n_bit)).astype(int).tolist()
+        flatten_list = (
+            binary_encoded_colors.reshape(
+                (self.n_samples * self.void_dim**3, self.n_bit)
+            )
+            .astype(int)
+            .tolist()
+        )
 
         decode_preprocess_binary = [
             "".join(str(bit) for bit in pixel) for pixel in flatten_list

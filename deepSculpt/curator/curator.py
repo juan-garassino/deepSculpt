@@ -12,16 +12,17 @@ import numpy as np
 from tensorflow.data import Dataset
 import tensorflow as tf
 
-class Curator:  # make manager work with and with out epochs
 
+class Curator:  # make manager work with and with out epochs
     def __init__(
-        self, n_samples=128,
+        self,
+        n_samples=128,
         edge_elements=None,
         plane_elements=None,
         volume_elements=None,
         void_dim=None,
         grid=1,
-        binary=1
+        binary=1,
     ):
         self.n_samples = n_samples
         self.edge_elements = edge_elements
@@ -29,7 +30,7 @@ class Curator:  # make manager work with and with out epochs
         self.volume_elements = volume_elements
         self.void_dim = void_dim
         self.grid = grid
-        self.binary=binary
+        self.binary = binary
 
     def sampling(self):  # convert to spare tensor
 
@@ -81,7 +82,9 @@ class Curator:  # make manager work with and with out epochs
 
             for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
-                index = random.choices(list(np.arange(0, volumes_void.shape[0], 1)), k=1)[0]
+                index = random.choices(
+                    list(np.arange(0, volumes_void.shape[0], 1)), k=1
+                )[0]
 
                 Plotter(
                     volumes_void[index],
@@ -99,12 +102,18 @@ class Curator:  # make manager work with and with out epochs
                 )
 
         # Creates the data
-        elif int(os.environ.get("CREATE_DATA")) == 1:  # CREATES AND UPLOADS TO BIG QUERY
+        elif (
+            int(os.environ.get("CREATE_DATA")) == 1
+        ):  # CREATES AND UPLOADS TO BIG QUERY
 
             # Local path
             if int(os.environ.get("INSTANCE")) == 0:
                 path = os.path.join(
-                    os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+                    os.environ.get("HOME"),
+                    "code",
+                    "juan-garassino",
+                    "deepSculpt",
+                    "data",
                 )
 
             # Colab path
@@ -123,7 +132,11 @@ class Curator:  # make manager work with and with out epochs
             # GCP path
             if int(os.environ.get("INSTANCE")) == 2:
                 path = os.path.join(
-                    os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+                    os.environ.get("HOME"),
+                    "code",
+                    "juan-garassino",
+                    "deepSculpt",
+                    "data",
                 )
 
             # Initiates
@@ -142,11 +155,14 @@ class Curator:  # make manager work with and with out epochs
             volumes_void, materials_void = curator.create_collection()
 
         # No data
-        elif int(os.environ.get("CREATE_DATA")) != 0 and int(os.environ.get("CREATE_DATA")) != 1:
-            print('How do i get data?!')
+        elif (
+            int(os.environ.get("CREATE_DATA")) != 0
+            and int(os.environ.get("CREATE_DATA")) != 1
+        ):
+            print("How do i get data?!")
 
         else:
-            print('Big Error')
+            print("Big Error")
 
         # Returns onehot encoded data
         if self.binary == 0:
@@ -154,30 +170,40 @@ class Curator:  # make manager work with and with out epochs
             if isinstance(materials_void, np.ndarray) == False:
                 print("error")
 
-            materials = [COLORS["edges"], COLORS["planes"]
-                            ] + COLORS["volumes"] + [None]
+            materials = [COLORS["edges"], COLORS["planes"]] + COLORS["volumes"] + [None]
 
             # Preproccess the data
             preprocessing_class_o = OneHotEncoderDecoder(
-                materials_void, materials=materials, verbose=1)
+                materials_void, materials=materials, verbose=1
+            )
 
             o_encode, o_classes = preprocessing_class_o.ohe_encode()
 
-            print("\n 🔀 " + Fore.YELLOW +
-                    "Just preproccess data from shape {} to {}".format(
-                        materials_void.shape, o_encode.shape) +
-                    Style.RESET_ALL)
+            print(
+                "\n 🔀 "
+                + Fore.YELLOW
+                + "Just preproccess data from shape {} to {}".format(
+                    materials_void.shape, o_encode.shape
+                )
+                + Style.RESET_ALL
+            )
 
-            print("\n 🔠 " + Fore.YELLOW +
-                    "The classes are: {}".format(o_classes) +
-                    Style.RESET_ALL)
+            print(
+                "\n 🔠 "
+                + Fore.YELLOW
+                + "The classes are: {}".format(o_classes)
+                + Style.RESET_ALL
+            )
 
             # o_encode = tf.sparse.from_dense(o_encode)
 
             # Creates the dataset
-            train_dataset = (Dataset.from_tensor_slices(o_encode).shuffle(
-                BUFFER_SIZE).take(int(os.environ.get("TRAIN_SIZE"))).batch(
-                    int(os.environ.get("BATCH_SIZE"))))
+            train_dataset = (
+                Dataset.from_tensor_slices(o_encode)
+                .shuffle(BUFFER_SIZE)
+                .take(int(os.environ.get("TRAIN_SIZE")))
+                .batch(int(os.environ.get("BATCH_SIZE")))
+            )
 
             return train_dataset, preprocessing_class_o
 
@@ -187,12 +213,10 @@ class Curator:  # make manager work with and with out epochs
             if isinstance(materials_void, np.ndarray) == False:
                 print("error")
 
-            #materials = [COLORS["edges"], COLORS["planes"]] + COLORS["volumes"] + [None]
+            # materials = [COLORS["edges"], COLORS["planes"]] + COLORS["volumes"] + [None]
 
             # Preproccess the data
-            preprocessing_class_b = BinaryEncoderDecoder(
-                materials_void
-            )
+            preprocessing_class_b = BinaryEncoderDecoder(materials_void)
 
             b_encode, b_classes = preprocessing_class_b.binary_encode()
 
@@ -226,10 +250,10 @@ class Curator:  # make manager work with and with out epochs
 
         # No encoder
         elif self.binary != 0 and self.binary != 1:
-            print('broken')
+            print("broken")
 
         else:
-            print('Big Error')
+            print("Big Error")
 
 
 if __name__ == "__main__":
@@ -241,7 +265,7 @@ if __name__ == "__main__":
         volume_elements=(1, 0.2, 0.6),
         void_dim=os.environ.get("VOID_DIM"),
         grid=1,
-        binary=1
+        binary=1,
     )
 
     curator.sampling()
