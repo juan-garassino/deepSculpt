@@ -18,7 +18,7 @@ from tensorflow.train import Checkpoint, CheckpointManager
 from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
 
-from deepSculpt.trainer.tools.complexmodel import (
+from deepSculpt.trainer.tools.skipmodel import (
     make_three_dimensional_generator,
     make_three_dimentional_critic,
 )
@@ -289,7 +289,7 @@ def trainer(
                 print(
                     "\n ℹ️ "
                     + Fore.CYAN
-                    + " Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
+                    + "Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
                         disc_loss, gen_loss
                     )
                     + Style.RESET_ALL
