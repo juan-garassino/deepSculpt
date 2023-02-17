@@ -18,7 +18,7 @@ from tensorflow.train import Checkpoint, CheckpointManager
 from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
 
-from deepSculpt.trainer.tools.skipmodel import (
+from deepSculpt.trainer.tools.firstmodel import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
