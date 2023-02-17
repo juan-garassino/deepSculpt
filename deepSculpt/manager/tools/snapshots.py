@@ -63,6 +63,8 @@ def generate_and_save_snapshot(
         ).plot_sculpture(
             directory + f"[{snapshot_input[prediction][0]}]",
             raster_picture=True,
+            vector_picture=False,
             volumes_array=True,
+            materials_array=False,
             hide_axis=True,
         )

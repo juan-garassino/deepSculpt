@@ -96,7 +96,14 @@ class Curator:  # make manager work with and with out epochs
                     figsize=25,
                     style="#ffffff",
                     dpi=int(os.environ.get("DPI")),
-                ).plot_sculpture(path + f"[{index}]")
+                ).plot_sculpture(
+                    path + f"[{index}]",
+                    raster_picture=True,
+                    vector_picture=False,
+                    volumes_array=False,
+                    materials_array=False,
+                    hide_axis=True,
+                )
 
                 print(
                     "\n 🆗 "

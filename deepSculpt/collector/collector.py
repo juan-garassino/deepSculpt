@@ -207,7 +207,14 @@ class Collector:
                 figsize=25,
                 style="#ffffff",
                 dpi=int(os.environ.get("DPI")),
-            ).plot_sculpture(path)
+            ).plot_sculpture(
+                path,
+                raster_picture=True,
+                vectorial_picture=False,
+                volumes_array=False,
+                materials_array=False,
+                hide_axis=True,
+            )
 
             print(
                 "\n 🆗 "
