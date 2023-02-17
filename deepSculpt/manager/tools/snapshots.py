@@ -55,8 +55,8 @@ def generate_and_save_snapshot(
     for prediction in range(int(os.environ.get("SCULPTS_GEN"))):
         # Plots the Sculpture
         Plotter(
-            o_decoded_volumes[snapshot_input[prediction]],
-            o_decoded_colors[snapshot_input[prediction]],
+            o_decoded_volumes[prediction],
+            o_decoded_colors[prediction],
             figsize=25,
             style="#ffffff",
             dpi=int(os.environ.get("DPI")),

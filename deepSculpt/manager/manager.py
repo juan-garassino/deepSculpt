@@ -269,7 +269,7 @@ class Manager:  # make manager work with and with out epochs
             print(
                 "\n ⏹ "
                 + Fore.GREEN
-                + f" This directory has been created {directory}"
+                + f"This directory has been created {directory}"
                 + Style.RESET_ALL
             )
 
