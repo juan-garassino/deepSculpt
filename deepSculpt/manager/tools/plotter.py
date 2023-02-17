@@ -41,7 +41,13 @@ class Plotter(Sculptor):
             axes[index].imshow(sculpture[index, :, :], cmap="gray")
 
     def plot_sculpture(
-        self, directory, raster_picture=False, vector_picture=False, volumes_array=False, materials_array= False, hide_axis=False
+        self,
+        directory,
+        raster_picture=False,
+        vector_picture=False,
+        volumes_array=False,
+        materials_array=False,
+        hide_axis=False,
     ):  # add call to generative sculpt and then plot like 12
         fig, axes = plt.subplots(
             ncols=2,
@@ -53,7 +59,6 @@ class Plotter(Sculptor):
         )
 
         axes = axes.ravel()
-
 
         if type(self.colors).__module__ == np.__name__:
             for _ in range(1):
@@ -137,9 +142,11 @@ class Plotter(Sculptor):
             plt.savefig(name_png, transparent=self.transparent)
 
             print(
-                "\n ✅ " + Fore.BLUE +
-                f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
-                + Style.RESET_ALL)
+                "\n ✅ "
+                + Fore.BLUE
+                + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
+                + Style.RESET_ALL
+            )
 
         if vector_picture:
 
@@ -150,9 +157,11 @@ class Plotter(Sculptor):
             plt.savefig(name_svg, transparent=self.transparent)
 
             print(
-                "\n ✅ " + Fore.BLUE
+                "\n ✅ "
+                + Fore.BLUE
                 + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
-                + Style.RESET_ALL)
+                + Style.RESET_ALL
+            )
 
         if volumes_array:
 
@@ -163,9 +172,11 @@ class Plotter(Sculptor):
             np.save(name_volume_array, self.volumes)
 
             print(
-                "\n ✅ " + Fore.BLUE +
-                f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
-                + Style.RESET_ALL)
+                "\n ✅ "
+                + Fore.BLUE
+                + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
+                + Style.RESET_ALL
+            )
 
         if materials_array:
 
@@ -176,6 +187,8 @@ class Plotter(Sculptor):
             np.save(name_material_array, self.colors)
 
             print(
-                "\n ✅ " + Fore.BLUE +
-                f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
-                + Style.RESET_ALL)
+                "\n ✅ "
+                + Fore.BLUE
+                + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
+                + Style.RESET_ALL
+            )

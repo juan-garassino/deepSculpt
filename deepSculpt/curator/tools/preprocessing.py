@@ -93,9 +93,11 @@ class OneHotEncoderDecoder:
 
         if self.verbose == 1:
             print(
-                "\n 🔀 " + Fore.RED +
-                f"A number of {self.materials_labels_array.shape[0]} samples shaped {self.materials_labels_array.shape} have been encoded in {self.n_classes} classes: {self.classes}"
-                + Style.RESET_ALL)
+                "\n 🔀 "
+                + Fore.RED
+                + f"A number of {self.materials_labels_array.shape[0]} samples shaped {self.materials_labels_array.shape} have been encoded in {self.n_classes} classes: {self.classes}"
+                + Style.RESET_ALL
+            )
 
         return (
             encoded_array.toarray().reshape(
@@ -142,9 +144,11 @@ class OneHotEncoderDecoder:
 
         if self.verbose == 1:
             print(
-                "\n 🔀 " + Fore.RED +
-                f"A number of {one_hot_encoded_array.shape[0]} samples shaped {one_hot_encoded_array.shape} have been decoded in {self.n_classes} classes: {self.classes}"
-                + Style.RESET_ALL)
+                "\n 🔀 "
+                + Fore.RED
+                + f"A number of {one_hot_encoded_array.shape[0]} samples shaped {one_hot_encoded_array.shape} have been decoded in {self.n_classes} classes: {self.classes}"
+                + Style.RESET_ALL
+            )
 
         return decoded_void.reshape(
             (self.n_sample, self.void_dim, self.void_dim, self.void_dim)
@@ -210,9 +214,11 @@ class BinaryEncoderDecoder:
 
         if self.verbose == 1:
             print(
-                "\n 🔀 " + Fore.RED +
-                f"A number of {self.materials_labels_array.shape[0]} samples shaped {self.materials_labels_array.shape} have been encoded to {binary_encoded_colors.shape} in {len(self.classes)} classes: {self.classes}"
-                + Style.RESET_ALL)
+                "\n 🔀 "
+                + Fore.RED
+                + f"A number of {self.materials_labels_array.shape[0]} samples shaped {self.materials_labels_array.shape} have been encoded to {binary_encoded_colors.shape} in {len(self.classes)} classes: {self.classes}"
+                + Style.RESET_ALL
+            )
 
         return binary_encoded_colors.astype(float), list(self.classes)
 
@@ -253,8 +259,10 @@ class BinaryEncoderDecoder:
 
         if self.verbose == 1:
             print(
-                "\n 🔀 " + Fore.RED +
-                f"A number of {binary_encoded_colors.shape[0]} samples shaped {binary_encoded_colors.shape} have been decoded to {decoded_void.shape} in {len(self.classes)} classes: {self.classes}"
-                + Style.RESET_ALL)
+                "\n 🔀 "
+                + Fore.RED
+                + f"A number of {binary_encoded_colors.shape[0]} samples shaped {binary_encoded_colors.shape} have been decoded to {decoded_void.shape} in {len(self.classes)} classes: {self.classes}"
+                + Style.RESET_ALL
+            )
 
         return (decoded_void, decoded_color)

@@ -51,7 +51,7 @@ if os.environ.get("COLOR") == 0:  # MONOCHROME
 
     train_dataset, preprocessing_class_o = curator.sampling()
 
-if int(os.environ.get("COLOR")) == 1: # COLOR
+if int(os.environ.get("COLOR")) == 1:  # COLOR
 
     # Loads Data
 
@@ -196,7 +196,6 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
         zip(gradients_of_discriminator, discriminator.trainable_variables)
     )
     # applying the gradients on the trainable variables of the generator to update the parameters
-
 
 
 """@function
