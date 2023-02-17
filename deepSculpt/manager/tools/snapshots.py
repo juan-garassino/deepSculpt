@@ -61,7 +61,7 @@ def generate_and_save_snapshot(
             style="#ffffff",
             dpi=int(os.environ.get("DPI")),
         ).plot_sculpture(
-            directory + f"[{snapshot_input[prediction]}]",
+            directory + f"[{snapshot_input[prediction][0][3:]}]",
             raster_picture=True,
             volumes_array=True,
             hide_axis=True,

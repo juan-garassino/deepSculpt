@@ -286,9 +286,14 @@ def trainer(
                     + Style.RESET_ALL
                 )
 
-                print("\n 📶 " + Fore.CYAN +
-                      "Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".
-                      format(disc_loss, gen_loss) + Style.RESET_ALL)
+                print(
+                    "\n 📶 "
+                    + Fore.CYAN
+                    + "Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
+                        disc_loss, gen_loss
+                    )
+                    + Style.RESET_ALL
+                )
 
                 print(
                     "\n 📶 "

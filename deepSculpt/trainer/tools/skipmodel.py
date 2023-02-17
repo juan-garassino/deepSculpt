@@ -18,6 +18,7 @@ from tensorflow.keras.layers import (
 
 
 def make_three_dimentional_generator():
+
     void_dim = int(os.environ.get("VOID_DIM"))
     noise_dim = int(os.environ.get("NOISE_DIM"))
 

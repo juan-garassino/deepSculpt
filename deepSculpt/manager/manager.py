@@ -266,9 +266,12 @@ class Manager:  # make manager work with and with out epochs
         try:
             os.makedirs(directory)
 
-            print("\n ✅ " + Fore.GREEN +
-                  f"This directory has been created {directory}" +
-                  Style.RESET_ALL)
+            print(
+                "\n ✅ "
+                + Fore.GREEN
+                + f"This directory has been created {directory}"
+                + Style.RESET_ALL
+            )
 
         except OSError as e:
             if e.errno != errno.EEXIST:
