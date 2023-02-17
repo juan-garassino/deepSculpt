@@ -19,7 +19,7 @@ from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
 
 from deepSculpt.trainer.tools.skipmodel import (
-    make_three_dimensional_generator,
+    make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
 from deepSculpt.trainer.tools.optimizers import (
@@ -75,7 +75,7 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
 
     # Initiates the Generator
 
-    generator = make_three_dimensional_generator()
+    generator = make_three_dimentional_generator()
 
     generator.compile()
 
