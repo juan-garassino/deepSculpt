@@ -155,7 +155,7 @@ if int(os.environ.get("COLOR")) == 1: # COLOR
         checkpoint_name="checkpoint",
     )
 
-"""
+
 @function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
@@ -197,9 +197,9 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     )
     # applying the gradients on the trainable variables of the generator to update the parameters
 
-"""
 
-@function
+
+"""@function
 def train_step(images, gen_steps=1, disc_steps=1):
 
     for i in range(gen_steps):
@@ -226,7 +226,7 @@ def train_step(images, gen_steps=1, disc_steps=1):
         )
         discriminator_optimizer.apply_gradients(
             zip(gradients_of_discriminator, discriminator.trainable_variables)
-        )
+        )"""
 
 
 def trainer(
@@ -285,7 +285,6 @@ def trainer(
                     + Fore.MAGENTA
                     + f"Minibatch number {index + 1} epoch {epoch + 1}"
                     + Style.RESET_ALL
-                    + "\n "
                 )
 
                 print(

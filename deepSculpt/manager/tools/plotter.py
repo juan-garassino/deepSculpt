@@ -41,7 +41,7 @@ class Plotter(Sculptor):
             axes[index].imshow(sculpture[index, :, :], cmap="gray")
 
     def plot_sculpture(
-        self, directory
+        self, directory, raster_picture=False, vector_picture=False, volumes_array=False, materials_array= False, hide_axis=False
     ):  # add call to generative sculpt and then plot like 12
         fig, axes = plt.subplots(
             ncols=2,
@@ -54,17 +54,22 @@ class Plotter(Sculptor):
 
         axes = axes.ravel()
 
-        # imprimir en colores in no colores
 
         if type(self.colors).__module__ == np.__name__:
-            # if isinstance(self.colors, list) == True:
-            for plot in range(1):
+            for _ in range(1):
+
+                if hide_axis:
+                    axes[0].set_axis_off()
+
                 axes[0].voxels(
                     self.volumes,
                     edgecolors="k",
                     linewidth=0.05,
                     facecolors=self.colors,
                 )
+
+                if hide_axis:
+                    axes[1].set_axis_off()
 
                 axes[1].voxels(
                     np.rot90(self.volumes, 1),
@@ -73,12 +78,18 @@ class Plotter(Sculptor):
                     linewidth=0.05,
                 )
 
+                if hide_axis:
+                    axes[2].set_axis_off()
+
                 axes[2].voxels(
                     np.rot90(self.volumes, 2),
                     facecolors=np.rot90(self.colors, 2),
                     edgecolors="k",
                     linewidth=0.05,
                 )
+
+                if hide_axis:
+                    axes[3].set_axis_off()
 
                 axes[3].voxels(
                     np.rot90(self.volumes, 3),
@@ -88,89 +99,83 @@ class Plotter(Sculptor):
                 )
 
         else:
-            for plot in range(1):
+            for _ in range(1):
                 axes[0].voxels(
                     self.volumes,
                     edgecolors="k",
                     linewidth=0.05,
-                    # facecolors=self.colors,
                 )
 
                 axes[1].voxels(
                     np.rot90(self.volumes, 1),
-                    # facecolors=np.rot90(self.colors, 1),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
                 axes[2].voxels(
                     np.rot90(self.volumes, 2),
-                    # facecolors=np.rot90(self.colors, 2),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
                 axes[3].voxels(
                     np.rot90(self.volumes, 3),
-                    # facecolors=np.rot90(self.colors, 3),
                     edgecolors="k",
                     linewidth=0.05,
                 )
-
-        Manager.make_directory(directory + "/picture")
-
-        Manager.make_directory(directory + "/vectorial")
-
-        Manager.make_directory(directory + "/volume_array")
-
-        Manager.make_directory(directory + "/material_array")
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
         print("\n 🔽 " + Fore.GREEN + f"Plotting [{now}]" + Style.RESET_ALL)
 
-        name_png = f"{directory}/picture/image[{now}].png"
+        if raster_picture:
 
-        plt.savefig(
-            name_png, transparent=self.transparent
-        )  # agregar tiempo de impresion y exportar 3D y bounding box
+            Manager.make_directory(directory + "/picture")
 
-        print(
-            "\n ✅ "
-            + Fore.BLUE
-            + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
-            + Style.RESET_ALL
-        )
+            name_png = f"{directory}/picture/image[{now}].png"
 
-        name_svg = f"{directory}/vectorial/vectorial[{now}].svg"
+            plt.savefig(name_png, transparent=self.transparent)
 
-        plt.savefig(name_svg, transparent=self.transparent)
+            print(
+                "\n ✅ " + Fore.BLUE +
+                f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
+                + Style.RESET_ALL)
 
-        print(
-            "\n ✅ "
-            + Fore.BLUE
-            + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
-            + Style.RESET_ALL
-        )
+        if vector_picture:
 
-        name_volume_array = f"{directory}/volume_array/volume_array[{now}]"
+            Manager.make_directory(directory + "/vectorial")
 
-        np.save(name_volume_array, self.volumes)
+            name_svg = f"{directory}/vectorial/vectorial[{now}].svg"
 
-        print(
-            "\n ✅ "
-            + Fore.BLUE
-            + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
-            + Style.RESET_ALL
-        )
+            plt.savefig(name_svg, transparent=self.transparent)
 
-        name_material_array = f"{directory}/material_array/material_array[{now}]"
+            print(
+                "\n ✅ " + Fore.BLUE
+                + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
+                + Style.RESET_ALL)
 
-        np.save(name_material_array, self.colors)
+        if volumes_array:
 
-        print(
-            "\n ✅ "
-            + Fore.BLUE
-            + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
-            + Style.RESET_ALL
-        )
+            Manager.make_directory(directory + "/volume_array")
+
+            name_volume_array = f"{directory}/volume_array/volume_array[{now}]"
+
+            np.save(name_volume_array, self.volumes)
+
+            print(
+                "\n ✅ " + Fore.BLUE +
+                f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
+                + Style.RESET_ALL)
+
+        if materials_array:
+
+            Manager.make_directory(directory + "/material_array")
+
+            name_material_array = f"{directory}/material_array/material_array[{now}]"
+
+            np.save(name_material_array, self.colors)
+
+            print(
+                "\n ✅ " + Fore.BLUE +
+                f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
+                + Style.RESET_ALL)
