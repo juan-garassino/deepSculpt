@@ -1,6 +1,7 @@
 # from xml.dom import NO_MODIFICATION_ALLOWED_ERR
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.manager.manager import Manager
 from datetime import datetime
@@ -192,3 +193,43 @@ class Plotter(Sculptor):
                 + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
                 + Style.RESET_ALL
             )
+
+    @staticmethod
+    def voxel_to_pointscloud(arr, N):
+        n_x, n_y, n_z = arr.shape
+        new_arr = np.zeros((N * n_x, N * n_y, N * n_z, 3))
+        for i in range(n_x):
+            for j in range(n_y):
+                for k in range(n_z):
+                    if arr[i, j, k]:
+                        x = np.linspace(i, i + 1, N + 1)[:-1]
+                        y = np.linspace(j, j + 1, N + 1)[:-1]
+                        z = np.linspace(k, k + 1, N + 1)[:-1]
+                        xv, yv, zv = np.meshgrid(x, y, z, indexing='ij')
+                        vertices = np.stack((xv, yv, zv), axis=-1)
+                        vertices = vertices.reshape(-1, 3)
+                        new_arr[N * i:N * (i + 1), N * j:N * (j + 1),
+                                N * k:N * (k + 1)] = vertices.reshape(N, N, N, 3)
+        return np.unique(new_arr.reshape(-1, 3), axis=0)
+
+    @staticmethod
+    def plot_pointscloud(x, y, z, size=1.0, color=(0, 0, 0), alpha=1.0):
+        # Create the scatter3d trace
+        trace = go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            mode='markers',
+            marker=dict(
+                size=size,
+                color=f'rgba({color[0]}, {color[1]}, {color[2]}, {alpha})'))
+
+        # Set the layout of the plot
+        layout = go.Layout(scene=dict(aspectratio=dict(x=1, y=1, z=1),
+                                    xaxis=dict(title='X'),
+                                    yaxis=dict(title='Y'),
+                                    zaxis=dict(title='Z')))
+
+        # Plot the trace
+        fig = go.Figure(data=trace, layout=layout)
+        fig.show()
