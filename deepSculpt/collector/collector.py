@@ -210,7 +210,7 @@ class Collector:
             ).plot_sculpture(
                 path,
                 raster_picture=True,
-                vectorial_picture=False,
+                vector_picture=False,
                 volumes_array=False,
                 materials_array=False,
                 hide_axis=True,
