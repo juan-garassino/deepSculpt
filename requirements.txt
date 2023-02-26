@@ -9,3 +9,4 @@ google-cloud-bigquery<3.0.0
 google-cloud-storage
 mlflow==1.27.0
 imageio
+scipy
