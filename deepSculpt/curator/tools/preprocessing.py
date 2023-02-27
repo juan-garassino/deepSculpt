@@ -1,7 +1,8 @@
 import numpy as np
+import matplotlib.colors as mcolors
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
-
+from deepSculpt.manager.tools.params import COLORS
 from colorama import Fore, Style
 
 
@@ -52,14 +53,15 @@ class OneHotEncoderDecoder:
     """
 
     def __init__(
-        self, colors_labels_array: np.ndarray, materials: list, verbose: int = 1
+        self, materials_labels_array: np.ndarray, materials: list = None, verbose: int = 1
     ):
-        self.materials_labels_array = colors_labels_array
+        self.materials_labels_array = materials_labels_array
         self.void_dim = self.materials_labels_array.shape[1]
         self.n_samples = self.materials_labels_array.shape[0]
         self.n_classes = None
         self.classes = None
-        self.materials = materials
+        if materials == None:
+            self.materials = [COLORS['edges'], COLORS['planes']] + COLORS['volumes'] + [None]
         self.one_hot_encoder = OneHotEncoder(
             categories=[self.materials], handle_unknown="ignore"
         )
@@ -269,4 +271,79 @@ class BinaryEncoderDecoder:
 
 
 class RGBEncoderDecoder:
-    pass
+
+    def __init__(self, color_dict=None):
+        """Initialize RGBEncoderDecoder object.
+
+        Args:
+            color_dict (dict, optional): Mapping of color names to RGB tuples.
+                If None, use default TABLEAU_COLORS and CSS4_COLORS from matplotlib.
+
+        """
+        # If no color_dict provided, use default matplotlib colors
+        if color_dict is None:
+            self.color_dict = {}
+            for name, hex in mcolors.TABLEAU_COLORS.items():
+                self.color_dict[name] = tuple(
+                    int(x * 255) for x in mcolors.to_rgb(hex))
+            for name, hex in mcolors.CSS4_COLORS.items():
+                if name not in self.color_dict:
+                    self.color_dict[name] = tuple(
+                        int(x * 255) for x in mcolors.to_rgb(hex))
+        else:
+            self.color_dict = color_dict
+
+    def decode_color_array(self, materials_labels_array):
+        """Decodes an NxNxN array of color names into an NxNxNxchannels array of RGB values.
+
+        Args:
+            materials_labels_array (np.ndarray): Array of shape n_samples x N x N x N containing color names.
+
+        Returns:
+            np.ndarray: Array of shape n_samples x N x N x N x 3 containing RGB values.
+
+        """
+        n_samples = materials_labels_array.shape[0]
+        n = materials_labels_array.shape[1]
+        rgb_array = np.zeros((n_samples, n, n, n, 3), dtype=np.uint8)
+        for s in range(n_samples):
+            for i in range(n):
+                for j in range(n):
+                    for k in range(n):
+                        color_name = materials_labels_array[s, i, j, k]
+                        if color_name in self.color_dict:
+                            rgb_array[s, i, j, k] = self.color_dict[color_name]
+        return rgb_array
+
+    def encode_color_array(self, rgb_array):
+        """Encodes an NxNxNxchannels array of RGB values into an NxNxN array of color names.
+
+        Args:
+            rgb_array (np.ndarray): Array of shape n_samples x N x N x N x 3 containing RGB values.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: Tuple containing:
+                - Array of shape n_samples x N x N x N containing color names.
+                - Array of shape n_samples x N x N x N containing binary values where color is not None.
+
+        """
+        n_samples = rgb_array.shape[0]
+        n = rgb_array.shape[1]
+        color_array = np.empty((n_samples, n, n, n), dtype='object')
+        volume_array = np.zeros((n_samples, n, n, n), dtype=np.uint8)
+        for s in range(n_samples):
+            for i in range(n):
+                for j in range(n):
+                    for k in range(n):
+                        rgb_value = tuple(rgb_array[s, i, j, k])
+                        if rgb_value == (0, 0, 0):
+                            color_array[s, i, j,
+                                        k] = None  # replace black with None
+                        else:
+                            for color_name, color_rgb in self.color_dict.items(
+                            ):
+                                if color_rgb == rgb_value:
+                                    color_array[s, i, j, k] = color_name
+                                    volume_array[s, i, j, k] = 1
+                                    break
+        return volume_array, color_array

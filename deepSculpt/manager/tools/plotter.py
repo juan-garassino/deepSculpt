@@ -232,4 +232,7 @@ class Plotter(Sculptor):
 
         # Plot the trace
         fig = go.Figure(data=trace, layout=layout)
+
+        fig.update_layout(width=1200, height=800)
+
         fig.show()
