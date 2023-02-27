@@ -205,11 +205,14 @@ class Plotter(Sculptor):
                         x = np.linspace(i, i + 1, N + 1)[:-1]
                         y = np.linspace(j, j + 1, N + 1)[:-1]
                         z = np.linspace(k, k + 1, N + 1)[:-1]
-                        xv, yv, zv = np.meshgrid(x, y, z, indexing='ij')
+                        xv, yv, zv = np.meshgrid(x, y, z, indexing="ij")
                         vertices = np.stack((xv, yv, zv), axis=-1)
                         vertices = vertices.reshape(-1, 3)
-                        new_arr[N * i:N * (i + 1), N * j:N * (j + 1),
-                                N * k:N * (k + 1)] = vertices.reshape(N, N, N, 3)
+                        new_arr[
+                            N * i : N * (i + 1),
+                            N * j : N * (j + 1),
+                            N * k : N * (k + 1),
+                        ] = vertices.reshape(N, N, N, 3)
         return np.unique(new_arr.reshape(-1, 3), axis=0)
 
     @staticmethod
@@ -219,16 +222,21 @@ class Plotter(Sculptor):
             x=x,
             y=y,
             z=z,
-            mode='markers',
+            mode="markers",
             marker=dict(
-                size=size,
-                color=f'rgba({color[0]}, {color[1]}, {color[2]}, {alpha})'))
+                size=size, color=f"rgba({color[0]}, {color[1]}, {color[2]}, {alpha})"
+            ),
+        )
 
         # Set the layout of the plot
-        layout = go.Layout(scene=dict(aspectratio=dict(x=1, y=1, z=1),
-                                    xaxis=dict(title='X'),
-                                    yaxis=dict(title='Y'),
-                                    zaxis=dict(title='Z')))
+        layout = go.Layout(
+            scene=dict(
+                aspectratio=dict(x=1, y=1, z=1),
+                xaxis=dict(title="X"),
+                yaxis=dict(title="Y"),
+                zaxis=dict(title="Z"),
+            )
+        )
 
         # Plot the trace
         fig = go.Figure(data=trace, layout=layout)
