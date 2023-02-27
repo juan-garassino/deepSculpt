@@ -53,7 +53,10 @@ class OneHotEncoderDecoder:
     """
 
     def __init__(
-        self, materials_labels_array: np.ndarray, materials: list = None, verbose: int = 1
+        self,
+        materials_labels_array: np.ndarray,
+        materials: list = None,
+        verbose: int = 1,
     ):
         self.materials_labels_array = materials_labels_array
         self.void_dim = self.materials_labels_array.shape[1]
@@ -61,7 +64,9 @@ class OneHotEncoderDecoder:
         self.n_classes = None
         self.classes = None
         if materials == None:
-            self.materials = [COLORS['edges'], COLORS['planes']] + COLORS['volumes'] + [None]
+            self.materials = (
+                [COLORS["edges"], COLORS["planes"]] + COLORS["volumes"] + [None]
+            )
         self.one_hot_encoder = OneHotEncoder(
             categories=[self.materials], handle_unknown="ignore"
         )
@@ -271,7 +276,6 @@ class BinaryEncoderDecoder:
 
 
 class RGBEncoderDecoder:
-
     def __init__(self, color_dict=None):
         """Initialize RGBEncoderDecoder object.
 
@@ -284,12 +288,12 @@ class RGBEncoderDecoder:
         if color_dict is None:
             self.color_dict = {}
             for name, hex in mcolors.TABLEAU_COLORS.items():
-                self.color_dict[name] = tuple(
-                    int(x * 255) for x in mcolors.to_rgb(hex))
+                self.color_dict[name] = tuple(int(x * 255) for x in mcolors.to_rgb(hex))
             for name, hex in mcolors.CSS4_COLORS.items():
                 if name not in self.color_dict:
                     self.color_dict[name] = tuple(
-                        int(x * 255) for x in mcolors.to_rgb(hex))
+                        int(x * 255) for x in mcolors.to_rgb(hex)
+                    )
         else:
             self.color_dict = color_dict
 
@@ -329,7 +333,7 @@ class RGBEncoderDecoder:
         """
         n_samples = rgb_array.shape[0]
         n = rgb_array.shape[1]
-        color_array = np.empty((n_samples, n, n, n), dtype='object')
+        color_array = np.empty((n_samples, n, n, n), dtype="object")
         volume_array = np.zeros((n_samples, n, n, n), dtype=np.uint8)
         for s in range(n_samples):
             for i in range(n):
@@ -337,11 +341,9 @@ class RGBEncoderDecoder:
                     for k in range(n):
                         rgb_value = tuple(rgb_array[s, i, j, k])
                         if rgb_value == (0, 0, 0):
-                            color_array[s, i, j,
-                                        k] = None  # replace black with None
+                            color_array[s, i, j, k] = None  # replace black with None
                         else:
-                            for color_name, color_rgb in self.color_dict.items(
-                            ):
+                            for color_name, color_rgb in self.color_dict.items():
                                 if color_rgb == rgb_value:
                                     color_array[s, i, j, k] = color_name
                                     volume_array[s, i, j, k] = 1
