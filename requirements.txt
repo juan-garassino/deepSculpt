@@ -10,3 +10,5 @@ google-cloud-storage
 mlflow==1.27.0
 imageio
 scipy
+plotly
+nbformat
