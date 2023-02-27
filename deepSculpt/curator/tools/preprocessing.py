@@ -266,3 +266,7 @@ class BinaryEncoderDecoder:
             )
 
         return (decoded_void, decoded_color)
+
+
+class RGBEncoderDecoder:
+    pass

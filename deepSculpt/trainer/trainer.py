@@ -49,7 +49,7 @@ if os.environ.get("COLOR") == 0:  # MONOCHROME
         binary=0,
     )
 
-    train_dataset, preprocessing_class_o = curator.sampling()
+    train_dataset, preprocessing_class_o = curator.preprocess_collection()
 
 if int(os.environ.get("COLOR")) == 1:  # COLOR
 
@@ -65,7 +65,7 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
         binary=0,
     )
 
-    train_dataset, preprocessing_class_o = curator.sampling()
+    train_dataset, preprocessing_class_o = curator.preprocess_collection()
 
     # add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
 

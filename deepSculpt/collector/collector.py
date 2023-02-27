@@ -181,7 +181,7 @@ class Collector:
                 "juan-garassino",
                 "deepSculpt",
                 "data",
-                "sampling",
+                "preprocess_collection",
             )
         # path
         if int(os.environ.get("INSTANCE")) == 1:
@@ -194,7 +194,7 @@ class Collector:
                 "repositories",
                 "deepSculpt",
                 "data",
-                "sampling",
+                "preprocess_collection",
             )
 
         for sample in range(int(os.environ.get("N_SAMPLES_PLOT"))):

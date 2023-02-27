@@ -36,7 +36,7 @@ class Curator:  # make manager work with and with out epochs
         self.grid = grid
         self.binary = binary
 
-    def sampling(self):  # convert to spare tensor
+    def preprocess_collection(self):  # convert to spare tensor
 
         # Loads the data
         if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
@@ -57,7 +57,7 @@ class Curator:  # make manager work with and with out epochs
                     "juan-garassino",
                     "deepSculpt",
                     "data",
-                    "sampling",
+                    "preprocess_collection",
                 )
 
                 volumes_void, materials_void = manager.load_locally()
@@ -74,7 +74,7 @@ class Curator:  # make manager work with and with out epochs
                     "repositories",
                     "deepSculpt",
                     "data",
-                    "sampling",
+                    "preprocess_collection",
                 )
 
                 volumes_void, materials_void = manager.load_locally()
@@ -279,4 +279,4 @@ if __name__ == "__main__":
         binary=1,
     )
 
-    curator.sampling()
+    curator.preprocess_collection()
