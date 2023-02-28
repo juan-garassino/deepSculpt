@@ -140,7 +140,7 @@ class Plotter(Sculptor):
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
-        print("\n 🔽 " + Fore.MAGENTA + f"Plotting [{now}]" + Style.RESET_ALL)
+        print("\n 🔽 " + Fore.YELLOW + f"Plotting [{now}]" + Style.RESET_ALL)
 
         if raster_picture:
 

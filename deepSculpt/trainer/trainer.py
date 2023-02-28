@@ -564,9 +564,23 @@ def trainer(collection_folder, curator, n_epochs):
 
 if __name__ == "__main__":
 
-    collection_folder = os.path.join(
-        os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
-    )
+    if int(os.environ.get("INSTANCE")) == 0:
+
+        collection_folder = os.path.join(
+            os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+        )
+
+    if int(os.environ.get("INSTANCE")) == 1:
+        collection_folder = os.path.join(
+            os.environ.get("HOME"),
+            "..",
+            "content",
+            "drive",
+            "MyDrive",
+            "repositories",
+            "deepSculpt",
+            "data",
+        )
 
     curator = Curator(processing_method="OHE")
 

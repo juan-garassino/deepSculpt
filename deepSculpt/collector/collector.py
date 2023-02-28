@@ -160,11 +160,9 @@ class Collector:
             )
 
             print(
-                "\n 🔽 "
-                + Fore.GREEN
-                + f"Just created 'volume_data' chunk {chunk + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
-                + Style.RESET_ALL
-            )
+                "\n ✅ " + Fore.GREEN +
+                f"Just created 'volume_data' chunk {chunk + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
+                + Style.RESET_ALL)
 
             Manager.make_directory(self.directory)
 
@@ -181,11 +179,9 @@ class Collector:
             )
 
             print(
-                "\n ✅ "
-                + Fore.BLUE
-                + f"Just saved 'volume_data' & 'material_data' chunk {chunk + 1} @ {self.directory}"
-                + Style.RESET_ALL
-            )
+                "\n 🔽 " + Fore.BLUE +
+                f"Just saved 'volume_data' & 'material_data' chunk {chunk + 1} @ {self.directory}"
+                + Style.RESET_ALL)
 
         # path
         if int(os.environ.get("INSTANCE")) == 0:
@@ -232,7 +228,7 @@ class Collector:
 
             print(
                 "\n 🆗 "
-                + Fore.GREEN
+                + Fore.BLUE
                 + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                 + Style.RESET_ALL
             )
