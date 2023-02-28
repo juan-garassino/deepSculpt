@@ -11,17 +11,12 @@ from colorama import Fore, Style
 class Plotter(Sculptor):
     def __init__(
         self,
-        #volumes=None,
-        #colors=None,
         figsize=25,
         style="#ffffff",
         dpi=100,
         transparent=False,
     ):
 
-        #self.void = volumes
-        #self.volumes = volumes
-        #self.colors = colors
         self.figsize = figsize
         self.style = style
         self.dpi = dpi
