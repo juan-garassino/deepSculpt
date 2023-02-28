@@ -314,7 +314,7 @@ def trainer(collection_folder, curator, n_epochs):
                     minibatch_start = time.time()
 
                     print(
-                        "\n ⏩ " + Fore.YELLOW +
+                        "\n ⏩ " + Fore.RED +
                         f"Minibatch number {minibatch + 1} chunk {chunk + 1} epoch {epoch + 1}"
                         + Style.RESET_ALL)
 
