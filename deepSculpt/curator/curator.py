@@ -70,11 +70,7 @@ class Curator:  # make manager work with and with out epochs
 
             index = random.choices(list(np.arange(0, volumes_void.shape[0], 1)), k=1)[0]
 
-            Plotter(
-                figsize=16,
-                style="#ffffff",
-                dpi=25,
-            ).plot_sculpture(
+            Plotter(figsize=16, style="#ffffff", dpi=25,).plot_sculpture(
                 volumes=volumes_void[index],
                 materials=materials_void[index],
                 directory=path,  # + f"/sample[{index}]",

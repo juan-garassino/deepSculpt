@@ -16,7 +16,7 @@ from deepSculpt.trainer.tools.optimizers import (
 from tensorflow import GradientTape, function, Variable
 
 
-def main(create_data=False, collection_folder='.', epochs=5, monochrome=0):
+def main(create_data=False, collection_folder=".", epochs=5, monochrome=0):
 
     # LOADS DATA
     if create_data == 0:
@@ -28,7 +28,7 @@ def main(create_data=False, collection_folder='.', epochs=5, monochrome=0):
 
     # BROKEN
     else:
-        print('BROKEN')
+        print("BROKEN")
 
     # MONOCHROME SETUP
     if monochrome == 0:
@@ -126,7 +126,7 @@ def main(create_data=False, collection_folder='.', epochs=5, monochrome=0):
 
     # BROKEN
     else:
-        print('BROKEN')
+        print("BROKEN")
 
     # TRAIN LOOP
     trainer(collection_folder, curator, epochs)

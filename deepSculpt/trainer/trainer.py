@@ -1,32 +1,6 @@
-import matplotlib.pyplot as plt
-from IPython import display
-import time
-import warnings
-import re
-
-warnings.filterwarnings("ignore")
-
-from colorama import Fore, Style
-import os
-import numpy as np
-from google.cloud import storage
-
-from tensorflow.data import Dataset
-from tensorflow import GradientTape, function, Variable
-from tensorflow.random import normal
-from tensorflow.train import Checkpoint, CheckpointManager
+from deepSculpt.curator.curator import Curator
 
 from deepSculpt.manager.manager import Manager
-from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
-
-from deepSculpt.trainer.tools.firstmodel import (
-    make_three_dimentional_generator,
-    make_three_dimentional_critic,
-)
-from deepSculpt.trainer.tools.optimizers import (
-    generator_optimizer,
-    discriminator_optimizer,
-)
 from deepSculpt.manager.tools.snapshots import (
     generate_and_save_snapshot,
     upload_snapshot_to_gcp,
@@ -36,7 +10,44 @@ from deepSculpt.manager.tools.checkpoint import (
     load_model_from_cgp,
 )
 from deepSculpt.manager.tools.params import SEED, MINIBATCHES
-from deepSculpt.curator.curator import Curator
+
+from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
+from deepSculpt.trainer.tools.firstmodel import (
+    make_three_dimentional_generator,
+    make_three_dimentional_critic,
+)
+from deepSculpt.trainer.tools.skipmodel import (
+    make_three_dimentional_critic,
+    make_three_dimentional_generator,
+)
+from deepSculpt.trainer.tools.complexmodel import (
+    make_three_dimentional_critic,
+    make_three_dimentional_generator,
+)
+from deepSculpt.trainer.tools.freecolormodel import (
+    make_three_dimentional_critic,
+    make_three_dimentional_generator,
+)
+from deepSculpt.trainer.tools.optimizers import (
+    generator_optimizer,
+    discriminator_optimizer,
+)
+
+from IPython import display
+from colorama import Fore, Style
+import matplotlib.pyplot as plt
+import time
+import warnings
+
+warnings.filterwarnings("ignore")
+import os
+from google.cloud import storage
+from tensorflow import GradientTape, function, Variable
+from tensorflow.random import normal
+from tensorflow.train import Checkpoint, CheckpointManager
+
+# from tensorflow.data import Dataset
+# import numpy as np
 
 if os.environ.get("COLOR") == 0:  # MONOCHROME
     pass
@@ -129,7 +140,7 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
     )
 
 
-@function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
+"""@function  # Notice the use of "tf.function" This annotation causes the function to be "compiled"
 def train_step(images):  # train for just ONE STEP aka one forward and back propagation
 
     with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
@@ -168,7 +179,7 @@ def train_step(images):  # train for just ONE STEP aka one forward and back prop
     discriminator_optimizer.apply_gradients(
         zip(gradients_of_discriminator, discriminator.trainable_variables)
     )
-    # applying the gradients on the trainable variables of the generator to update the parameters
+    # applying the gradients on the trainable variables of the generator to update the parameters"""
 
 
 """@function
@@ -201,6 +212,7 @@ def train_step(images, gen_steps=1, disc_steps=1):
         )"""
 
 
+@function
 def trainer(collection_folder, curator, n_epochs):
 
     if int(os.environ.get("INSTANCE")) == 2:
@@ -231,7 +243,12 @@ def trainer(collection_folder, curator, n_epochs):
 
         for chunk in range(len(chunk_files) // 2):
 
-            print("\n ⏩ " + Fore.RED + "Chunk number %d Epoch number %d" % (chunk + 1, epoch + 1) + Style.RESET_ALL)
+            print(
+                "\n ⏩ "
+                + Fore.RED
+                + "Chunk number %d Epoch number %d" % (chunk + 1, epoch + 1)
+                + Style.RESET_ALL
+            )
 
             if int(os.environ.get("INSTANCE")) == 0:
 
@@ -243,9 +260,13 @@ def trainer(collection_folder, curator, n_epochs):
                     "data",
                 )
 
-                path_volumes = f"{root_path}/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
+                path_volumes = (
+                    f"{root_path}/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
+                )
 
-                path_materials = f"{root_path}/material_data[2023-02-28]chunk[{chunk + 1}].npy"
+                path_materials = (
+                    f"{root_path}/material_data[2023-02-28]chunk[{chunk + 1}].npy"
+                )
 
             if int(os.environ.get("INSTANCE")) == 1:
 
@@ -260,10 +281,13 @@ def trainer(collection_folder, curator, n_epochs):
                     "data",
                 )
 
-                path_volumes = f"{root_path}/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
+                path_volumes = (
+                    f"{root_path}/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
+                )
 
-                path_materials = f"{root_path}/material_data[2023-02-28]chunk[{chunk + 1}].npy"
-
+                path_materials = (
+                    f"{root_path}/material_data[2023-02-28]chunk[{chunk + 1}].npy"
+                )
 
             print(
                 "\n ✅ " + Fore.GREEN + f"Volumes Path: {path_volumes}" + Style.RESET_ALL
@@ -314,9 +338,11 @@ def trainer(collection_folder, curator, n_epochs):
                     minibatch_start = time.time()
 
                     print(
-                        "\n ⏩ " + Fore.RED +
-                        f"Minibatch number {minibatch + 1} chunk {chunk + 1} epoch {epoch + 1}"
-                        + Style.RESET_ALL)
+                        "\n ⏩ "
+                        + Fore.RED
+                        + f"Minibatch number {minibatch + 1} chunk {chunk + 1} epoch {epoch + 1}"
+                        + Style.RESET_ALL
+                    )
 
                     print(
                         "\n 📶 "
@@ -327,15 +353,16 @@ def trainer(collection_folder, curator, n_epochs):
                         + Style.RESET_ALL
                     )
 
-                    print("\n 📶 " + Fore.MAGENTA +
-                          "Time for minibatches between {} and {} is {} sec".
-                          format(
-                              (minibatch *
-                               int(os.environ.get("MINIBATCH_SIZE"))),
-                              ((minibatch + 1) *
-                               int(os.environ.get("MINIBATCH_SIZE"))),
-                              time.time() - minibatch_start,
-                          ) + Style.RESET_ALL)
+                    print(
+                        "\n 📶 "
+                        + Fore.MAGENTA
+                        + "Time for minibatches between {} and {} is {} sec".format(
+                            (minibatch * int(os.environ.get("MINIBATCH_SIZE"))),
+                            ((minibatch + 1) * int(os.environ.get("MINIBATCH_SIZE"))),
+                            time.time() - minibatch_start,
+                        )
+                        + Style.RESET_ALL
+                    )
 
                 gradients_of_generator = gen_tape.gradient(
                     gen_loss, generator.trainable_variables
