@@ -11,27 +11,27 @@ from colorama import Fore, Style
 class Plotter(Sculptor):
     def __init__(
         self,
-        volumes=None,
-        colors=None,
+        #volumes=None,
+        #colors=None,
         figsize=25,
         style="#ffffff",
         dpi=100,
         transparent=False,
     ):
 
-        self.void = volumes
-        self.volumes = volumes
-        self.colors = colors
+        #self.void = volumes
+        #self.volumes = volumes
+        #self.colors = colors
         self.figsize = figsize
         self.style = style
         self.dpi = dpi
         self.transparent = transparent
 
-    def plot_sections(self):
+    def plot_sections(self, volumes):
         sculpture = self.void
         fig, axes = plt.subplots(
             ncols=6,
-            nrows=int(np.ceil(self.void.shape[0] / 6)),
+            nrows=int(np.ceil(volumes.shape[0] / 6)),
             figsize=(self.figsize, self.figsize),
             facecolor=(self.style),
             dpi=self.dpi,
@@ -43,7 +43,9 @@ class Plotter(Sculptor):
 
     def plot_sculpture(
         self,
-        directory,
+        volumes=None,
+        materials=None,
+        directory='.',
         raster_picture=False,
         vector_picture=False,
         volumes_array=False,
@@ -61,25 +63,25 @@ class Plotter(Sculptor):
 
         axes = axes.ravel()
 
-        if type(self.colors).__module__ == np.__name__:
+        if type(materials).__module__ == np.__name__:
             for _ in range(1):
 
                 if hide_axis:
                     axes[0].set_axis_off()
 
                 axes[0].voxels(
-                    self.volumes,
+                    volumes,
                     edgecolors="k",
                     linewidth=0.05,
-                    facecolors=self.colors,
+                    facecolors=materials,
                 )
 
                 if hide_axis:
                     axes[1].set_axis_off()
 
                 axes[1].voxels(
-                    np.rot90(self.volumes, 1),
-                    facecolors=np.rot90(self.colors, 1),
+                    np.rot90(volumes, 1),
+                    facecolors=np.rot90(materials, 1),
                     edgecolors="k",
                     linewidth=0.05,
                 )
@@ -88,8 +90,8 @@ class Plotter(Sculptor):
                     axes[2].set_axis_off()
 
                 axes[2].voxels(
-                    np.rot90(self.volumes, 2),
-                    facecolors=np.rot90(self.colors, 2),
+                    np.rot90(volumes, 2),
+                    facecolors=np.rot90(materials, 2),
                     edgecolors="k",
                     linewidth=0.05,
                 )
@@ -98,41 +100,51 @@ class Plotter(Sculptor):
                     axes[3].set_axis_off()
 
                 axes[3].voxels(
-                    np.rot90(self.volumes, 3),
-                    facecolors=np.rot90(self.colors, 3),
+                    np.rot90(volumes, 3),
+                    facecolors=np.rot90(materials, 3),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
+                print(
+                    "\n ✅ " + Fore.GREEN +
+                    f"Creating a color plots"
+                    + Style.RESET_ALL)
+
         else:
             for _ in range(1):
                 axes[0].voxels(
-                    self.volumes,
+                    volumes,
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
                 axes[1].voxels(
-                    np.rot90(self.volumes, 1),
+                    np.rot90(volumes, 1),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
                 axes[2].voxels(
-                    np.rot90(self.volumes, 2),
+                    np.rot90(volumes, 2),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
                 axes[3].voxels(
-                    np.rot90(self.volumes, 3),
+                    np.rot90(volumes, 3),
                     edgecolors="k",
                     linewidth=0.05,
                 )
 
+                print(
+                    "\n ✅ " + Fore.GREEN +
+                    f"Creating a monochrome plots"
+                    + Style.RESET_ALL)
+
         now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 
-        print("\n 🔽 " + Fore.GREEN + f"Plotting [{now}]" + Style.RESET_ALL)
+        print("\n 🔽 " + Fore.MAGENTA + f"Plotting [{now}]" + Style.RESET_ALL)
 
         if raster_picture:
 
@@ -145,7 +157,7 @@ class Plotter(Sculptor):
             print(
                 "\n ✅ "
                 + Fore.BLUE
-                + f"Just created a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
+                + f"Just saved a snapshot {name_png.split('/')[-1]} @ {directory  + '/picture'}"
                 + Style.RESET_ALL
             )
 
@@ -160,7 +172,7 @@ class Plotter(Sculptor):
             print(
                 "\n ✅ "
                 + Fore.BLUE
-                + f"Just created a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
+                + f"Just saved a vectorial snapshot {name_svg.split('/')[-1]} @ {directory  + '/vectorial'}"
                 + Style.RESET_ALL
             )
 
@@ -170,12 +182,12 @@ class Plotter(Sculptor):
 
             name_volume_array = f"{directory}/volume_array/volume_array[{now}]"
 
-            np.save(name_volume_array, self.volumes)
+            np.save(name_volume_array, volumes)
 
             print(
                 "\n ✅ "
                 + Fore.BLUE
-                + f"Just created a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
+                + f"Just saved a volume array {name_volume_array.split('/')[-1]} @ {directory + '/volume_array'}"
                 + Style.RESET_ALL
             )
 
@@ -185,12 +197,12 @@ class Plotter(Sculptor):
 
             name_material_array = f"{directory}/material_array/material_array[{now}]"
 
-            np.save(name_material_array, self.colors)
+            np.save(name_material_array, materials)
 
             print(
                 "\n ✅ "
                 + Fore.BLUE
-                + f"Just created a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
+                + f"Just saved a material array {name_material_array.split('/')[-1]} @ {directory + '/material_array'}"
                 + Style.RESET_ALL
             )
 
