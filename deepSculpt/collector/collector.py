@@ -240,9 +240,26 @@ class Collector:
 
 if __name__ == "__main__":
 
-    out_dir = os.path.join(
-        os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
-    )
+    if int(os.environ.get("INSTANCE")) == 0:
+        out_dir = os.path.join(
+            os.environ.get("HOME"),
+            "code",
+            "juan-garassino",
+            "deepSculpt",
+            "data",
+        )
+
+    if int(os.environ.get("INSTANCE")) == 1:
+        out_dir = os.path.join(
+            os.environ.get("HOME"),
+            "..",
+            "content",
+            "drive",
+            "MyDrive",
+            "repositories",
+            "deepSculpt",
+            "data",
+        )
 
     collector = Collector(
         void_dim=int(os.environ.get("VOID_DIM")),

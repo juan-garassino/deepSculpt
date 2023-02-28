@@ -54,7 +54,7 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
 
     print("\n ❎ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
-    # print(generator.summary())
+    print(generator.summary())
 
     # Initiates the Discriminator
 
@@ -64,7 +64,7 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
 
     print("\n ❎ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
-    # print(discriminator.summary())
+    print(discriminator.summary())
 
     print(Style.RESET_ALL)
 
@@ -233,9 +233,37 @@ def trainer(collection_folder, curator, n_epochs):
 
             print("\n ⏩ " + Fore.RED + "Chunk number %d Epoch number %d" % (chunk + 1, epoch + 1) + Style.RESET_ALL)
 
-            path_volumes = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
+            if int(os.environ.get("INSTANCE")) == 0:
 
-            path_materials = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]chunk[{chunk + 1}].npy"
+                root_path = os.path.join(
+                    os.environ.get("HOME"),
+                    "code",
+                    "juan-garassino",
+                    "deepSculpt",
+                    "data",
+                )
+
+                path_volumes = f"{root_path}/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
+
+                path_materials = f"{root_path}/material_data[2023-02-28]chunk[{chunk + 1}].npy"
+
+            if int(os.environ.get("INSTANCE")) == 1:
+
+                root_path = os.path.join(
+                    os.environ.get("HOME"),
+                    "..",
+                    "content",
+                    "drive",
+                    "MyDrive",
+                    "repositories",
+                    "deepSculpt",
+                    "data",
+                )
+
+                path_volumes = f"{root_path}/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
+
+                path_materials = f"{root_path}/material_data[2023-02-28]chunk[{chunk + 1}].npy"
+
 
             print(
                 "\n ✅ " + Fore.GREEN + f"Volumes Path: {path_volumes}" + Style.RESET_ALL
