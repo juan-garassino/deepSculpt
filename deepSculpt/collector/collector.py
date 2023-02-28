@@ -195,7 +195,7 @@ class Collector:
                 "juan-garassino",
                 "deepSculpt",
                 "data",
-                "preprocess_collection",
+                "samples",
             )
         # path
         if int(os.environ.get("INSTANCE")) == 1:
@@ -232,7 +232,7 @@ class Collector:
 
             print(
                 "\n 🆗 "
-                + Fore.YELLOW
+                + Fore.GREEN
                 + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                 + Style.RESET_ALL
             )

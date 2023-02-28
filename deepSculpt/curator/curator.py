@@ -65,15 +65,15 @@ class Curator:  # make manager work with and with out epochs
         if int(os.environ.get("INSTANCE")) == 2:
             volumes_void, materials_void = manager.load_from_query()
 
-        # Plot sample from the minibatch
+        # Plot sample from the chunk
         for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
             index = random.choices(list(np.arange(0, volumes_void.shape[0], 1)), k=1)[0]
 
             Plotter(
-                figsize=25,
+                figsize=16,
                 style="#ffffff",
-                dpi=int(os.environ.get("DPI")),
+                dpi=25,
             ).plot_sculpture(
                 volumes=volumes_void[index],
                 materials=materials_void[index],

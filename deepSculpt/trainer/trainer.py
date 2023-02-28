@@ -229,15 +229,13 @@ def trainer(collection_folder, curator, n_epochs):
             if os.path.isfile(os.path.join(collection_folder, f))
         ]
 
-        for index in range(len(chunk_files) // 2):
+        for chunk in range(len(chunk_files) // 2):
 
-            print(
-                "\n ⏩ " + Fore.RED + "Chunk number %d" % (index + 1,) + Style.RESET_ALL
-            )
+            print("\n ⏩ " + Fore.RED + "Chunk number %d Epoch number %d" % (chunk + 1, epoch + 1) + Style.RESET_ALL)
 
-            path_volumes = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]chunk[{index + 1}].npy"
+            path_volumes = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]chunk[{chunk + 1}].npy"
 
-            path_materials = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]chunk[{index + 1}].npy"
+            path_materials = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]chunk[{chunk + 1}].npy"
 
             print(
                 "\n ✅ " + Fore.GREEN + f"Volumes Path: {path_volumes}" + Style.RESET_ALL
@@ -255,7 +253,7 @@ def trainer(collection_folder, curator, n_epochs):
                 preprocessing_class_o,
             ) = curator.preprocess_collection_minibatch(path_volumes, path_materials)
 
-            for index, sculpts_batch in enumerate(chunk_sculpts):
+            for minibatch, sculpts_batch in enumerate(chunk_sculpts):
 
                 noise = normal(
                     [
@@ -284,15 +282,13 @@ def trainer(collection_folder, curator, n_epochs):
                         real_output, fake_output
                     )  # calculating the descrim loss function previously defined
 
-                if (index + 1) % MINIBATCHES[index]:
+                if (minibatch + 1) % MINIBATCHES[minibatch]:
                     minibatch_start = time.time()
 
                     print(
-                        "\n ⏩ "
-                        + Fore.YELLOW
-                        + f"Minibatch number {index + 1} epoch {epoch + 1}"
-                        + Style.RESET_ALL
-                    )
+                        "\n ⏩ " + Fore.YELLOW +
+                        f"Minibatch number {minibatch + 1} chunk {chunk + 1} epoch {epoch + 1}"
+                        + Style.RESET_ALL)
 
                     print(
                         "\n 📶 "
@@ -303,16 +299,15 @@ def trainer(collection_folder, curator, n_epochs):
                         + Style.RESET_ALL
                     )
 
-                    print(
-                        "\n 📶 "
-                        + Fore.MAGENTA
-                        + "Time for minibatches between {} and {} is {} sec".format(
-                            (index * int(os.environ.get("MINIBATCH_SIZE"))),
-                            ((index + 1) * int(os.environ.get("MINIBATCH_SIZE"))),
-                            time.time() - minibatch_start,
-                        )
-                        + Style.RESET_ALL
-                    )
+                    print("\n 📶 " + Fore.MAGENTA +
+                          "Time for minibatches between {} and {} is {} sec".
+                          format(
+                              (minibatch *
+                               int(os.environ.get("MINIBATCH_SIZE"))),
+                              ((minibatch + 1) *
+                               int(os.environ.get("MINIBATCH_SIZE"))),
+                              time.time() - minibatch_start,
+                          ) + Style.RESET_ALL)
 
                 gradients_of_generator = gen_tape.gradient(
                     gen_loss, generator.trainable_variables
