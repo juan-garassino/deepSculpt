@@ -184,9 +184,7 @@ class Curator:  # make manager work with and with out epochs
             materials = [COLORS["edges"], COLORS["planes"]] + COLORS["volumes"] + [None]
 
             # Preproccess the data
-            preprocessing_class_o = OneHotEncoderDecoder(
-                materials_void, materials=materials, verbose=1
-            )
+            preprocessing_class_o = OneHotEncoderDecoder(materials_void, verbose=1)
 
             o_encode, o_classes = preprocessing_class_o.ohe_encode()
 
