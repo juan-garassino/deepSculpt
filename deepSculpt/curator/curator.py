@@ -127,7 +127,7 @@ class Curator:  # make manager work with and with out epochs
                 Dataset.from_tensor_slices(o_encode)
                 .shuffle(BUFFER_SIZE)
                 .take(int(os.environ.get("TRAIN_SIZE")))
-                .batch(int(os.environ.get("BATCH_SIZE")))
+                .batch(int(os.environ.get("MINIBATCH_SIZE")))
             )
 
             return train_dataset, preprocessing_class_o
@@ -168,7 +168,7 @@ class Curator:  # make manager work with and with out epochs
                 Dataset.from_tensor_slices(b_encode)
                 .shuffle(BUFFER_SIZE)
                 .take(int(os.environ.get("TRAIN_SIZE")))
-                .batch(int(os.environ.get("BATCH_SIZE")))
+                .batch(int(os.environ.get("MINIBATCH_SIZE")))
             )
 
             return train_dataset, preprocessing_class_b

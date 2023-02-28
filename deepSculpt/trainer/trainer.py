@@ -201,9 +201,7 @@ def train_step(images, gen_steps=1, disc_steps=1):
         )"""
 
 
-def trainer(
-    collection_folder, n_minibatches, n_epochs, instance=os.environ.get("INSTANCE")
-):  # load checkpoint, checkpoint + manager
+def trainer(collection_folder, n_epochs):
 
     if int(os.environ.get("INSTANCE")) == 2:
         load_model_from_cgp(checkpoint, manager)
@@ -215,6 +213,7 @@ def trainer(
             + "Restored from {}...".format(manager.latest_checkpoint)
             + Style.RESET_ALL
         )
+
     else:
         print("\n ✅ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
 
@@ -225,34 +224,45 @@ def trainer(
         print("\n ⏩ " + Fore.RED + "Epoch number %d" % (epoch + 1,) + Style.RESET_ALL)
 
         chunk_files = [
-            f for f in os.listdir(collection_folder)
+            f
+            for f in os.listdir(collection_folder)
             if os.path.isfile(os.path.join(collection_folder, f))
         ]
 
         for index in range(len(chunk_files)):
 
-            print("\n ⏩ " + Fore.RED + "Chunk number %d" % (index + 1, ) +
-                  Style.RESET_ALL)
+            print(
+                "\n ⏩ " + Fore.RED + "Chunk number %d" % (index + 1,) + Style.RESET_ALL
+            )
 
-            # minibatch = re.search(r'minibatch\[(\d+)\]', minibatch_file).group(1)
+            path_volumes = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]chunk[{index + 1}].npy"
 
-            path_volumes = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]minibatch[{index + 1}].npy"
+            path_materials = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]chunk[{index + 1}].npy"
 
-            path_materials = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]minibatch[{index + 1}].npy"
+            print(
+                "\n ✅ " + Fore.GREEN + f"Volumes Path: {path_volumes}" + Style.RESET_ALL
+            )
 
-            print("\n ✅ " + Fore.GREEN + f"Volumes Path: {path_volumes}" +
-                  Style.RESET_ALL)
+            print(
+                "\n ✅ "
+                + Fore.GREEN
+                + f"Materials Path: {path_materials}"
+                + Style.RESET_ALL
+            )
 
-            print("\n ✅ " + Fore.GREEN +
-                  f"Materials Path: {path_materials}" + Style.RESET_ALL)
-
-            (chunk_sculpts, preprocessing_class_o) = curator.preprocess_collection_minibatch(path_volumes, path_materials)
+            (
+                chunk_sculpts,
+                preprocessing_class_o,
+            ) = curator.preprocess_collection_minibatch(path_volumes, path_materials)
 
             for index, sculpts_batch in enumerate(chunk_sculpts):
 
                 noise = normal(
-                    [int(os.environ.get("BATCH_SIZE")), int(os.environ.get("NOISE_DIM"))]
-                )  # tf.random.normal([os.environ.get('BATCH_SIZE'), noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
+                    [
+                        int(os.environ.get("MINIBATCH_SIZE")),
+                        int(os.environ.get("NOISE_DIM")),
+                    ]
+                )  # tf.random.normal([os.environ.get('MINIBATCH_SIZE'), noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
 
                 with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
                     generated_images = generator(
@@ -297,8 +307,8 @@ def trainer(
                         "\n 📶 "
                         + Fore.MAGENTA
                         + "Time for minibatches between {} and {} is {} sec".format(
-                            (index * int(os.environ.get("BATCH_SIZE"))),
-                            ((index + 1) * int(os.environ.get("BATCH_SIZE"))),
+                            (index * int(os.environ.get("MINIBATCH_SIZE"))),
+                            ((index + 1) * int(os.environ.get("MINIBATCH_SIZE"))),
                             time.time() - minibatch_start,
                         )
                         + Style.RESET_ALL
@@ -537,6 +547,5 @@ if __name__ == "__main__":
 
     trainer(
         collection_folder,
-        int(os.environ.get("N_MINIBATCHES")),
         int(os.environ.get("EPOCHS")),
     )

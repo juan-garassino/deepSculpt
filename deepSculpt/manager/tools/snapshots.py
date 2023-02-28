@@ -55,13 +55,13 @@ def generate_and_save_snapshot(
     for prediction in range(int(os.environ.get("SCULPTS_GEN"))):
         # Plots the Sculpture
         Plotter(
-            o_decoded_volumes[prediction],
-            o_decoded_colors[prediction],
             figsize=25,
             style="#ffffff",
             dpi=int(os.environ.get("DPI")),
         ).plot_sculpture(
-            directory + f"[{snapshot_input[prediction][0]}]",
+            volumes=o_decoded_volumes[prediction],
+            materials=o_decoded_colors[prediction],
+            directory=directory + f"[{snapshot_input[prediction][0]}]",
             raster_picture=True,
             vector_picture=False,
             volumes_array=True,

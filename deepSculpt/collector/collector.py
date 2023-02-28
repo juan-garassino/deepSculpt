@@ -22,8 +22,8 @@ class Collector:
         volume_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
         step: int = None,
         directory: str = None,
-        minibatch_size: int = 32,
-        n_minibatches: int = 100,
+        chunk_size: int = 32,
+        n_chunks: int = 100,
         grid: int = 1,
     ):  # -> None:
         """Initialize the Curator instance.
@@ -57,8 +57,8 @@ class Collector:
 
         self.directory = str(directory) if directory is not None else None
 
-        self.minibatch_size = minibatch_size
-        self.n_minibatches = n_minibatches
+        self.chunk_size = chunk_size
+        self.n_chunks = n_chunks
 
     def create_collection(self):  # -> Tuple[np.ndarray, np.ndarray]:
         """Generate the 3D sculpted shapes.
@@ -69,7 +69,7 @@ class Collector:
             data of the generated shapes.
         """
 
-        for minibatch in range(self.n_minibatches):
+        for chunk in range(self.n_chunks):
 
             volumes_raw_data: List[np.ndarray] = []
 
@@ -77,7 +77,7 @@ class Collector:
 
             count = 0
 
-            for count, sculpture in enumerate(range(self.minibatch_size)):  #
+            for count, sculpture in enumerate(range(self.chunk_size)):  #
 
                 if int(os.environ.get("VERBOSE")) == 1:
                     print(
@@ -120,7 +120,7 @@ class Collector:
                     grid=(
                         self.grid,
                         self.step,
-                    ),  # minimun height of column, and maximun height
+                    ),
                     materials_edges=COLORS["edges"],
                     materials_planes=COLORS["planes"],
                     materials_volumes=COLORS["volumes"],
@@ -129,9 +129,7 @@ class Collector:
 
                 sculpture = sculptor.generative_sculpt()
 
-                volumes_raw_data.append(
-                    sculpture[0].astype("int8")
-                )  # NOT APPEND BUT SAVE IN DIFF FILES!!
+                volumes_raw_data.append(sculpture[0].astype("int8"))
 
                 materials_raw_data.append(sculpture[1])
 
@@ -139,7 +137,7 @@ class Collector:
                 np.asarray(volumes_raw_data)
                 .reshape(
                     (
-                        int(self.minibatch_size),
+                        int(self.chunk_size),
                         int(self.void_dim),
                         int(self.void_dim),
                         int(self.void_dim),
@@ -152,7 +150,7 @@ class Collector:
                 np.asarray(materials_raw_data)
                 .reshape(
                     (
-                        int(self.minibatch_size),
+                        int(self.chunk_size),
                         int(self.void_dim),
                         int(self.void_dim),
                         int(self.void_dim),
@@ -164,20 +162,20 @@ class Collector:
             print(
                 "\n 🔽 "
                 + Fore.GREEN
-                + f"Just created 'volume_data' minibatch {minibatch + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
+                + f"Just created 'volume_data' chunk {chunk + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
                 + Style.RESET_ALL
             )
 
             Manager.make_directory(self.directory)
 
             np.save(
-                f"{self.directory}/volume_data[{date.today()}]minibatch[{minibatch + 1}]",
+                f"{self.directory}/volume_data[{date.today()}]chunk[{chunk + 1}]",
                 volumes_raw_data,
                 allow_pickle=True,
             )
 
             np.save(
-                f"{self.directory}/material_data[{date.today()}]minibatch[{minibatch + 1}]",
+                f"{self.directory}/material_data[{date.today()}]chunk[{chunk + 1}]",
                 materials_raw_data,
                 allow_pickle=True,
             )
@@ -185,7 +183,7 @@ class Collector:
             print(
                 "\n ✅ "
                 + Fore.BLUE
-                + f"Just saved 'volume_data' & 'material_data' minibatch {minibatch + 1} @ {self.directory}"
+                + f"Just saved 'volume_data' & 'material_data' chunk {chunk + 1} @ {self.directory}"
                 + Style.RESET_ALL
             )
 
@@ -210,12 +208,12 @@ class Collector:
                 "repositories",
                 "deepSculpt",
                 "data",
-                "preprocess_collection",
+                "samples",
             )
 
         for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
-            index = random.choices(list(np.arange(0, self.minibatch_size, 1)), k=1)[0]
+            index = random.choices(list(np.arange(0, self.chunk_size, 1)), k=1)[0]
 
             Plotter(
                 figsize=25,
@@ -226,9 +224,9 @@ class Collector:
                 materials=materials_raw_data[index],
                 directory=path,
                 raster_picture=True,
-                vector_picture=True,
-                volumes_array=True,
-                materials_array=True,
+                vector_picture=False,
+                volumes_array=False,
+                materials_array=False,
                 hide_axis=True,
             )
 
@@ -253,8 +251,8 @@ if __name__ == "__main__":
         volume_elements=(2, 0.3, 0.5),
         step=None,
         directory=out_dir,
-        minibatch_size=int(os.environ.get("N_SAMPLES_CREATE")),
-        n_minibatches=16,
+        chunk_size=int(os.environ.get("N_SAMPLES_PER_CHUNK")),
+        n_chunks=int(os.environ.get("N_CHUNCKS")),
         grid=1,
     )
 
