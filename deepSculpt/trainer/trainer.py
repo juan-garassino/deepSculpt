@@ -54,7 +54,7 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
 
     print("\n ❎ " + Fore.RED + "The Generators summary is" + Fore.YELLOW + "\n ")
 
-    print(generator.summary())
+    # print(generator.summary())
 
     # Initiates the Discriminator
 
@@ -64,7 +64,7 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
 
     print("\n ❎ " + Fore.RED + "The Discriminators summary is" + Fore.YELLOW + "\n ")
 
-    print(discriminator.summary())
+    # print(discriminator.summary())
 
     print(Style.RESET_ALL)
 
@@ -201,7 +201,7 @@ def train_step(images, gen_steps=1, disc_steps=1):
         )"""
 
 
-def trainer(collection_folder, n_epochs):
+def trainer(collection_folder, curator, n_epochs):
 
     if int(os.environ.get("INSTANCE")) == 2:
         load_model_from_cgp(checkpoint, manager)
@@ -229,7 +229,7 @@ def trainer(collection_folder, n_epochs):
             if os.path.isfile(os.path.join(collection_folder, f))
         ]
 
-        for index in range(len(chunk_files)):
+        for index in range(len(chunk_files) // 2):
 
             print(
                 "\n ⏩ " + Fore.RED + "Chunk number %d" % (index + 1,) + Style.RESET_ALL
@@ -289,7 +289,7 @@ def trainer(collection_folder, n_epochs):
 
                     print(
                         "\n ⏩ "
-                        + Fore.MAGENTA
+                        + Fore.YELLOW
                         + f"Minibatch number {index + 1} epoch {epoch + 1}"
                         + Style.RESET_ALL
                     )
@@ -545,7 +545,10 @@ if __name__ == "__main__":
         os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
     )
 
+    curator = Curator(processing_method="OHE")
+
     trainer(
         collection_folder,
+        curator,
         int(os.environ.get("EPOCHS")),
     )

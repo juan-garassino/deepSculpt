@@ -101,7 +101,7 @@ class OneHotEncoderDecoder:
         if self.verbose == 1:
             print(
                 "\n 🔀 "
-                + Fore.RED
+                + Fore.BLUE
                 + f"A number of {self.materials_labels_array.shape[0]} samples shaped {self.materials_labels_array.shape} have been encoded in {self.n_classes} classes: {self.classes}"
                 + Style.RESET_ALL
             )
@@ -152,7 +152,7 @@ class OneHotEncoderDecoder:
         if self.verbose == 1:
             print(
                 "\n 🔀 "
-                + Fore.RED
+                + Fore.BLUE
                 + f"A number of {one_hot_encoded_array.shape[0]} samples shaped {one_hot_encoded_array.shape} have been decoded in {self.n_classes} classes: {self.classes}"
                 + Style.RESET_ALL
             )
@@ -222,7 +222,7 @@ class BinaryEncoderDecoder:
         if self.verbose == 1:
             print(
                 "\n 🔀 "
-                + Fore.RED
+                + Fore.BLUE
                 + f"A number of {self.materials_labels_array.shape[0]} samples shaped {self.materials_labels_array.shape} have been encoded to {binary_encoded_colors.shape} in {len(self.classes)} classes: {self.classes}"
                 + Style.RESET_ALL
             )
@@ -267,7 +267,7 @@ class BinaryEncoderDecoder:
         if self.verbose == 1:
             print(
                 "\n 🔀 "
-                + Fore.RED
+                + Fore.BLUE
                 + f"A number of {binary_encoded_colors.shape[0]} samples shaped {binary_encoded_colors.shape} have been decoded to {decoded_void.shape} in {len(self.classes)} classes: {self.classes}"
                 + Style.RESET_ALL
             )

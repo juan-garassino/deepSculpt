@@ -53,6 +53,7 @@ class Curator:  # make manager work with and with out epochs
                 "repositories",
                 "deepSculpt",
                 "data",
+                "samples",
             )
 
             # volumes_void,  materials_void = manager.load_from_gcp()
@@ -76,7 +77,7 @@ class Curator:  # make manager work with and with out epochs
             ).plot_sculpture(
                 volumes=volumes_void[index],
                 materials=materials_void[index],
-                directory=path + f"[{index}]",
+                directory=path,  # + f"/sample[{index}]",
                 raster_picture=True,
                 vector_picture=False,
                 volumes_array=False,
@@ -106,7 +107,7 @@ class Curator:  # make manager work with and with out epochs
 
             print(
                 "\n 🔀 "
-                + Fore.YELLOW
+                + Fore.CYAN
                 + "Just preproccess data from shape {} to {}".format(
                     materials_void.shape, o_encode.shape
                 )
@@ -115,7 +116,7 @@ class Curator:  # make manager work with and with out epochs
 
             print(
                 "\n 🔠 "
-                + Fore.YELLOW
+                + Fore.CYAN
                 + "The classes are: {}".format(o_classes)
                 + Style.RESET_ALL
             )
@@ -147,7 +148,7 @@ class Curator:  # make manager work with and with out epochs
 
             print(
                 "\n 🔀 "
-                + Fore.YELLOW
+                + Fore.CYAN
                 + "Just preproccess data from shape {} to {}".format(
                     materials_void.shape, b_encode.shape
                 )
@@ -156,7 +157,7 @@ class Curator:  # make manager work with and with out epochs
 
             print(
                 "\n 🔠 "
-                + Fore.YELLOW
+                + Fore.CYAN
                 + "The classes are: {}".format(b_classes)
                 + Style.RESET_ALL
             )
