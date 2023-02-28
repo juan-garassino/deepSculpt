@@ -4,7 +4,7 @@ import os
 ## GENERATOR
 
 
-def make_three_dimentional_generator():
+def make_three_dimentional_generator_freecolor():
     model = Sequential()
     model.add(
         layers.Dense(
@@ -130,7 +130,7 @@ def make_three_dimentional_generator():
 ## CRITIC
 
 
-def make_three_dimentional_critic():
+def make_three_dimentional_critic_freecolor():
     model = Sequential()
     model.add(
         layers.Conv3D(

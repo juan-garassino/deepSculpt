@@ -17,7 +17,7 @@ from tensorflow.keras.layers import (
 ## GENERATOR
 
 
-def make_three_dimentional_generator():
+def make_three_dimentional_generator_skip():
 
     void_dim = int(os.environ.get("VOID_DIM"))
     noise_dim = int(os.environ.get("NOISE_DIM"))
@@ -64,7 +64,7 @@ def make_three_dimentional_generator():
 ## CRITIC
 
 
-def make_three_dimentional_critic():
+def make_three_dimentional_critic_skip():
     model = Sequential()
     model.add(
         layers.Conv3D(
