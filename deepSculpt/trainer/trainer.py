@@ -12,21 +12,22 @@ from deepSculpt.manager.tools.checkpoint import (
 from deepSculpt.manager.tools.params import SEED, MINIBATCHES
 
 from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
+
 from deepSculpt.trainer.tools.firstmodel import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
 from deepSculpt.trainer.tools.skipmodel import (
-    make_three_dimentional_critic,
-    make_three_dimentional_generator,
+    make_three_dimentional_critic_skip,
+    make_three_dimentional_generator_skip,
 )
 from deepSculpt.trainer.tools.complexmodel import (
-    make_three_dimentional_critic,
-    make_three_dimentional_generator,
+    make_three_dimentional_critic_complex,
+    make_three_dimentional_generator_complex,
 )
 from deepSculpt.trainer.tools.freecolormodel import (
-    make_three_dimentional_critic,
-    make_three_dimentional_generator,
+    make_three_dimentional_critic_freecolor,
+    make_three_dimentional_generator_freecolor,
 )
 from deepSculpt.trainer.tools.optimizers import (
     generator_optimizer,
