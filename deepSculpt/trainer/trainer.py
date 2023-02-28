@@ -79,6 +79,22 @@ if int(os.environ.get("COLOR")) == 1:  # COLOR
 
     print(Style.RESET_ALL)
 
+    ##
+
+    import tensorflow as tf
+
+    regularizer = tf.keras.regularizers.l2(0.01)  # weight decay parameter
+
+    for layer in generator.layers:
+        if isinstance(layer, tf.keras.layers.Conv3D):
+            layer.kernel_regularizer = regularizer
+
+    for layer in discriminator.layers:
+        if isinstance(layer, tf.keras.layers.Conv3D):
+            layer.kernel_regularizer = regularizer
+
+    ##
+
     ## Path local instance enviroment on COMPUTER
 
     if int(os.environ.get("INSTANCE")) == 0:

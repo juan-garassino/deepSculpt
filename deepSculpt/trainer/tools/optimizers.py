@@ -1,5 +1,27 @@
 from tensorflow.keras.optimizers import Adam
 
-generator_optimizer = Adam(1e-5)  # SGD INSTEAD???   (Radford et al., 2015)
+from tensorflow.keras.optimizers.experimental import SGD
 
-discriminator_optimizer = Adam(1e-5)  # SGD INSTEAD???  (Radford et al., 2015)
+generator_optimizer = Adam(learning_rate=0.0002, beta_1=0.5, beta_2=0.999)
+
+discriminator_optimizer = Adam(learning_rate=0.0002, beta_1=0.5, beta_2=0.999)
+
+
+import tensorflow as tf
+
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001,
+                                     beta_1=0.9,
+                                     beta_2=0.999,
+                                     epsilon=1e-07)
+
+optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.00005,
+                                        rho=0.9)
+
+optimizer = tf.keras.optimizers.Nadam(learning_rate=0.0002,
+                                      beta_1=0.5,
+                                      beta_2=0.999)
+
+optimizer = tf.keras.optimizers.SGD(learning_rate=0.001,
+                                    momentum=0.9)
+
+optimizer = tf.keras.optimizers.Adagrad(learning_rate=0.01)
