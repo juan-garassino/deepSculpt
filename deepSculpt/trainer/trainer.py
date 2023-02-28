@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from IPython import display
 import time
 import warnings
+import re
 
 warnings.filterwarnings("ignore")
 
@@ -38,40 +39,12 @@ from deepSculpt.manager.tools.params import SEED, MINIBATCHES
 from deepSculpt.curator.curator import Curator
 
 if os.environ.get("COLOR") == 0:  # MONOCHROME
-
-    curator = Curator(
-        n_samples=os.environ.get("N_SAMPLES_CREATE"),
-        edge_elements=(0, 0.2, 0.6),
-        plane_elements=(0, 0.2, 0.6),
-        volume_elements=(2, 0.6, 0.9),
-        void_dim=os.environ.get("VOID_DIM"),
-        grid=1,
-        binary=0,
-    )
-
-    train_dataset, preprocessing_class_o = curator.preprocess_collection()
+    pass
 
 if int(os.environ.get("COLOR")) == 1:  # COLOR
 
-    # Loads Data
-
-    curator = Curator(
-        n_samples=os.environ.get("N_SAMPLES_CREATE"),
-        edge_elements=(0, 0.2, 0.6),
-        plane_elements=(0, 0.2, 0.6),
-        volume_elements=(2, 0.6, 0.9),
-        void_dim=os.environ.get("VOID_DIM"),
-        grid=1,
-        binary=0,
-    )
-
-    train_dataset, preprocessing_class_o = curator.preprocess_collection()
-
-    # add CHUNKS!! I ADD COLORS AND ALPHA !! AND SPARSE LOADER
-
-    # ADD MLFLOW I PREFECT
-
-    # ARREGLAR PLOTER CAMBIANDO LOS 1 POR EL COLOR!
+    # Loads and process data
+    curator = Curator(processing_method="OHE")
 
     # Initiates the Generator
 
@@ -229,7 +202,7 @@ def train_step(images, gen_steps=1, disc_steps=1):
 
 
 def trainer(
-    dataset, epochs, locally=os.environ.get("INSTANCE")
+    collection_folder, n_minibatches, n_epochs, instance=os.environ.get("INSTANCE")
 ):  # load checkpoint, checkpoint + manager
 
     if int(os.environ.get("INSTANCE")) == 2:
@@ -245,84 +218,109 @@ def trainer(
     else:
         print("\n ✅ " + Fore.GREEN + "Initializing from scratch" + Style.RESET_ALL)
 
-    for epoch in range(epochs):
+    for epoch in range(n_epochs):
 
         start = time.time()
 
         print("\n ⏩ " + Fore.RED + "Epoch number %d" % (epoch + 1,) + Style.RESET_ALL)
 
-        for index, image_batch in enumerate(dataset):
-            noise = normal(
-                [int(os.environ.get("BATCH_SIZE")), int(os.environ.get("NOISE_DIM"))]
-            )  # tf.random.normal([os.environ.get('BATCH_SIZE'), noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
+        chunk_files = [
+            f for f in os.listdir(collection_folder)
+            if os.path.isfile(os.path.join(collection_folder, f))
+        ]
 
-            with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
-                generated_images = generator(
-                    noise, training=True
-                )  # iterates over the noises
+        for index in range(len(chunk_files)):
 
-                real_output = discriminator(
-                    image_batch, training=True
-                )  # trains discriminator based on labeled real pics
-                fake_output = discriminator(
-                    generated_images, training=True
-                )  # trains discriminator based on labeled generated pics
-                # why it doesnt traing all at ones
+            print("\n ⏩ " + Fore.RED + "Chunk number %d" % (index + 1, ) +
+                  Style.RESET_ALL)
 
-                gen_loss = generator_loss(
-                    fake_output
-                )  # calculating the generator loss function previously defined
-                disc_loss = discriminator_loss(
-                    real_output, fake_output
-                )  # calculating the descrim loss function previously defined
+            # minibatch = re.search(r'minibatch\[(\d+)\]', minibatch_file).group(1)
 
-            if (index + 1) % MINIBATCHES[index]:
-                minibatch_start = time.time()
+            path_volumes = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]minibatch[{index + 1}].npy"
 
-                print(
-                    "\n ⏩ "
-                    + Fore.MAGENTA
-                    + f"Minibatch number {index + 1} epoch {epoch + 1}"
-                    + Style.RESET_ALL
-                )
+            path_materials = f"/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]minibatch[{index + 1}].npy"
 
-                print(
-                    "\n 📶 "
-                    + Fore.CYAN
-                    + "Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
-                        disc_loss, gen_loss
+            print("\n ✅ " + Fore.GREEN + f"Volumes Path: {path_volumes}" +
+                  Style.RESET_ALL)
+
+            print("\n ✅ " + Fore.GREEN +
+                  f"Materials Path: {path_materials}" + Style.RESET_ALL)
+
+            (chunk_sculpts, preprocessing_class_o) = curator.preprocess_collection_minibatch(path_volumes, path_materials)
+
+            for index, sculpts_batch in enumerate(chunk_sculpts):
+
+                noise = normal(
+                    [int(os.environ.get("BATCH_SIZE")), int(os.environ.get("NOISE_DIM"))]
+                )  # tf.random.normal([os.environ.get('BATCH_SIZE'), noise_dim]) # generate the noises [batch size, latent space 100 dimention vector]
+
+                with GradientTape() as gen_tape, GradientTape() as disc_tape:  # get the gradient for each parameter for this step
+                    generated_images = generator(
+                        noise, training=True
+                    )  # iterates over the noises
+
+                    real_output = discriminator(
+                        sculpts_batch, training=True
+                    )  # trains discriminator based on labeled real pics
+                    fake_output = discriminator(
+                        generated_images, training=True
+                    )  # trains discriminator based on labeled generated pics
+                    # why it doesnt traing all at ones
+
+                    gen_loss = generator_loss(
+                        fake_output
+                    )  # calculating the generator loss function previously defined
+                    disc_loss = discriminator_loss(
+                        real_output, fake_output
+                    )  # calculating the descrim loss function previously defined
+
+                if (index + 1) % MINIBATCHES[index]:
+                    minibatch_start = time.time()
+
+                    print(
+                        "\n ⏩ "
+                        + Fore.MAGENTA
+                        + f"Minibatch number {index + 1} epoch {epoch + 1}"
+                        + Style.RESET_ALL
                     )
-                    + Style.RESET_ALL
-                )
 
-                print(
-                    "\n 📶 "
-                    + Fore.MAGENTA
-                    + "Time for minibatches between {} and {} is {} sec".format(
-                        (index * int(os.environ.get("BATCH_SIZE"))),
-                        ((index + 1) * int(os.environ.get("BATCH_SIZE"))),
-                        time.time() - minibatch_start,
+                    print(
+                        "\n 📶 "
+                        + Fore.CYAN
+                        + "Discriminator Loss: {:.4f}, Generator Loss: {:.4f}".format(
+                            disc_loss, gen_loss
+                        )
+                        + Style.RESET_ALL
                     )
-                    + Style.RESET_ALL
+
+                    print(
+                        "\n 📶 "
+                        + Fore.MAGENTA
+                        + "Time for minibatches between {} and {} is {} sec".format(
+                            (index * int(os.environ.get("BATCH_SIZE"))),
+                            ((index + 1) * int(os.environ.get("BATCH_SIZE"))),
+                            time.time() - minibatch_start,
+                        )
+                        + Style.RESET_ALL
+                    )
+
+                gradients_of_generator = gen_tape.gradient(
+                    gen_loss, generator.trainable_variables
                 )
+                # saving the gradients of each trainable variable of the generator
+                gradients_of_discriminator = disc_tape.gradient(
+                    disc_loss, discriminator.trainable_variables
+                )
+                # saving the gradients of each trainable variable of the discriminator
 
-            gradients_of_generator = gen_tape.gradient(
-                gen_loss, generator.trainable_variables
-            )
-            # saving the gradients of each trainable variable of the generator
-            gradients_of_discriminator = disc_tape.gradient(
-                disc_loss, discriminator.trainable_variables
-            )
-            # saving the gradients of each trainable variable of the discriminator
-
-            generator_optimizer.apply_gradients(
-                zip(gradients_of_generator, generator.trainable_variables)
-            )
-            # applying the gradients on the trainable variables of the generator to update the parameters
-            discriminator_optimizer.apply_gradients(
-                zip(gradients_of_discriminator, discriminator.trainable_variables)
-            )
-            # applying the gradients on the trainable variables of the generator to update the parameters
+                generator_optimizer.apply_gradients(
+                    zip(gradients_of_generator, generator.trainable_variables)
+                )
+                # applying the gradients on the trainable variables of the generator to update the parameters
+                discriminator_optimizer.apply_gradients(
+                    zip(gradients_of_discriminator, discriminator.trainable_variables)
+                )
+                # applying the gradients on the trainable variables of the generator to update the parameters
 
         # Produce images
         display.clear_output(wait=True)  # clearing output !!!TO BE CHECKED!!!
@@ -532,4 +530,13 @@ def trainer(
 
 
 if __name__ == "__main__":
-    trainer(train_dataset, int(os.environ.get("EPOCHS")))
+
+    collection_folder = os.path.join(
+        os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
+    )
+
+    trainer(
+        collection_folder,
+        int(os.environ.get("N_MINIBATCHES")),
+        int(os.environ.get("EPOCHS")),
+    )

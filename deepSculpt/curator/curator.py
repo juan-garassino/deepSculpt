@@ -20,24 +20,13 @@ import tensorflow as tf
 class Curator:  # make manager work with and with out epochs
     def __init__(
         self,
-        #n_samples=128,
-        #edge_elements=None,
-        #plane_elements=None,
-        #volume_elements=None,
-        #void_dim=None,
-        #grid=1,
-        processing_method='OHE',
+        processing_method="OHE",
     ):
-        #self.n_samples = n_samples
-        #self.edge_elements = edge_elements
-        #self.plane_elements = plane_elements
-        #self.volume_elements = volume_elements
-        #self.void_dim = void_dim
-        #self.grid = grid
         self.processing_method = processing_method
 
     def preprocess_collection_minibatch(
-            self, path_volumes, path_colors):  # convert to spare tensor
+        self, path_volumes, path_colors
+    ):  # convert to spare tensor
 
         manager = Manager()
 
@@ -45,14 +34,12 @@ class Curator:  # make manager work with and with out epochs
         if int(os.environ.get("INSTANCE")) == 0:
 
             path = os.path.join(
-                os.environ.get("HOME"),
-                "code",
-                "juan-garassino",
-                "deepSculpt",
-                "data"
+                os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
             )
 
-            volumes_void, materials_void = manager.load_locally(path_volumes, path_colors)
+            volumes_void, materials_void = manager.load_locally(
+                path_volumes, path_colors
+            )
 
         # Colab path
         if int(os.environ.get("INSTANCE")) == 1:
@@ -65,11 +52,13 @@ class Curator:  # make manager work with and with out epochs
                 "MyDrive",
                 "repositories",
                 "deepSculpt",
-                "data"
+                "data",
             )
 
             # volumes_void,  materials_void = manager.load_from_gcp()
-            volumes_void, materials_void = manager.load_locally(path_volumes, path_colors)
+            volumes_void, materials_void = manager.load_locally(
+                path_volumes, path_colors
+            )
 
         # Bigquery load
         if int(os.environ.get("INSTANCE")) == 2:
@@ -78,9 +67,7 @@ class Curator:  # make manager work with and with out epochs
         # Plot sample from the minibatch
         for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
-            index = random.choices(
-                list(np.arange(0, volumes_void.shape[0], 1)), k=1
-            )[0]
+            index = random.choices(list(np.arange(0, volumes_void.shape[0], 1)), k=1)[0]
 
             Plotter(
                 figsize=25,
@@ -105,7 +92,7 @@ class Curator:  # make manager work with and with out epochs
             )
 
         # Returns onehot encoded data
-        if self.processing_method == 'OHE':
+        if self.processing_method == "OHE":
 
             if isinstance(materials_void, np.ndarray) == False:
                 print("error")
@@ -146,7 +133,7 @@ class Curator:  # make manager work with and with out epochs
             return train_dataset, preprocessing_class_o
 
         # Returns binary encoded data
-        elif self.processing_method == 'BINARY':
+        elif self.processing_method == "BINARY":
 
             if isinstance(materials_void, np.ndarray) == False:
                 print("error")
@@ -187,14 +174,18 @@ class Curator:  # make manager work with and with out epochs
             return train_dataset, preprocessing_class_b
 
         # Returns RGB encoded data
-        elif self.processing_method == 'RGB':
+        elif self.processing_method == "RGB":
             pass
 
         # No encoder
-        elif self.processing_method != 'OHE' and self.processing_method != "BINARY":
+        elif self.processing_method != "OHE" and self.processing_method != "BINARY":
 
-            print("\n 🆘 " + Fore.RED + f"The {self.processing_method} processing method is not known" +
-                  Style.RESET_ALL)
+            print(
+                "\n 🆘 "
+                + Fore.RED
+                + f"The {self.processing_method} processing method is not known"
+                + Style.RESET_ALL
+            )
 
         # No encoder
         else:
@@ -203,14 +194,14 @@ class Curator:  # make manager work with and with out epochs
 
 if __name__ == "__main__":
 
-    path_colors = '/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]minibatch[1].npy'
+    path_colors = "/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]minibatch[1].npy"
 
-    path_volumes = '/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]minibatch[1].npy'
+    path_volumes = "/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]minibatch[1].npy"
 
-    curator = Curator(processing_method='OHE')
+    curator = Curator(processing_method="OHE")
 
     curator.preprocess_collection_minibatch(path_volumes, path_colors)
 
-    curator = Curator(processing_method='BINARY')
+    curator = Curator(processing_method="BINARY")
 
     curator.preprocess_collection_minibatch(path_volumes, path_colors)

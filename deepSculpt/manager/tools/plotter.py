@@ -40,7 +40,7 @@ class Plotter(Sculptor):
         self,
         volumes=None,
         materials=None,
-        directory='.',
+        directory=".",
         raster_picture=False,
         vector_picture=False,
         volumes_array=False,
@@ -102,9 +102,8 @@ class Plotter(Sculptor):
                 )
 
                 print(
-                    "\n ✅ " + Fore.GREEN +
-                    f"Creating a color plots"
-                    + Style.RESET_ALL)
+                    "\n ✅ " + Fore.GREEN + f"Creating a color plots" + Style.RESET_ALL
+                )
 
         else:
             for _ in range(1):
@@ -133,9 +132,11 @@ class Plotter(Sculptor):
                 )
 
                 print(
-                    "\n ✅ " + Fore.GREEN +
-                    f"Creating a monochrome plots"
-                    + Style.RESET_ALL)
+                    "\n ✅ "
+                    + Fore.GREEN
+                    + f"Creating a monochrome plots"
+                    + Style.RESET_ALL
+                )
 
         now = datetime.now().strftime("%d-%m-%Y-%H-%M-%S")
 

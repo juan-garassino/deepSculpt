@@ -11,9 +11,7 @@ import imageio
 
 
 class Manager:  # make manager work with and with out epochs
-    def __init__(self,
-                 model_name='deepSculpt',
-                 data_name='data'):
+    def __init__(self, model_name="deepSculpt", data_name="data"):
 
         self.model_name = model_name
         self.data_name = data_name
@@ -30,12 +28,13 @@ class Manager:  # make manager work with and with out epochs
         raw_materials_array = np.load(path_materials_array, allow_pickle=True)
 
         print(
-            "\n 🔼 " + Fore.BLUE +
-            f"Just loaded 'volume_data' shaped {raw_volumes_array.shape} and 'material_data' shaped{raw_materials_array.shape}"
-            + Style.RESET_ALL)
+            "\n 🔼 "
+            + Fore.BLUE
+            + f"Just loaded 'volume_data' shaped {raw_volumes_array.shape} and 'material_data' shaped{raw_materials_array.shape}"
+            + Style.RESET_ALL
+        )
 
         return (raw_volumes_array, raw_materials_array)
-
 
     def load_from_gcp(self):
 
@@ -45,26 +44,26 @@ class Manager:  # make manager work with and with out epochs
 
         for file in files:
 
-            blob = client.blob(
-                os.environ.get("BUCKET_TRAIN_DATA_PATH") + "/" + file)
+            blob = client.blob(os.environ.get("BUCKET_TRAIN_DATA_PATH") + "/" + file)
 
             blob.download_to_filename(file)
 
-        raw_data = np.load(
-            self.path_volumes,
-            allow_pickle=True)[:int(os.environ.get("TRAIN_SIZE"))]
+        raw_data = np.load(self.path_volumes, allow_pickle=True)[
+            : int(os.environ.get("TRAIN_SIZE"))
+        ]
 
-        color_raw_data = np.load(
-            self.path_colors,
-            allow_pickle=True)[:int(os.environ.get("TRAIN_SIZE"))]
+        color_raw_data = np.load(self.path_colors, allow_pickle=True)[
+            : int(os.environ.get("TRAIN_SIZE"))
+        ]
 
         print(
-            "\n 🔼 " + Fore.BLUE +
-            f"Just loaded 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
-            + Style.RESET_ALL)
+            "\n 🔼 "
+            + Fore.BLUE
+            + f"Just loaded 'volume_data' shaped {raw_data.shape} and 'material_data' shaped{color_raw_data.shape}"
+            + Style.RESET_ALL
+        )
 
         return (raw_data, color_raw_data)
-
 
     def upload_snapshot_to_gcp(snapshot_name):
 

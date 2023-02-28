@@ -69,7 +69,6 @@ class Collector:
             data of the generated shapes.
         """
 
-
         for minibatch in range(self.n_minibatches):
 
             volumes_raw_data: List[np.ndarray] = []
@@ -136,24 +135,38 @@ class Collector:
 
                 materials_raw_data.append(sculpture[1])
 
-            volumes_raw_data = (np.asarray(volumes_raw_data).reshape((
-                int(self.minibatch_size),
-                int(self.void_dim),
-                int(self.void_dim),
-                int(self.void_dim),
-            )).astype("int8"))
+            volumes_raw_data = (
+                np.asarray(volumes_raw_data)
+                .reshape(
+                    (
+                        int(self.minibatch_size),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                    )
+                )
+                .astype("int8")
+            )
 
-            materials_raw_data = (np.asarray(materials_raw_data).reshape((
-                int(self.minibatch_size),
-                int(self.void_dim),
-                int(self.void_dim),
-                int(self.void_dim),
-            )).astype("object"))
+            materials_raw_data = (
+                np.asarray(materials_raw_data)
+                .reshape(
+                    (
+                        int(self.minibatch_size),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                    )
+                )
+                .astype("object")
+            )
 
             print(
-                "\n 🔽 " + Fore.GREEN +
-                f"Just created 'volume_data' minibatch {minibatch + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
-                + Style.RESET_ALL)
+                "\n 🔽 "
+                + Fore.GREEN
+                + f"Just created 'volume_data' minibatch {minibatch + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
+                + Style.RESET_ALL
+            )
 
             Manager.make_directory(self.directory)
 
@@ -170,9 +183,11 @@ class Collector:
             )
 
             print(
-                "\n ✅ " + Fore.BLUE +
-                f"Just saved 'volume_data' & 'material_data' minibatch {minibatch + 1} @ {self.directory}"
-                + Style.RESET_ALL)
+                "\n ✅ "
+                + Fore.BLUE
+                + f"Just saved 'volume_data' & 'material_data' minibatch {minibatch + 1} @ {self.directory}"
+                + Style.RESET_ALL
+            )
 
         # path
         if int(os.environ.get("INSTANCE")) == 0:
@@ -200,8 +215,7 @@ class Collector:
 
         for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
-            index = random.choices(list(np.arange(0, self.minibatch_size, 1)),
-                                   k=1)[0]
+            index = random.choices(list(np.arange(0, self.minibatch_size, 1)), k=1)[0]
 
             Plotter(
                 figsize=25,
@@ -225,8 +239,6 @@ class Collector:
                 + Style.RESET_ALL
             )
 
-        # return (volumes_raw_data, materials_raw_data)
-
 
 if __name__ == "__main__":
 
@@ -241,8 +253,8 @@ if __name__ == "__main__":
         volume_elements=(2, 0.3, 0.5),
         step=None,
         directory=out_dir,
-        minibatch_size = 32,
-        n_minibatches = 10,
+        minibatch_size=int(os.environ.get("N_SAMPLES_CREATE")),
+        n_minibatches=16,
         grid=1,
     )
 
