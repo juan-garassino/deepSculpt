@@ -20,163 +20,79 @@ import tensorflow as tf
 class Curator:  # make manager work with and with out epochs
     def __init__(
         self,
-        n_samples=128,
-        edge_elements=None,
-        plane_elements=None,
-        volume_elements=None,
-        void_dim=None,
-        grid=1,
-        binary=1,
+        processing_method="OHE",
     ):
-        self.n_samples = n_samples
-        self.edge_elements = edge_elements
-        self.plane_elements = plane_elements
-        self.volume_elements = volume_elements
-        self.void_dim = void_dim
-        self.grid = grid
-        self.binary = binary
+        self.processing_method = processing_method
 
-    def preprocess_collection(self):  # convert to spare tensor
+    def preprocess_collection_minibatch(
+        self, path_volumes, path_colors
+    ):  # convert to spare tensor
 
-        # Loads the data
-        if int(os.environ.get("CREATE_DATA")) == 0:  # LOADS FROM BIG QUERY
+        manager = Manager()
 
-            manager = Manager(
-                model_name="",
-                data_name="",
-                path_colors=os.environ.get("FILE_TO_LOAD_COLORS"),
-                path_volumes=os.environ.get("FILE_TO_LOAD_VOLUMES"),
+        # Local path
+        if int(os.environ.get("INSTANCE")) == 0:
+
+            path = os.path.join(
+                os.environ.get("HOME"), "code", "juan-garassino", "deepSculpt", "data"
             )
 
-            # Local path
-            if int(os.environ.get("INSTANCE")) == 0:
-
-                path = os.path.join(
-                    os.environ.get("HOME"),
-                    "code",
-                    "juan-garassino",
-                    "deepSculpt",
-                    "data",
-                    "preprocess_collection",
-                )
-
-                volumes_void, materials_void = manager.load_locally()
-
-            # Colab path
-            if int(os.environ.get("INSTANCE")) == 1:
-
-                path = os.path.join(
-                    os.environ.get("HOME"),
-                    "..",
-                    "content",
-                    "drive",
-                    "MyDrive",
-                    "repositories",
-                    "deepSculpt",
-                    "data",
-                    "preprocess_collection",
-                )
-
-                volumes_void, materials_void = manager.load_locally()
-                # volumes_void,  materials_void = manager.load_from_gcp()
-
-            # GCP path
-            if int(os.environ.get("INSTANCE")) == 2:
-                volumes_void, materials_void = manager.load_from_query()
-
-            for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
-
-                index = random.choices(
-                    list(np.arange(0, volumes_void.shape[0], 1)), k=1
-                )[0]
-
-                Plotter(
-                    volumes_void[index],
-                    materials_void[index],
-                    figsize=25,
-                    style="#ffffff",
-                    dpi=int(os.environ.get("DPI")),
-                ).plot_sculpture(
-                    path + f"[{index}]",
-                    raster_picture=True,
-                    vector_picture=False,
-                    volumes_array=False,
-                    materials_array=False,
-                    hide_axis=True,
-                )
-
-                print(
-                    "\n 🆗 "
-                    + Fore.YELLOW
-                    + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
-                    + Style.RESET_ALL
-                )
-
-        # Creates the data
-        elif (
-            int(os.environ.get("CREATE_DATA")) == 1
-        ):  # CREATES AND UPLOADS TO BIG QUERY
-
-            # Local path
-            if int(os.environ.get("INSTANCE")) == 0:
-                path = os.path.join(
-                    os.environ.get("HOME"),
-                    "code",
-                    "juan-garassino",
-                    "deepSculpt",
-                    "data",
-                )
-
-            # Colab path
-            if int(os.environ.get("INSTANCE")) == 1:
-                path = os.path.join(
-                    os.environ.get("HOME"),
-                    "..",
-                    "content",
-                    "drive",
-                    "MyDrive",
-                    "repositories",
-                    "deepSculpt",
-                    "data",
-                )
-
-            # GCP path
-            if int(os.environ.get("INSTANCE")) == 2:
-                path = os.path.join(
-                    os.environ.get("HOME"),
-                    "code",
-                    "juan-garassino",
-                    "deepSculpt",
-                    "data",
-                )
-
-            # Initiates
-            curator = Collector(
-                void_dim=int(self.void_dim),
-                edge_elements=self.edge_elements,
-                plane_elements=self.plane_elements,
-                volume_elements=self.volume_elements,
-                step=None,
-                grid=self.grid,
-                directory=path,
-                n_samples=int(self.n_samples),
+            volumes_void, materials_void = manager.load_locally(
+                path_volumes, path_colors
             )
 
-            # Creates the data
-            volumes_void, materials_void = curator.create_collection()
+        # Colab path
+        if int(os.environ.get("INSTANCE")) == 1:
 
-        # No data
-        elif (
-            int(os.environ.get("CREATE_DATA")) != 0
-            and int(os.environ.get("CREATE_DATA")) != 1
-        ):
-            print("How do i get data?!")
+            path = os.path.join(
+                os.environ.get("HOME"),
+                "..",
+                "content",
+                "drive",
+                "MyDrive",
+                "repositories",
+                "deepSculpt",
+                "data",
+            )
 
-        else:
-            print("Big Error")
+            # volumes_void,  materials_void = manager.load_from_gcp()
+            volumes_void, materials_void = manager.load_locally(
+                path_volumes, path_colors
+            )
+
+        # Bigquery load
+        if int(os.environ.get("INSTANCE")) == 2:
+            volumes_void, materials_void = manager.load_from_query()
+
+        # Plot sample from the minibatch
+        for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
+
+            index = random.choices(list(np.arange(0, volumes_void.shape[0], 1)), k=1)[0]
+
+            Plotter(
+                figsize=25,
+                style="#ffffff",
+                dpi=int(os.environ.get("DPI")),
+            ).plot_sculpture(
+                volumes=volumes_void[index],
+                materials=materials_void[index],
+                directory=path + f"[{index}]",
+                raster_picture=True,
+                vector_picture=False,
+                volumes_array=False,
+                materials_array=False,
+                hide_axis=True,
+            )
+
+            print(
+                "\n 🆗 "
+                + Fore.YELLOW
+                + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
+                + Style.RESET_ALL
+            )
 
         # Returns onehot encoded data
-        if self.binary == 0:
+        if self.processing_method == "OHE":
 
             if isinstance(materials_void, np.ndarray) == False:
                 print("error")
@@ -217,7 +133,7 @@ class Curator:  # make manager work with and with out epochs
             return train_dataset, preprocessing_class_o
 
         # Returns binary encoded data
-        elif self.binary == 1:
+        elif self.processing_method == "BINARY":
 
             if isinstance(materials_void, np.ndarray) == False:
                 print("error")
@@ -257,24 +173,35 @@ class Curator:  # make manager work with and with out epochs
 
             return train_dataset, preprocessing_class_b
 
-        # No encoder
-        elif self.binary != 0 and self.binary != 1:
-            print("broken")
+        # Returns RGB encoded data
+        elif self.processing_method == "RGB":
+            pass
 
+        # No encoder
+        elif self.processing_method != "OHE" and self.processing_method != "BINARY":
+
+            print(
+                "\n 🆘 "
+                + Fore.RED
+                + f"The {self.processing_method} processing method is not known"
+                + Style.RESET_ALL
+            )
+
+        # No encoder
         else:
-            print("Big Error")
+            print("\n 🆘 " + Fore.RED + "Big Error")
 
 
 if __name__ == "__main__":
 
-    curator = Curator(
-        n_samples=128,
-        edge_elements=(1, 0.2, 0.6),
-        plane_elements=(1, 0.2, 0.6),
-        volume_elements=(1, 0.2, 0.6),
-        void_dim=os.environ.get("VOID_DIM"),
-        grid=1,
-        binary=1,
-    )
+    path_colors = "/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]minibatch[1].npy"
 
-    curator.preprocess_collection()
+    path_volumes = "/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]minibatch[1].npy"
+
+    curator = Curator(processing_method="OHE")
+
+    curator.preprocess_collection_minibatch(path_volumes, path_colors)
+
+    curator = Curator(processing_method="BINARY")
+
+    curator.preprocess_collection_minibatch(path_volumes, path_colors)

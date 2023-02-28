@@ -22,7 +22,8 @@ class Collector:
         volume_elements: Tuple[float, float, float] = (0, 0.3, 0.5),
         step: int = None,
         directory: str = None,
-        n_samples: int = 100,
+        minibatch_size: int = 32,
+        n_minibatches: int = 100,
         grid: int = 1,
     ):  # -> None:
         """Initialize the Curator instance.
@@ -46,13 +47,18 @@ class Collector:
             The minimum height of a column and the maximum height of a column on the 3D grid. Defaults to 1.
         """
         self.void_dim = void_dim
+
         self.edge_elements = edge_elements
         self.plane_elements = plane_elements
         self.volume_elements = volume_elements
         self.grid = grid
+
         self.step = int(self.void_dim / 6) if step is None else step
+
         self.directory = str(directory) if directory is not None else None
-        self.n_samples = n_samples
+
+        self.minibatch_size = minibatch_size
+        self.n_minibatches = n_minibatches
 
     def create_collection(self):  # -> Tuple[np.ndarray, np.ndarray]:
         """Generate the 3D sculpted shapes.
@@ -62,116 +68,126 @@ class Collector:
             4D NumPy array of the volume data, and the second one is a 4D NumPy array of the material
             data of the generated shapes.
         """
-        volumes_raw_data: List[np.ndarray] = []
 
-        materials_raw_data: List[np.ndarray] = []
+        for minibatch in range(self.n_minibatches):
 
-        count = 0
+            volumes_raw_data: List[np.ndarray] = []
 
-        for count, sculpture in enumerate(range(self.n_samples)):  #
+            materials_raw_data: List[np.ndarray] = []
 
-            if int(os.environ.get("VERBOSE")) == 1:
-                print(
-                    "\n\t⏹ "
-                    + Fore.BLUE
-                    + f"Creating sculpture number {count}"
-                    + Style.RESET_ALL
-                )
+            count = 0
 
-            start = time.time()
+            for count, sculpture in enumerate(range(self.minibatch_size)):  #
 
-            if int(os.environ.get("VERBOSE")) == 1:
-                if (count + 1) % 25 == 0:
+                if int(os.environ.get("VERBOSE")) == 1:
                     print(
                         "\n\t⏹ "
-                        + Fore.GREEN
-                        + "{} sculputers where created in {}".format(
-                            (count + 1), time.time() - start
-                        )
+                        + Fore.BLUE
+                        + f"Creating sculpture number {count}"
                         + Style.RESET_ALL
                     )
 
-            sculptor = Sculptor(
-                void_dim=self.void_dim,
-                edges=(
-                    self.edge_elements[0],
-                    self.edge_elements[1],
-                    self.edge_elements[2],
-                ),  # number of elements, minimun, maximun
-                planes=(
-                    self.plane_elements[0],
-                    self.plane_elements[1],
-                    self.plane_elements[2],
-                ),
-                volumes=(
-                    self.volume_elements[0],
-                    self.volume_elements[1],
-                    self.volume_elements[2],
-                ),
-                grid=(
-                    self.grid,
-                    self.step,
-                ),  # minimun height of column, and maximun height
-                materials_edges=COLORS["edges"],
-                materials_planes=COLORS["planes"],
-                materials_volumes=COLORS["volumes"],
-                step=self.step,
-            )
+                start = time.time()
 
-            sculpture = sculptor.generative_sculpt()
+                if int(os.environ.get("VERBOSE")) == 1:
+                    if (count + 1) % 25 == 0:
+                        print(
+                            "\n\t⏹ "
+                            + Fore.GREEN
+                            + "{} sculputers where created in {}".format(
+                                (count + 1), time.time() - start
+                            )
+                            + Style.RESET_ALL
+                        )
 
-            volumes_raw_data.append(
-                sculpture[0].astype("int8")
-            )  # NOT APPEND BUT SAVE IN DIFF FILES!!
-
-            materials_raw_data.append(sculpture[1])
-
-        volumes_raw_data = (
-            np.asarray(volumes_raw_data)
-            .reshape(
-                (
-                    int(self.n_samples),
-                    int(self.void_dim),
-                    int(self.void_dim),
-                    int(self.void_dim),
+                sculptor = Sculptor(
+                    void_dim=self.void_dim,
+                    edges=(
+                        self.edge_elements[0],
+                        self.edge_elements[1],
+                        self.edge_elements[2],
+                    ),  # number of elements, minimun, maximun
+                    planes=(
+                        self.plane_elements[0],
+                        self.plane_elements[1],
+                        self.plane_elements[2],
+                    ),
+                    volumes=(
+                        self.volume_elements[0],
+                        self.volume_elements[1],
+                        self.volume_elements[2],
+                    ),
+                    grid=(
+                        self.grid,
+                        self.step,
+                    ),  # minimun height of column, and maximun height
+                    materials_edges=COLORS["edges"],
+                    materials_planes=COLORS["planes"],
+                    materials_volumes=COLORS["volumes"],
+                    step=self.step,
                 )
-            )
-            .astype("int8")
-        )
 
-        materials_raw_data = (
-            np.asarray(materials_raw_data)
-            .reshape(
-                (
-                    int(self.n_samples),
-                    int(self.void_dim),
-                    int(self.void_dim),
-                    int(self.void_dim),
+                sculpture = sculptor.generative_sculpt()
+
+                volumes_raw_data.append(
+                    sculpture[0].astype("int8")
+                )  # NOT APPEND BUT SAVE IN DIFF FILES!!
+
+                materials_raw_data.append(sculpture[1])
+
+            volumes_raw_data = (
+                np.asarray(volumes_raw_data)
+                .reshape(
+                    (
+                        int(self.minibatch_size),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                    )
                 )
+                .astype("int8")
             )
-            .astype("object")
-        )
 
-        Manager.make_directory(self.directory)
+            materials_raw_data = (
+                np.asarray(materials_raw_data)
+                .reshape(
+                    (
+                        int(self.minibatch_size),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                        int(self.void_dim),
+                    )
+                )
+                .astype("object")
+            )
 
-        np.save(
-            f"{self.directory}/volume_data[{date.today()}]",
-            volumes_raw_data,
-            allow_pickle=True,
-        )
+            print(
+                "\n 🔽 "
+                + Fore.GREEN
+                + f"Just created 'volume_data' minibatch {minibatch + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
+                + Style.RESET_ALL
+            )
 
-        np.save(
-            f"{self.directory}/material_data[{date.today()}]",
-            materials_raw_data,
-            allow_pickle=True,
-        )
+            Manager.make_directory(self.directory)
 
-        print(
-            "\n 🔽 "
-            + Fore.BLUE
-            + f"Just created 'volume_data' shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
-            + Style.RESET_ALL
-        )
+            np.save(
+                f"{self.directory}/volume_data[{date.today()}]minibatch[{minibatch + 1}]",
+                volumes_raw_data,
+                allow_pickle=True,
+            )
+
+            np.save(
+                f"{self.directory}/material_data[{date.today()}]minibatch[{minibatch + 1}]",
+                materials_raw_data,
+                allow_pickle=True,
+            )
+
+            print(
+                "\n ✅ "
+                + Fore.BLUE
+                + f"Just saved 'volume_data' & 'material_data' minibatch {minibatch + 1} @ {self.directory}"
+                + Style.RESET_ALL
+            )
 
         # path
         if int(os.environ.get("INSTANCE")) == 0:
@@ -197,22 +213,22 @@ class Collector:
                 "preprocess_collection",
             )
 
-        for sample in range(int(os.environ.get("N_SAMPLES_PLOT"))):
+        for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
-            index = random.choices(list(np.arange(0, self.n_samples, 1)), k=1)[0]
+            index = random.choices(list(np.arange(0, self.minibatch_size, 1)), k=1)[0]
 
             Plotter(
-                volumes_raw_data[index],
-                materials_raw_data[index],
                 figsize=25,
                 style="#ffffff",
                 dpi=int(os.environ.get("DPI")),
             ).plot_sculpture(
-                path,
+                volumes=volumes_raw_data[index],
+                materials=materials_raw_data[index],
+                directory=path,
                 raster_picture=True,
-                vector_picture=False,
-                volumes_array=False,
-                materials_array=False,
+                vector_picture=True,
+                volumes_array=True,
+                materials_array=True,
                 hide_axis=True,
             )
 
@@ -222,8 +238,6 @@ class Collector:
                 + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
                 + Style.RESET_ALL
             )
-
-        return (volumes_raw_data, materials_raw_data)
 
 
 if __name__ == "__main__":
@@ -239,7 +253,8 @@ if __name__ == "__main__":
         volume_elements=(2, 0.3, 0.5),
         step=None,
         directory=out_dir,
-        n_samples=50,
+        minibatch_size=int(os.environ.get("N_SAMPLES_CREATE")),
+        n_minibatches=16,
         grid=1,
     )
 
