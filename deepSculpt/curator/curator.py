@@ -1,5 +1,5 @@
 from deepSculpt.manager.manager import Manager
-from deepSculpt.manager.tools.params import BUFFER_SIZE, COLORS
+from deepSculpt.manager.tools.params import COLORS
 from deepSculpt.manager.tools.plotter import Plotter
 
 from deepSculpt.collector.collector import Collector
@@ -122,7 +122,7 @@ class Curator:  # make manager work with and with out epochs
             # Creates the dataset
             train_dataset = (
                 Dataset.from_tensor_slices(o_encode)
-                .shuffle(BUFFER_SIZE)
+                .shuffle(int(os.environ.get("BUFFER_SIZE")))
                 .take(int(os.environ.get("TRAIN_SIZE")))
                 .batch(int(os.environ.get("MINIBATCH_SIZE")))
             )
@@ -163,7 +163,7 @@ class Curator:  # make manager work with and with out epochs
             # Creates the dataset
             train_dataset = (
                 Dataset.from_tensor_slices(b_encode)
-                .shuffle(BUFFER_SIZE)
+                .shuffle(int(os.environ.get("BUFFER_SIZE")))
                 .take(int(os.environ.get("TRAIN_SIZE")))
                 .batch(int(os.environ.get("MINIBATCH_SIZE")))
             )
@@ -191,9 +191,11 @@ class Curator:  # make manager work with and with out epochs
 
 if __name__ == "__main__":
 
-    path_colors = "/home/juan-garassino/code/juan-garassino/deepSculpt/data/material_data[2023-02-28]minibatch[1].npy"
+    data_date = '2023-03-01'
 
-    path_volumes = "/home/juan-garassino/code/juan-garassino/deepSculpt/data/volume_data[2023-02-28]minibatch[1].npy"
+    path_colors = f"{os.environ.get('HOME')}/Code/juan-garassino/deepSculpt/data/material_data[{data_date}]chunk[1].npy"
+
+    path_volumes = f"{os.environ.get('HOME')}/Code/juan-garassino/deepSculpt/data/volume_data[{data_date}]chunk[1].npy"
 
     curator = Curator(processing_method="OHE")
 

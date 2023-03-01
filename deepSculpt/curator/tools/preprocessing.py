@@ -1,5 +1,9 @@
 import numpy as np
 import matplotlib.colors as mcolors
+
+import tensorflow as tf
+tf.autograph.set_verbosity(0)
+
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 from deepSculpt.manager.tools.params import COLORS

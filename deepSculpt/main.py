@@ -1,5 +1,5 @@
 from deepSculpt.manager.manager import Manager
-from deepSculpt.trainer.trainer import trainer
+from deepSculpt.trainer.trainerbackup import trainer
 from deepSculpt.curator.curator import Curator
 from deepSculpt.trainer.tools.firstmodel import (
     make_three_dimentional_generator,
