@@ -9,14 +9,15 @@ import os
 MINIBATCHES_LIST = np.arange(
     0,
     int(os.environ.get("TRAIN_SIZE")),
-    int(os.environ.get("TRAIN_SIZE")) / (int(os.environ.get("TRAIN_SIZE")) / 10),
+    int(os.environ.get("TRAIN_SIZE")) /
+    (int(os.environ.get("MINIBATCH_SIZE")) / 10),
 )
 
 MINIBATCHES = np.arange(
     0,
     int(os.environ.get("TRAIN_SIZE")),
     int(os.environ.get("TRAIN_SIZE")) /
-    (int(os.environ.get("TRAIN_SIZE")) / 10),
+    (int(os.environ.get("MINIBATCH_SIZE"))),
 )
 
 SEED = normal([int(os.environ.get("SCULPTS_GEN")), int(os.environ.get("NOISE_DIM"))])

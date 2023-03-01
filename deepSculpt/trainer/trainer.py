@@ -230,7 +230,7 @@ def trainer(collection_folder, data_date,
             if os.path.isfile(os.path.join(collection_folder, f))
         ]
 
-        for index in range(len(chunk_files)):
+        for index in range(len(chunk_files) // 2):
 
             print("\n ⏩ " + Fore.RED + "Chunk number %d Epoch number %d" %
                             (index + 1, epoch + 1) + Style.RESET_ALL)
@@ -317,6 +317,10 @@ def trainer(collection_folder, data_date,
                     disc_loss = discriminator_loss(
                         real_output, fake_output
                     )  # calculating the descrim loss function previously defined
+
+                print("\n ⏩ " + Fore.MAGENTA +
+                      f"Iteartion number {index} of minibatches {MINIBATCHES}" +
+                      Style.RESET_ALL)
 
                 if (index + 1) % MINIBATCHES[index]:
                     minibatch_start = time.time()
