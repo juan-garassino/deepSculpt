@@ -14,6 +14,7 @@ from colorama import Fore, Style
 
 
 class Collector:
+
     def __init__(
         self,
         void_dim: int = 32,
@@ -27,7 +28,6 @@ class Collector:
         grid: int = 1,
     ):  # -> None:
         """Initialize the Curator instance.
-
         Args:
             void_dim (int, optional):
             The size of the 3D grid in each dimension. Defaults to 32.
@@ -62,7 +62,6 @@ class Collector:
 
     def create_collection(self):  # -> Tuple[np.ndarray, np.ndarray]:
         """Generate the 3D sculpted shapes.
-
         Returns:
             Tuple[np.ndarray, np.ndarray]: A tuple containing two NumPy arrays, the first one is a
             4D NumPy array of the volume data, and the second one is a 4D NumPy array of the material
@@ -80,25 +79,18 @@ class Collector:
             for count, sculpture in enumerate(range(self.chunk_size)):  #
 
                 if int(os.environ.get("VERBOSE")) == 1:
-                    print(
-                        "\n\t⏹ "
-                        + Fore.BLUE
-                        + f"Creating sculpture number {count}"
-                        + Style.RESET_ALL
-                    )
+                    print("\n\t⏹ " + Fore.BLUE +
+                          f"Creating sculpture number {count}" +
+                          Style.RESET_ALL)
 
                 start = time.time()
 
                 if int(os.environ.get("VERBOSE")) == 1:
                     if (count + 1) % 25 == 0:
-                        print(
-                            "\n\t⏹ "
-                            + Fore.GREEN
-                            + "{} sculputers where created in {}".format(
-                                (count + 1), time.time() - start
-                            )
-                            + Style.RESET_ALL
-                        )
+                        print("\n\t⏹ " + Fore.GREEN +
+                              "{} sculputers where created in {}".format(
+                                  (count + 1),
+                                  time.time() - start) + Style.RESET_ALL)
 
                 sculptor = Sculptor(
                     void_dim=self.void_dim,
@@ -133,38 +125,24 @@ class Collector:
 
                 materials_raw_data.append(sculpture[1])
 
-            volumes_raw_data = (
-                np.asarray(volumes_raw_data)
-                .reshape(
-                    (
-                        int(self.chunk_size),
-                        int(self.void_dim),
-                        int(self.void_dim),
-                        int(self.void_dim),
-                    )
-                )
-                .astype("int8")
-            )
+            volumes_raw_data = (np.asarray(volumes_raw_data).reshape((
+                int(self.chunk_size),
+                int(self.void_dim),
+                int(self.void_dim),
+                int(self.void_dim),
+            )).astype("int8"))
 
-            materials_raw_data = (
-                np.asarray(materials_raw_data)
-                .reshape(
-                    (
-                        int(self.chunk_size),
-                        int(self.void_dim),
-                        int(self.void_dim),
-                        int(self.void_dim),
-                    )
-                )
-                .astype("object")
-            )
+            materials_raw_data = (np.asarray(materials_raw_data).reshape((
+                int(self.chunk_size),
+                int(self.void_dim),
+                int(self.void_dim),
+                int(self.void_dim),
+            )).astype("object"))
 
             print(
-                "\n ✅ "
-                + Fore.GREEN
-                + f"Just created 'volume_data' chunk {chunk + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
-                + Style.RESET_ALL
-            )
+                "\n ✅ " + Fore.GREEN +
+                f"Just created 'volume_data' chunk {chunk + 1} shaped {volumes_raw_data.shape} and 'material_data' shaped{materials_raw_data.shape}"
+                + Style.RESET_ALL)
 
             Manager.make_directory(self.directory)
 
@@ -181,11 +159,9 @@ class Collector:
             )
 
             print(
-                "\n 🔽 "
-                + Fore.BLUE
-                + f"Just saved 'volume_data' & 'material_data' chunk {chunk + 1} @ {self.directory}"
-                + Style.RESET_ALL
-            )
+                "\n 🔽 " + Fore.BLUE +
+                f"Just saved 'volume_data' & 'material_data' chunk {chunk + 1} @ {self.directory}"
+                + Style.RESET_ALL)
 
         # path
         if int(os.environ.get("INSTANCE")) == 0:
@@ -213,7 +189,8 @@ class Collector:
 
         for _ in range(int(os.environ.get("N_SAMPLES_PLOT"))):
 
-            index = random.choices(list(np.arange(0, self.chunk_size, 1)), k=1)[0]
+            index = random.choices(list(np.arange(0, self.chunk_size, 1)),
+                                   k=1)[0]
 
             Plotter(
                 figsize=25,
@@ -231,11 +208,11 @@ class Collector:
             )
 
             print(
-                "\n 🆗 "
-                + Fore.BLUE
-                + f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
-                + Style.RESET_ALL
-            )
+                "\n 🆗 " + Fore.BLUE +
+                f"Just ploted 'volume_data[{index}]' and 'material_data[{index}]'"
+                + Style.RESET_ALL)
+
+        return volumes_raw_data, materials_raw_data
 
 
 if __name__ == "__main__":

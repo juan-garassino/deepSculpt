@@ -2,6 +2,7 @@ from matplotlib import pyplot as plt
 from colorama import Fore, Style
 from google.cloud import storage
 from tensorflow.data import Dataset
+import matplotlib.colors as mcolors
 import os
 import numpy as np
 import errno
@@ -267,6 +268,50 @@ class Manager:  # make manager work with and with out epochs
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
+
+    @staticmethod
+    def get_rgb_from_color_array(color_array):
+        rgb_array = np.zeros((*color_array.shape[:3], 3))
+        for i in range(color_array.shape[0]):
+            for j in range(color_array.shape[1]):
+                for k in range(color_array.shape[2]):
+                    color = color_array[i, j, k]
+                    if color is not None:
+                        rgb_array[i, j, k] = mcolors.to_rgb(color)
+        return rgb_array * 255
+
+    @staticmethod
+    def convert_to_matplotlib_colors(arr):
+        """
+        Takes a 4D numpy array of shape (48, 48, 48, 3) and returns a new 4D numpy array where the
+        third dimension represents the RGB channels and the values are the corresponding matplotlib color strings.
+
+        Args:
+            arr (ndarray): A 4D numpy array of shape (48, 48, 48, 3).
+
+        Returns:
+            ndarray: A 4D numpy array of shape (48, 48, 48) where the third dimension represents the RGB channels
+                    and the values are matplotlib color strings.
+        """
+
+        size = arr.shape[0]
+        # Initialize an empty array of the same shape as the input array
+        result = np.empty((size, size, size), dtype=object)
+
+        # Iterate over each pixel in the input array
+        for i in range(size):
+            for j in range(size):
+                for k in range(size):
+                    # Get the RGB values of the pixel
+                    r, g, b = arr[i, j, k, :]
+
+                    # Convert the RGB values to a matplotlib color string
+                    color = mcolors.rgb2hex((r / 255, g / 255, b / 255))
+
+                    # Store the color string in the output array
+                    result[i, j, k] = color
+
+        return result
 
 
 if __name__ == "__main__":

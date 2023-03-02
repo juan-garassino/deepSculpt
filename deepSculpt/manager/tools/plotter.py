@@ -2,8 +2,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
+
 from deepSculpt.sculptor.sculptor import Sculptor
 from deepSculpt.manager.manager import Manager
+
 from datetime import datetime
 from colorama import Fore, Style
 
