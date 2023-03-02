@@ -1,29 +1,34 @@
 import os
-import tensorflow as tf
-from tensorflow.keras import layers, Sequential
-
+from tensorflow.keras import layers
+from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.layers import (
-    Input,
     Dense,
+    concatenate,
     Reshape,
-    Concatenate,
-    BatchNormalization,
-    Activation,
-    LeakyReLU,
+    ThresholdedReLU,
+    Input,
     Conv3DTranspose,
+    BatchNormalization,
+    ReLU,
+    Add,
 )
-from tensorflow.keras.models import Model
-import os
 
 
-def make_three_dimentional_generator_complex():
+## GENERATOR
+
+
+def tridimensional_skip_connection_generator():
+
     void_dim = int(os.environ.get("VOID_DIM"))
     noise_dim = int(os.environ.get("NOISE_DIM"))
 
     inputs = Input(shape=(noise_dim,))
-    x = Dense((void_dim // 8) ** 3 * noise_dim, use_bias=False)(inputs)
+    x = Dense(
+        (void_dim // 8) ** 3 * noise_dim,
+        use_bias=False,
+    )(inputs)
     x = BatchNormalization()(x)
-    x = LeakyReLU(alpha=0.2)(x)
+    x = ReLU()(x)
 
     x = Reshape((void_dim // 8, void_dim // 8, void_dim // 8, noise_dim))(x)
     assert x.shape == (None, void_dim // 8, void_dim // 8, void_dim // 8, noise_dim)
@@ -33,17 +38,21 @@ def make_three_dimentional_generator_complex():
     strides = [(1, 1, 1), (2, 2, 2), (2, 2, 2), (2, 2, 2)]
     for i in range(4):
         if i > 0:
-            x = Concatenate()([x, skip_connections[-1]])
+            x = concatenate([x, skip_connections[-1]])
 
         x = Conv3DTranspose(
-            filters[i], (3, 3, 3), strides=strides[i], padding="same", use_bias=False
+            filters[i],
+            (3, 3, 3),
+            strides=strides[i],
+            padding="same",
+            use_bias=False,
         )(x)
         x = BatchNormalization()(x)
-        x = LeakyReLU(alpha=0.2)(x)
+        x = ReLU()(x)
         if i != 3:
             skip_connections.append(x)
         else:
-            x = Activation("tanh")(x)
+            x = ThresholdedReLU(theta=0.0)(x)
 
     x = Reshape((void_dim, void_dim, void_dim, 6))(x)
     assert x.shape == (None, void_dim, void_dim, void_dim, 6)
@@ -52,7 +61,10 @@ def make_three_dimentional_generator_complex():
     return model
 
 
-def make_three_dimentional_critic_complex():
+## CRITIC
+
+
+def tridimensional_skip_connection_discriminator():
     model = Sequential()
     model.add(
         layers.Conv3D(

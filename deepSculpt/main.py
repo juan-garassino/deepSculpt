@@ -1,7 +1,7 @@
 from deepSculpt.manager.manager import Manager
 from deepSculpt.trainer.trainerbackup import trainer
 from deepSculpt.curator.curator import Curator
-from deepSculpt.trainer.tools.firstmodel import (
+from deepSculpt.trainer.tools.simple_model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
@@ -16,7 +16,7 @@ from deepSculpt.trainer.tools.optimizers import (
 from tensorflow import GradientTape, function, Variable
 
 
-def main(create_data=False, collection_folder=".", epochs=5, monochrome=0):
+def main(create_data=0, collection_folder=".", epochs=5, monochrome=0):
 
     # LOADS DATA
     if create_data == 0:

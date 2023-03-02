@@ -191,7 +191,7 @@ class Curator:  # make manager work with and with out epochs
 
 if __name__ == "__main__":
 
-    data_date = '2023-03-01'
+    data_date = "2023-03-01"
 
     path_colors = f"{os.environ.get('HOME')}/Code/juan-garassino/deepSculpt/data/material_data[{data_date}]chunk[1].npy"
 

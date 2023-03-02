@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.colors as mcolors
 
 import tensorflow as tf
+
 tf.autograph.set_verbosity(0)
 
 from sklearn.preprocessing import OneHotEncoder

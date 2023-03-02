@@ -4,7 +4,7 @@ import os
 ## GENERATOR
 
 
-def make_three_dimentional_generator_freecolor():
+def tridimensional_simple_generator():
     model = Sequential()
     model.add(
         layers.Dense(
@@ -98,12 +98,12 @@ def make_three_dimentional_generator_freecolor():
 
     model.add(
         layers.Conv3DTranspose(
-            3,
+            6,
             (3, 3, 3),
             strides=(2, 2, 2),
             padding="same",
             use_bias=False,
-            activation="relu",
+            activation="softmax",
         )
     )
     model.add(layers.ThresholdedReLU(theta=0.0))
@@ -113,7 +113,7 @@ def make_three_dimentional_generator_freecolor():
                 int(os.environ.get("VOID_DIM")),
                 int(os.environ.get("VOID_DIM")),
                 int(os.environ.get("VOID_DIM")),
-                3,
+                6,
             )
         )
     )
@@ -122,7 +122,7 @@ def make_three_dimentional_generator_freecolor():
         int(os.environ.get("VOID_DIM")),
         int(os.environ.get("VOID_DIM")),
         int(os.environ.get("VOID_DIM")),
-        3,
+        6,
     )
     return model
 
@@ -130,7 +130,7 @@ def make_three_dimentional_generator_freecolor():
 ## CRITIC
 
 
-def make_three_dimentional_critic_freecolor():
+def tridimensional_simple_discriminator():
     model = Sequential()
     model.add(
         layers.Conv3D(

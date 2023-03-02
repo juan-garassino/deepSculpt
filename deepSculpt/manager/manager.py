@@ -114,8 +114,7 @@ class Manager:  # make manager work with and with out epochs
                     registered_model_name=mlflow_model_name,
                 )
 
-        print("\n ✅ " + Fore.MAGENTA + "Data saved in mlflow" +
-              Style.RESET_ALL)
+        print("\n ✅ " + Fore.MAGENTA + "Data saved in mlflow" + Style.RESET_ALL)
 
         return None
 

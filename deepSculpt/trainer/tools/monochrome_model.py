@@ -4,7 +4,7 @@ import os
 ## GENERATOR
 
 
-def make_three_dimentional_generator():
+def tridimensional_monochrome_generator():
     model = Sequential()
     model.add(
         layers.Dense(
@@ -98,12 +98,12 @@ def make_three_dimentional_generator():
 
     model.add(
         layers.Conv3DTranspose(
-            6,
+            3,
             (3, 3, 3),
             strides=(2, 2, 2),
             padding="same",
             use_bias=False,
-            activation="softmax",
+            activation="relu",
         )
     )
     model.add(layers.ThresholdedReLU(theta=0.0))
@@ -113,7 +113,7 @@ def make_three_dimentional_generator():
                 int(os.environ.get("VOID_DIM")),
                 int(os.environ.get("VOID_DIM")),
                 int(os.environ.get("VOID_DIM")),
-                6,
+                3,
             )
         )
     )
@@ -122,7 +122,7 @@ def make_three_dimentional_generator():
         int(os.environ.get("VOID_DIM")),
         int(os.environ.get("VOID_DIM")),
         int(os.environ.get("VOID_DIM")),
-        6,
+        3,
     )
     return model
 
@@ -130,7 +130,7 @@ def make_three_dimentional_generator():
 ## CRITIC
 
 
-def make_three_dimentional_critic():
+def tridimensional_monochrome_discriminator():
     model = Sequential()
     model.add(
         layers.Conv3D(

@@ -90,6 +90,9 @@ run_emissary:
 run_manager:
 	python -m deepSculpt.manager.manager
 
+# PACKAGE RUNS
+run_all: clean black run_collector run_trainer
+
 
 # ----------------------------------
 #      UPLOAD PACKAGE TO PYPI

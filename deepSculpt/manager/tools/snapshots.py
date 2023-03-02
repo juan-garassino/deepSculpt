@@ -30,7 +30,16 @@ def upload_snapshot_to_gcp(snapshot_name):
 
 
 def generate_and_save_snapshot(
-    model, epoch, preprocessing_class_o, snapshot_input, directory
+    model,
+    epoch,
+    preprocessing_class_o,
+    snapshot_input,
+    directory,
+    raster_picture=True,
+    vector_picture=False,
+    volumes_array=True,
+    materials_array=False,
+    hide_axis=True,
 ):
 
     # Generates the sculpture
@@ -62,9 +71,9 @@ def generate_and_save_snapshot(
             volumes=o_decoded_volumes[prediction],
             materials=o_decoded_colors[prediction],
             directory=directory + f"[{snapshot_input[prediction][0]}]",
-            raster_picture=True,
-            vector_picture=False,
-            volumes_array=True,
-            materials_array=False,
-            hide_axis=True,
+            raster_picture=raster_picture,
+            vector_picture=vector_picture,
+            volumes_array=volumes_array,
+            materials_array=materials_array,
+            hide_axis=hide_axis,
         )
