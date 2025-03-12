@@ -1,5 +1,5 @@
-from deepSculpt.emissary.tools.client import getCreds
-from deepSculpt.emissary.tools.instagram import (
+from deepSculpt.telegram_connection.tools.client import getCreds
+from deepSculpt.telegram_connection.tools.instagram import (
     createMediaObject,
     getMediaObjectStatus,
     publishMedia,

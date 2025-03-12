@@ -1,7 +1,7 @@
-from deepSculpt.manager.manager import Manager
-from deepSculpt.trainer.trainerbackup import trainer
-from deepSculpt.curator.curator import Curator
-from deepSculpt.trainer.tools.simple_model import (
+from deepSculpt.general_manager.manager import Manager
+from deepSculpt.network_trainer.trainerbackup import trainer
+from deepSculpt.sample_generator.curator import Curator
+from deepSculpt.network_trainer.tools.simple_model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,
 )
@@ -9,7 +9,7 @@ from colorama import Fore, Style
 import os
 from google.cloud import storage
 from tensorflow.train import Checkpoint, CheckpointManager
-from deepSculpt.trainer.tools.optimizers import (
+from deepSculpt.network_trainer.tools.optimizers import (
     generator_optimizer,
     discriminator_optimizer,
 )

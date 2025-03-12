@@ -1,5 +1,5 @@
 import time
-from deepSculpt.emissary.tools.client import makeApiCall
+from deepSculpt.telegram_connection.tools.client import makeApiCall
 
 
 def createMediaObject(params):

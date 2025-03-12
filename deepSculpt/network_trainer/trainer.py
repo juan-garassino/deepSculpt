@@ -16,43 +16,43 @@ from tensorflow import GradientTape, function, Variable
 from tensorflow.random import normal
 from tensorflow.train import Checkpoint, CheckpointManager
 
-from deepSculpt.manager.manager import Manager
-from deepSculpt.trainer.tools.losses import discriminator_loss, generator_loss
+from deepSculpt.general_manager.manager import Manager
+from deepSculpt.network_trainer.tools.losses import discriminator_loss, generator_loss
 
-from deepSculpt.trainer.tools.simple_model import (
+from deepSculpt.network_trainer.tools.simple_model import (
     tridimensional_simple_discriminator,
     tridimensional_simple_generator,
 )
 
-from deepSculpt.trainer.tools.complex_model import (
+from deepSculpt.network_trainer.tools.complex_model import (
     tridimensional_complex_discriminator,
     tridimensional_complex_generator,
 )
 
-from deepSculpt.trainer.tools.skip_model import (
+from deepSculpt.network_trainer.tools.skip_model import (
     tridimensional_skip_connection_discriminator,
     tridimensional_skip_connection_generator,
 )
 
-from deepSculpt.trainer.tools.monochrome_model import (
+from deepSculpt.network_trainer.tools.monochrome_model import (
     tridimensional_monochrome_discriminator,
     tridimensional_monochrome_generator,
 )
 
-from deepSculpt.trainer.tools.optimizers import (
+from deepSculpt.network_trainer.tools.optimizers import (
     generator_optimizer,
     discriminator_optimizer,
 )
-from deepSculpt.manager.tools.snapshots import (
+from deepSculpt.general_manager.tools.snapshots import (
     generate_and_save_snapshot,
     upload_snapshot_to_gcp,
 )
-from deepSculpt.manager.tools.checkpoint import (
+from deepSculpt.general_manager.tools.checkpoint import (
     generate_and_save_checkpoint,
     load_model_from_cgp,
 )
-from deepSculpt.manager.tools.params import SEED, MINIBATCHES
-from deepSculpt.curator.curator import Curator
+from deepSculpt.general_manager.tools.params import SEED, MINIBATCHES
+from deepSculpt.sample_generator.curator import Curator
 
 if os.environ.get("COLOR") == 0:  # MONOCHROME
     pass
