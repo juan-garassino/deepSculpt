@@ -1,6 +1,6 @@
 from deepSculpt.general_manager.manager import Manager
 from deepSculpt.network_trainer.trainerbackup import trainer
-from deepSculpt.sample_generator.curator import Curator
+from deepSculpt.dataset_generator.curator import Curator
 from deepSculpt.network_trainer.tools.simple_model import (
     make_three_dimentional_generator,
     make_three_dimentional_critic,

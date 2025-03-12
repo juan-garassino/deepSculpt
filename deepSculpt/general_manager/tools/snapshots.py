@@ -1,7 +1,7 @@
 from google.cloud import storage
 import matplotlib.pyplot as plt
 
-from deepSculpt.sample_generator.visualization import Plotter
+from deepSculpt.dataset_generator.visualization import Plotter
 from deepSculpt.general_manager.manager import Manager
 
 from datetime import datetime

@@ -52,7 +52,7 @@ from deepSculpt.general_manager.tools.checkpoint import (
     load_model_from_cgp,
 )
 from deepSculpt.general_manager.tools.params import SEED, MINIBATCHES
-from deepSculpt.sample_generator.curator import Curator
+from deepSculpt.dataset_generator.curator import Curator
 
 if os.environ.get("COLOR") == 0:  # MONOCHROME
     pass
