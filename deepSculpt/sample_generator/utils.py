@@ -34,7 +34,10 @@ import random
 from typing import Tuple, List, Optional, Any, Dict
 from logger import log_info, log_error, log_warning, begin_section, end_section
 
-def return_axis(void: np.ndarray, color_void: np.ndarray) -> Tuple[np.ndarray, np.ndarray, int]:
+
+def return_axis(
+    void: np.ndarray, color_void: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, int]:
     """
     Selects a random plane from a 3D numpy array along a random axis.
 
@@ -68,65 +71,60 @@ def return_axis(void: np.ndarray, color_void: np.ndarray) -> Tuple[np.ndarray, n
 
     return working_plane, color_parameters, section
 
+
 def generate_random_size(
-    min_ratio: float,
-    max_ratio: float,
-    base_size: int,
-    step: int = 1
+    min_ratio: float, max_ratio: float, base_size: int, step: int = 1
 ) -> int:
     """
     Generate a random size based on given ratios and base size.
-    
+
     Args:
         min_ratio: Minimum size ratio relative to base_size
         max_ratio: Maximum size ratio relative to base_size
         base_size: Reference size (usually the smallest dimension of the void)
         step: Step size for the random range
-        
+
     Returns:
         Integer representing the random size
     """
     min_size = max(int(min_ratio * base_size), 2)  # Ensure minimum size of 2
     max_size = max(int(max_ratio * base_size), min_size + 1)  # Ensure max > min
-    
+
     if step > 1:
         # Adjust to be multiples of step
         min_size = (min_size // step) * step
         max_size = (max_size // step) * step
         if min_size == max_size:
             return min_size
-    
+
     return random.randrange(min_size, max_size, step)
 
-def select_random_position(
-    max_pos: int,
-    size: int
-) -> int:
+
+def select_random_position(max_pos: int, size: int) -> int:
     """
     Select a random position to insert a shape within bounds.
-    
+
     Args:
         max_pos: Maximum position value (usually dimension size)
         size: Size of the shape to be inserted
-        
+
     Returns:
         Integer representing the random position
     """
     return random.randint(0, max(0, max_pos - size))
 
+
 def insert_shape(
-    void: np.ndarray,
-    shape_indices: tuple,
-    values: np.ndarray = None
+    void: np.ndarray, shape_indices: tuple, values: np.ndarray = None
 ) -> np.ndarray:
     """
     Insert a shape into the void at the given indices.
-    
+
     Args:
         void: 3D NumPy array representing the space
         shape_indices: Tuple of slices or indices where to insert the shape
         values: Values to insert, if None uses 1s
-        
+
     Returns:
         Updated void array with the shape inserted
     """
@@ -136,54 +134,50 @@ def insert_shape(
         void[shape_indices] = values
     return void
 
+
 def assign_color(
-    color_void: np.ndarray,
-    shape_indices: tuple,
-    color: Any
+    color_void: np.ndarray, shape_indices: tuple, color: Any
 ) -> np.ndarray:
     """
     Assign color to the shape in the color void array.
-    
+
     Args:
         color_void: 3D NumPy array of objects representing colors
         shape_indices: Tuple of slices or indices where the shape is
         color: Color to assign to the shape
-        
+
     Returns:
         Updated color_void array with colors assigned to the shape
     """
     color_void[shape_indices] = color
     return color_void
 
-def validate_dimensions(
-    shape_size: List[int],
-    void_shape: Tuple[int, ...]
-) -> bool:
+
+def validate_dimensions(shape_size: List[int], void_shape: Tuple[int, ...]) -> bool:
     """
     Validate that the shape fits within the void dimensions.
-    
+
     Args:
         shape_size: Dimensions of the shape
         void_shape: Dimensions of the void
-        
+
     Returns:
         Boolean indicating if the shape fits in the void
     """
     return all(s <= v for s, v in zip(shape_size, void_shape))
 
+
 def validate_bounds(
-    start_pos: List[int],
-    shape_size: List[int],
-    void_shape: Tuple[int, ...]
+    start_pos: List[int], shape_size: List[int], void_shape: Tuple[int, ...]
 ) -> bool:
     """
     Validate that the shape at the given position fits within the void bounds.
-    
+
     Args:
         start_pos: Starting position coordinates
         shape_size: Dimensions of the shape
         void_shape: Dimensions of the void
-        
+
     Returns:
         Boolean indicating if the shape at the position fits in the void
     """
@@ -192,13 +186,14 @@ def validate_bounds(
             return False
     return True
 
+
 def select_random_color(colors: List[str]) -> str:
     """
     Select a random color from a list or return the color if it's a string.
-    
+
     Args:
         colors: List of color strings or a single color string
-        
+
     Returns:
         Selected color string
     """
@@ -206,14 +201,15 @@ def select_random_color(colors: List[str]) -> str:
         return random.choice(colors)
     return colors
 
+
 def create_debug_info(void: np.ndarray, filled_only: bool = True) -> Dict[str, Any]:
     """
     Create debug information about the void array.
-    
+
     Args:
         void: The 3D numpy array
         filled_only: If True, only count filled voxels
-        
+
     Returns:
         Dictionary with debug information
     """
@@ -221,27 +217,28 @@ def create_debug_info(void: np.ndarray, filled_only: bool = True) -> Dict[str, A
         "shape": void.shape,
         "total_voxels": void.size,
     }
-    
+
     if filled_only:
-        filled = (void > 0)
+        filled = void > 0
         info["filled_voxels"] = np.sum(filled)
         info["fill_percentage"] = (info["filled_voxels"] / info["total_voxels"]) * 100
-    
+
     return info
+
 
 def print_debug_info(info: Dict[str, Any]):
     """
     Print debug information in a structured format.
-    
+
     Args:
         info: Dictionary with debug information
     """
     begin_section("Debug Information")
-    
+
     for key, value in info.items():
         if key == "fill_percentage":
             log_info(f"{key}: {value:.2f}%")
         else:
             log_info(f"{key}: {value}")
-    
+
     end_section()

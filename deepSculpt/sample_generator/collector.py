@@ -44,15 +44,24 @@ from typing import List, Tuple, Dict, Any, Optional, Union
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from logger import begin_section, end_section, log_action, log_success, log_error, log_info, log_warning
+from logger import (
+    begin_section,
+    end_section,
+    log_action,
+    log_success,
+    log_error,
+    log_info,
+    log_warning,
+)
 from sculptor import Sculptor
 from visualization import Visualizer
+
 
 class Collector:
     """
     Class for generating and collecting batches of sculptures for dataset creation.
     """
-    
+
     def __init__(
         self,
         void_dim: int = 32,
@@ -66,11 +75,11 @@ class Collector:
         n_chunks: int = 10,
         colors: Optional[Dict[str, Any]] = None,
         seed: Optional[int] = None,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """
         Initialize the Collector instance.
-        
+
         Args:
             void_dim: Size of the 3D grid in each dimension
             edges: Tuple of (count, min_ratio, max_ratio) for edge elements
@@ -90,72 +99,80 @@ class Collector:
         self.planes = planes
         self.pipes = pipes
         self.grid = grid
-        
+
         # Calculate step if not provided
         self.step = int(void_dim / 6) if step is None else step
-        
+
         # Set directory
         self.directory = directory
-        
+
         # Set batch parameters
         self.chunk_size = chunk_size
         self.n_chunks = n_chunks
-        
+
         # Default colors if not provided
         if colors is None:
             self.colors = {
                 "edges": "red",
                 "planes": "green",
                 "pipes": ["blue", "cyan", "magenta"],
-                "volumes": ["purple", "brown", "orange"]
+                "volumes": ["purple", "brown", "orange"],
             }
         else:
             self.colors = colors
-        
+
         self.verbose = verbose
-        
+
         # Set random seed if provided
         if seed is not None:
             np.random.seed(seed)
             random.seed(seed)
-    
+
     def create_collection(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate a collection of 3D sculpted shapes in chunks.
-        
+
         Returns:
             Tuple of the last generated chunk's volumes and materials arrays
         """
-        begin_section(f"Creating Collection of {self.n_chunks} chunks with {self.chunk_size} sculptures each")
-        
+        begin_section(
+            f"Creating Collection of {self.n_chunks} chunks with {self.chunk_size} sculptures each"
+        )
+
         try:
             # Ensure the output directory exists
             os.makedirs(self.directory, exist_ok=True)
-            
+
             # Keep track of the last chunk for return value
             last_volumes = None
             last_materials = None
-            
+
             # Generate chunks
             for chunk_idx in range(self.n_chunks):
                 begin_section(f"Generating Chunk {chunk_idx+1}/{self.n_chunks}")
-                
+
                 try:
                     # Start timer
                     start_time = time.time()
-                    
+
                     # Initialize arrays for this chunk
                     volumes_raw_data: List[np.ndarray] = []
                     materials_raw_data: List[np.ndarray] = []
-                    
+
                     # Generate sculptures for this chunk
-                    log_action(f"Generating {self.chunk_size} sculptures for chunk {chunk_idx+1}")
-                    
+                    log_action(
+                        f"Generating {self.chunk_size} sculptures for chunk {chunk_idx+1}"
+                    )
+
                     # Use tqdm for progress tracking if not verbose
                     iterator = range(self.chunk_size)
                     if not self.verbose:
-                        iterator = tqdm(iterator, desc=f"Chunk {chunk_idx+1}/{self.n_chunks}", unit="sculpture")
-                    
+                        iterator = tqdm(
+                            iterator,
+                            desc=f"Chunk {chunk_idx+1}/{self.n_chunks}",
+                            unit="sculpture",
+                        )
+
                     for i in iterator:
                         # Create a sculptor
                         sculptor = Sculptor(
@@ -166,84 +183,119 @@ class Collector:
                             grid=self.grid,
                             colors=self.colors,
                             step=self.step,
-                            verbose=self.verbose
+                            verbose=self.verbose,
                         )
-                        
+
                         # Generate a sculpture
-                        sculpture_volumes, sculpture_materials = sculptor.generate_sculpture()
-                        
+                        (
+                            sculpture_volumes,
+                            sculpture_materials,
+                        ) = sculptor.generate_sculpture()
+
                         # Add to our arrays
                         volumes_raw_data.append(sculpture_volumes.astype("int8"))
                         materials_raw_data.append(sculpture_materials)
-                        
+
                         # Log progress if verbose
-                        if self.verbose and (i+1) % 5 == 0:
-                            log_info(f"Generated {i+1}/{self.chunk_size} sculptures", is_last=(i+1==self.chunk_size))
-                    
+                        if self.verbose and (i + 1) % 5 == 0:
+                            log_info(
+                                f"Generated {i+1}/{self.chunk_size} sculptures",
+                                is_last=(i + 1 == self.chunk_size),
+                            )
+
                     # Convert to numpy arrays
-                    volumes_array = np.asarray(volumes_raw_data).reshape((
-                        self.chunk_size,
-                        self.void_dim,
-                        self.void_dim,
-                        self.void_dim
-                    )).astype("int8")
-                    
-                    materials_array = np.asarray(materials_raw_data).reshape((
-                        self.chunk_size,
-                        self.void_dim,
-                        self.void_dim,
-                        self.void_dim
-                    )).astype("object")
-                    
-                    log_success(f"Generated chunk in {time.time() - start_time:.2f} seconds")
-                    
+                    volumes_array = (
+                        np.asarray(volumes_raw_data)
+                        .reshape(
+                            (
+                                self.chunk_size,
+                                self.void_dim,
+                                self.void_dim,
+                                self.void_dim,
+                            )
+                        )
+                        .astype("int8")
+                    )
+
+                    materials_array = (
+                        np.asarray(materials_raw_data)
+                        .reshape(
+                            (
+                                self.chunk_size,
+                                self.void_dim,
+                                self.void_dim,
+                                self.void_dim,
+                            )
+                        )
+                        .astype("object")
+                    )
+
+                    log_success(
+                        f"Generated chunk in {time.time() - start_time:.2f} seconds"
+                    )
+
                     # Keep track of the last chunk
                     last_volumes = volumes_array
                     last_materials = materials_array
-                    
+
                     # Save this chunk
                     timestamp = date.today().isoformat()
-                    
+
                     # Paths for saving
-                    volumes_path = os.path.join(self.directory, f"volume_data[{timestamp}]chunk[{chunk_idx+1}].npy")
-                    materials_path = os.path.join(self.directory, f"material_data[{timestamp}]chunk[{chunk_idx+1}].npy")
-                    
+                    volumes_path = os.path.join(
+                        self.directory,
+                        f"volume_data[{timestamp}]chunk[{chunk_idx+1}].npy",
+                    )
+                    materials_path = os.path.join(
+                        self.directory,
+                        f"material_data[{timestamp}]chunk[{chunk_idx+1}].npy",
+                    )
+
                     # Save arrays
                     np.save(volumes_path, volumes_array, allow_pickle=True)
                     np.save(materials_path, materials_array, allow_pickle=True)
-                    
-                    log_success(f"Saved chunk {chunk_idx+1} to {volumes_path} and {materials_path}")
-                    
+
+                    log_success(
+                        f"Saved chunk {chunk_idx+1} to {volumes_path} and {materials_path}"
+                    )
+
                     # Plot some random samples
-                    self._plot_samples(volumes_array, materials_array, n_samples=3, chunk_idx=chunk_idx+1)
-                    
+                    self._plot_samples(
+                        volumes_array,
+                        materials_array,
+                        n_samples=3,
+                        chunk_idx=chunk_idx + 1,
+                    )
+
                     end_section(f"Finished chunk {chunk_idx+1}/{self.n_chunks}")
-                    
+
                 except Exception as e:
                     log_error(f"Error generating chunk {chunk_idx+1}: {str(e)}")
                     end_section(f"Failed to generate chunk {chunk_idx+1}")
                     raise
-            
-            log_success(f"Successfully generated {self.n_chunks} chunks with {self.chunk_size} sculptures each")
+
+            log_success(
+                f"Successfully generated {self.n_chunks} chunks with {self.chunk_size} sculptures each"
+            )
             end_section()
-            
+
             return last_volumes, last_materials
-            
+
         except Exception as e:
             log_error(f"Error creating collection: {str(e)}")
             end_section("Collection creation failed")
             raise
-    
+
     def _plot_samples(
         self,
         volumes: np.ndarray,
         materials: np.ndarray,
         n_samples: int = 3,
-        chunk_idx: int = 0
+        chunk_idx: int = 0,
     ):
         """
         Plot random samples from the generated batch.
-        
+
         Args:
             volumes: 4D array of volumes (batch_size, dim, dim, dim)
             materials: 4D array of materials (batch_size, dim, dim, dim)
@@ -251,100 +303,110 @@ class Collector:
             chunk_idx: Current chunk index for file naming
         """
         begin_section(f"Plotting {n_samples} sample sculptures from chunk {chunk_idx}")
-        
+
         try:
             # Create a visualizer
             visualizer = Visualizer(figsize=15, dpi=100)
-            
+
             # Create samples directory
             samples_dir = os.path.join(self.directory, "samples")
             os.makedirs(samples_dir, exist_ok=True)
-            
+
             # Get indices of random samples
-            indices = random.sample(range(volumes.shape[0]), min(n_samples, volumes.shape[0]))
-            
+            indices = random.sample(
+                range(volumes.shape[0]), min(n_samples, volumes.shape[0])
+            )
+
             # Plot each sample
             for i, idx in enumerate(indices):
-                log_action(f"Plotting sample {i+1}/{n_samples} (index {idx})", is_last=(i==len(indices)-1))
-                
+                log_action(
+                    f"Plotting sample {i+1}/{n_samples} (index {idx})",
+                    is_last=(i == len(indices) - 1),
+                )
+
                 # Generate timestamp for unique filenames
                 timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                
+
                 # Plot the sculpture
-                sample_path = os.path.join(samples_dir, f"sample_chunk{chunk_idx}_idx{idx}_{timestamp}.png")
-                
+                sample_path = os.path.join(
+                    samples_dir, f"sample_chunk{chunk_idx}_idx{idx}_{timestamp}.png"
+                )
+
                 visualizer.plot_sculpture(
                     volumes[idx],
                     materials[idx],
                     title=f"Sample {idx} from Chunk {chunk_idx}",
                     hide_axis=True,
                     save_path=sample_path,
-                    show=False
+                    show=False,
                 )
-                
+
                 log_success(f"Saved sample plot to {sample_path}")
-            
+
             log_success(f"Plotted {n_samples} samples from chunk {chunk_idx}")
             end_section()
-            
+
         except Exception as e:
             log_error(f"Error plotting samples: {str(e)}")
             end_section("Sample plotting failed")
             raise
-    
+
     @classmethod
     def load_chunk(
-        cls,
-        volumes_path: str,
-        materials_path: str
+        cls, volumes_path: str, materials_path: str
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Load a previously saved chunk.
-        
+
         Args:
             volumes_path: Path to the volumes .npy file
             materials_path: Path to the materials .npy file
-            
+
         Returns:
             Tuple of (volumes, materials) arrays
         """
         begin_section(f"Loading chunk from {volumes_path} and {materials_path}")
-        
+
         try:
             # Load arrays
             volumes = np.load(volumes_path, allow_pickle=True)
             materials = np.load(materials_path, allow_pickle=True)
-            
-            log_success(f"Loaded volumes with shape {volumes.shape} and materials with shape {materials.shape}")
+
+            log_success(
+                f"Loaded volumes with shape {volumes.shape} and materials with shape {materials.shape}"
+            )
             end_section()
-            
+
             return volumes, materials
-            
+
         except Exception as e:
             log_error(f"Error loading chunk: {str(e)}")
             end_section("Chunk loading failed")
             raise
 
+
 # Example usage
 if __name__ == "__main__":
     # Set parameters for a small test
     output_dir = "data"
-    
+
     # Create a collector
     collector = Collector(
-        void_dim=20,                # Size of the 3D grid
-        edges=(2, 0.2, 0.6),        # 2 edges with sizes between 20-60% of void_dim
-        planes=(1, 0.3, 0.7),       # 1 plane with sizes between 30-70% of void_dim
-        pipes=(1, 0.4, 0.7),        # 1 pipe with sizes between 40-70% of void_dim
-        grid=(1, 4),                # Enable grid with step size 4
-        step=None,                  # Auto-calculate step size
-        directory=output_dir,       # Output directory
-        chunk_size=5,               # 5 sculptures per chunk
-        n_chunks=2,                 # Generate 2 chunks
-        verbose=True                # Print detailed information
+        void_dim=20,  # Size of the 3D grid
+        edges=(2, 0.2, 0.6),  # 2 edges with sizes between 20-60% of void_dim
+        planes=(1, 0.3, 0.7),  # 1 plane with sizes between 30-70% of void_dim
+        pipes=(1, 0.4, 0.7),  # 1 pipe with sizes between 40-70% of void_dim
+        grid=(1, 4),  # Enable grid with step size 4
+        step=None,  # Auto-calculate step size
+        directory=output_dir,  # Output directory
+        chunk_size=5,  # 5 sculptures per chunk
+        n_chunks=2,  # Generate 2 chunks
+        verbose=True,  # Print detailed information
     )
-    
+
     # Generate the collection
     volumes, materials = collector.create_collection()
-    
-    print(f"Generated {volumes.shape[0]} sculptures with dimensions {volumes.shape[1:]}.")
+
+    print(
+        f"Generated {volumes.shape[0]} sculptures with dimensions {volumes.shape[1:]}."
+    )
