@@ -1,0 +1,16 @@
+{
+    "timestamp": "2025-03-13T12:51:37.810023",
+    "collection_dir": "data/2025-03-13",
+    "train_size": 8,
+    "val_size": 2,
+    "batch_size": 8,
+    "buffer_size": 1000,
+    "encoded_shape": [
+        10,
+        20,
+        20,
+        20,
+        5
+    ],
+    "processing_method": "OHE"
+}

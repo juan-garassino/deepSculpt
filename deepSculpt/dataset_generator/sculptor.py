@@ -23,6 +23,10 @@ Used by:
 - collector.py: For batch generation of sculptures
 - demo.py: For demonstration and testing
 
+Terminology:
+- structure: 3D numpy array representing the sculpture shape (formerly "void")
+- colors: 3D numpy array with color information (formerly "color_void")
+
 TODO:
 - Add support for sculpture modification after generation
 - Implement style transfer between sculptures
@@ -78,7 +82,7 @@ class Sculptor:
         Initialize a new Sculptor instance.
 
         Args:
-            void_dim: The dimension of the void (cube size)
+            void_dim: The dimension of the structure (cube size)
             edges: Tuple of (count, min_ratio, max_ratio) for edges
             planes: Tuple of (count, min_ratio, max_ratio) for planes
             pipes: Tuple of (count, min_ratio, max_ratio) for pipes
@@ -88,8 +92,8 @@ class Sculptor:
             verbose: Whether to print detailed information
         """
         self.void_dim = void_dim
-        self.volumes_void = np.zeros((void_dim, void_dim, void_dim))
-        self.materials_void = np.empty(self.volumes_void.shape, dtype=object)
+        self.structure = np.zeros((void_dim, void_dim, void_dim))
+        self.colors = np.empty(self.structure.shape, dtype=object)
 
         self.edges = edges
         self.planes = planes
@@ -98,14 +102,14 @@ class Sculptor:
 
         # Default colors if not provided
         if colors is None:
-            self.colors = {
+            self.colors_dict = {
                 "edges": "red",
                 "planes": "green",
                 "pipes": ["blue", "cyan", "magenta"],
                 "volumes": ["purple", "brown", "orange"],
             }
         else:
-            self.colors = colors
+            self.colors_dict = colors
 
         self.step = step
         self.verbose = verbose
@@ -118,7 +122,7 @@ class Sculptor:
         Generate a sculpture by attaching various components.
 
         Returns:
-            Tuple of (volumes_void, materials_void) arrays
+            Tuple of (structure, colors) arrays
         """
         begin_section("Generating Sculpture")
 
@@ -130,11 +134,11 @@ class Sculptor:
             if self.grid[0] == 1:
                 log_action("Adding grid structure")
 
-                self.volumes_void, self.materials_void = attach_grid(
-                    self.volumes_void,
-                    self.materials_void,
+                self.structure, self.colors = attach_grid(
+                    self.structure,
+                    self.colors,
                     step=self.grid[1],
-                    colors=self.colors,
+                    colors_dict=self.colors_dict,
                     verbose=self.verbose,
                 )
 
@@ -145,13 +149,13 @@ class Sculptor:
                     is_last=(i == self.edges[0] - 1),
                 )
 
-                self.volumes_void, self.materials_void = attach_edge(
-                    self.volumes_void,
-                    self.materials_void,
+                self.structure, self.colors = attach_edge(
+                    self.structure,
+                    self.colors,
                     element_edge_min_ratio=self.edges[1],
                     element_edge_max_ratio=self.edges[2],
                     step=self.step,
-                    colors=self.colors,
+                    colors_dict=self.colors_dict,
                     verbose=self.verbose,
                 )
 
@@ -162,13 +166,13 @@ class Sculptor:
                     is_last=(i == self.planes[0] - 1),
                 )
 
-                self.volumes_void, self.materials_void = attach_plane(
-                    self.volumes_void,
-                    self.materials_void,
+                self.structure, self.colors = attach_plane(
+                    self.structure,
+                    self.colors,
                     element_plane_min_ratio=self.planes[1],
                     element_plane_max_ratio=self.planes[2],
                     step=self.step,
-                    colors=self.colors,
+                    colors_dict=self.colors_dict,
                     verbose=self.verbose,
                 )
 
@@ -179,19 +183,19 @@ class Sculptor:
                     is_last=(i == self.pipes[0] - 1),
                 )
 
-                self.volumes_void, self.materials_void = attach_pipe(
-                    self.volumes_void,
-                    self.materials_void,
+                self.structure, self.colors = attach_pipe(
+                    self.structure,
+                    self.colors,
                     element_volume_min_ratio=self.pipes[1],
                     element_volume_max_ratio=self.pipes[2],
                     step=self.step,
-                    colors=self.colors,
+                    colors_dict=self.colors_dict,
                     verbose=self.verbose,
                 )
 
             # Log statistics
-            filled_voxels = np.sum(self.volumes_void > 0)
-            total_voxels = self.volumes_void.size
+            filled_voxels = np.sum(self.structure > 0)
+            total_voxels = self.structure.size
             fill_percentage = (filled_voxels / total_voxels) * 100
 
             log_info(
@@ -203,7 +207,7 @@ class Sculptor:
 
             end_section()
 
-            return self.volumes_void, self.materials_void
+            return self.structure, self.colors
 
         except Exception as e:
             log_error(f"Error generating sculpture: {str(e)}")
@@ -240,14 +244,13 @@ class Sculptor:
 
             # Plot the sculpture
             fig = self.visualizer.plot_sculpture(
-                self.volumes_void,
-                self.materials_void,
+                structure=self.structure,
+                colors=self.colors,
                 title=title,
                 hide_axis=hide_axis,
                 save_path=save_path,
                 save_array=save_array,
                 save_dir=save_dir,
-                show=True,
             )
 
             log_success("Sculpture visualization completed")
@@ -281,13 +284,13 @@ class Sculptor:
 
         try:
             # Convert to point cloud
-            points = self.visualizer.voxel_to_pointcloud(self.volumes_void, subdivision)
+            points = self.visualizer.voxel_to_pointcloud(self.structure, subdivision)
 
-            # Create colors based on the materials_void
+            # Create colors based on the colors array
             point_colors = []
             for x, y, z in points.astype(int):
                 try:
-                    color_str = self.materials_void[x, y, z]
+                    color_str = self.colors[x, y, z]
                     if color_str == "red":
                         point_colors.append([255, 0, 0])
                     elif color_str == "green":
@@ -307,13 +310,12 @@ class Sculptor:
 
             # Plot the point cloud
             fig = self.visualizer.plot_pointcloud(
-                points,
+                points=points,
                 colors=np.array(point_colors),
                 size=3.0,
                 alpha=0.7,
                 title=title,
                 save_path=save_path,
-                show=True,
             )
 
             log_success("Point cloud visualization completed")
@@ -352,8 +354,8 @@ class Sculptor:
         try:
             # Create the animation
             anim = self.visualizer.plot_animated_rotation(
-                self.volumes_void,
-                self.materials_void,
+                structure=self.structure,
+                colors=self.colors,
                 n_frames=n_frames,
                 fps=fps,
                 title=title,
@@ -389,14 +391,14 @@ class Sculptor:
 
         try:
             # Add the shape
-            self.volumes_void, self.materials_void = attach_shape(
-                self.volumes_void,
-                self.materials_void,
+            self.structure, self.colors = attach_shape(
+                self.structure,
+                self.colors,
                 shape_type,
                 min_ratio=min_ratio,
                 max_ratio=max_ratio,
                 step=self.step,
-                colors=self.colors,
+                colors_dict=self.colors_dict,
                 verbose=self.verbose,
             )
 
@@ -412,7 +414,7 @@ class Sculptor:
 
     def reset(self):
         """
-        Reset the sculpture to an empty void.
+        Reset the sculpture to an empty structure.
 
         Returns:
             Self for method chaining
@@ -420,9 +422,9 @@ class Sculptor:
         begin_section("Resetting Sculpture")
 
         try:
-            # Reset the void and materials
-            self.volumes_void = np.zeros((self.void_dim, self.void_dim, self.void_dim))
-            self.materials_void = np.empty(self.volumes_void.shape, dtype=object)
+            # Reset the structure and colors
+            self.structure = np.zeros((self.void_dim, self.void_dim, self.void_dim))
+            self.colors = np.empty(self.structure.shape, dtype=object)
 
             log_success("Sculpture reset successfully")
             end_section()
@@ -437,16 +439,16 @@ class Sculptor:
     def save(
         self,
         directory: str = "output",
-        save_volumes: bool = True,
-        save_materials: bool = True,
+        save_structure: bool = True,
+        save_colors: bool = True,
     ):
         """
         Save the sculpture arrays to files.
 
         Args:
             directory: Directory to save files
-            save_volumes: Whether to save the volumes array
-            save_materials: Whether to save the materials array
+            save_structure: Whether to save the structure array
+            save_colors: Whether to save the colors array
 
         Returns:
             Dictionary with paths to saved files
@@ -462,31 +464,29 @@ class Sculptor:
             # Generate timestamp for filenames
             timestamp = time.strftime("%Y%m%d-%H%M%S")
 
-            # Save volumes if requested
-            if save_volumes:
-                volumes_dir = os.path.join(directory, "volume_array")
-                os.makedirs(volumes_dir, exist_ok=True)
+            # Create structures and colors subdirectories
+            structure_dir = os.path.join(directory, "structures")
+            colors_dir = os.path.join(directory, "colors")
 
-                volumes_path = os.path.join(
-                    volumes_dir, f"volume_array_{timestamp}.npy"
+            # Save structure if requested
+            if save_structure:
+                os.makedirs(structure_dir, exist_ok=True)
+                structure_path = os.path.join(
+                    structure_dir, f"structure_{timestamp}.npy"
                 )
-                np.save(volumes_path, self.volumes_void)
+                np.save(structure_path, self.structure)
 
-                saved_files["volumes"] = volumes_path
-                log_success(f"Saved volumes to {volumes_path}")
+                saved_files["structure"] = structure_path
+                log_success(f"Saved structure to {structure_path}")
 
-            # Save materials if requested
-            if save_materials:
-                materials_dir = os.path.join(directory, "material_array")
-                os.makedirs(materials_dir, exist_ok=True)
+            # Save colors if requested
+            if save_colors:
+                os.makedirs(colors_dir, exist_ok=True)
+                colors_path = os.path.join(colors_dir, f"colors_{timestamp}.npy")
+                np.save(colors_path, self.colors)
 
-                materials_path = os.path.join(
-                    materials_dir, f"material_array_{timestamp}.npy"
-                )
-                np.save(materials_path, self.materials_void)
-
-                saved_files["materials"] = materials_path
-                log_success(f"Saved materials to {materials_path}")
+                saved_files["colors"] = colors_path
+                log_success(f"Saved colors to {colors_path}")
 
             log_success("Sculpture saved successfully")
             end_section()
@@ -501,16 +501,16 @@ class Sculptor:
     @classmethod
     def load(
         cls,
-        volumes_path: str,
-        materials_path: Optional[str] = None,
+        structure_path: str,
+        colors_path: Optional[str] = None,
         verbose: bool = False,
     ):
         """
         Load a sculpture from files.
 
         Args:
-            volumes_path: Path to the volumes array file
-            materials_path: Path to the materials array file
+            structure_path: Path to the structure array file
+            colors_path: Path to the colors array file
             verbose: Whether to print detailed information
 
         Returns:
@@ -519,26 +519,26 @@ class Sculptor:
         begin_section("Loading Sculpture")
 
         try:
-            # Load volumes
-            volumes = np.load(volumes_path)
+            # Load structure
+            structure = np.load(structure_path)
 
-            # Load materials if provided
-            if materials_path:
-                materials = np.load(materials_path, allow_pickle=True)
+            # Load colors if provided
+            if colors_path:
+                colors = np.load(colors_path, allow_pickle=True)
             else:
-                materials = np.empty(volumes.shape, dtype=object)
+                colors = np.empty(structure.shape, dtype=object)
 
             # Create a new Sculptor instance
-            void_dim = volumes.shape[0]
+            void_dim = structure.shape[0]
             sculptor = cls(void_dim=void_dim, verbose=verbose)
 
             # Set the arrays
-            sculptor.volumes_void = volumes
-            sculptor.materials_void = materials
+            sculptor.structure = structure
+            sculptor.colors = colors
 
-            log_success(f"Loaded volumes from {volumes_path}")
-            if materials_path:
-                log_success(f"Loaded materials from {materials_path}")
+            log_success(f"Loaded structure from {structure_path}")
+            if colors_path:
+                log_success(f"Loaded colors from {colors_path}")
 
             log_success("Sculpture loaded successfully")
             end_section()
@@ -580,11 +580,11 @@ if __name__ == "__main__":
 
     # Generate the sculpture
     log_action("Generating the sculpture", is_last=False)
-    volumes, materials = sculptor.generate_sculpture()
+    structure, colors = sculptor.generate_sculpture()
 
     # Calculate statistics
-    filled_voxels = np.sum(volumes > 0)
-    total_voxels = volumes.size
+    filled_voxels = np.sum(structure > 0)
+    total_voxels = structure.size
     log_info(
         f"Created sculpture with {filled_voxels} filled voxels out of {total_voxels} ({filled_voxels/total_voxels*100:.2f}%)"
     )
@@ -607,7 +607,7 @@ if __name__ == "__main__":
     log_action("Visualizing sculpture sections", is_last=False)
     sections_path = os.path.join(output_dir, f"sculpture_sections_{timestamp}.png")
     section_fig = sculptor.visualizer.plot_sections(
-        volumes, title="Sculpture Cross-Sections", show=False, save_path=sections_path
+        structure=structure, title="Sculpture Cross-Sections", save_path=sections_path
     )
     log_success(f"Saved sections visualization to {sections_path}")
 
@@ -632,9 +632,6 @@ if __name__ == "__main__":
     # Save the sculpture arrays
     log_action("Saving sculpture data", is_last=True)
     saved_files = sculptor.save(directory=output_dir)
-
-    # Show all the figures
-    plt.show()
 
     log_success("Demonstration completed successfully")
     end_section()

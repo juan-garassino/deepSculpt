@@ -28,19 +28,15 @@ Used by:
 - Training scripts: For preparing data for machine learning models
 - Model evaluation: For processing inference results
 
-TODO:
-- Add support for sparse tensor encoding for memory efficiency
-- Implement more sophisticated data augmentation techniques
-- Add normalization options for different model architectures
-- Support for multi-GPU data pipeline optimization
-- Add dataset statistics and distribution analysis
-- Implement feature engineering options for different ML approaches
-- Add support for progressive loading of very large datasets
+Terminology:
+- structure: 3D numpy array representing the sculpture shape (formerly "volume")
+- colors: 3D numpy array with color information (formerly "material")
 """
 
 import os
 import time
 import random
+import glob
 import numpy as np
 import matplotlib.colors as mcolors
 from typing import List, Tuple, Dict, Any, Optional, Union, Set
@@ -61,35 +57,34 @@ from logger import (
     log_info,
     log_warning,
 )
-from collector import Collector
 from visualization import Visualizer
 
 
 class EncoderDecoder:
     """Base class for encoding and decoding methods."""
 
-    def __init__(self, materials: np.ndarray, verbose: bool = False):
+    def __init__(self, colors: np.ndarray, verbose: bool = False):
         """
         Initialize the EncoderDecoder.
 
         Args:
-            materials: Array of materials to encode
+            colors: Array of colors to encode
             verbose: Whether to print detailed information
         """
-        self.materials = materials
+        self.colors = colors
         self.verbose = verbose
         self.unique_colors = self._get_unique_colors()
 
     def _get_unique_colors(self) -> Set[Any]:
         """
-        Extract all unique colors from the materials array.
+        Extract all unique colors from the colors array.
 
         Returns:
             Set of unique color values
         """
         unique_colors = set()
         # Flatten the array and add each unique color to the set
-        for color in np.ndarray.flatten(self.materials):
+        for color in np.ndarray.flatten(self.colors):
             unique_colors.add(color)
 
         if self.verbose:
@@ -100,62 +95,59 @@ class EncoderDecoder:
 
 class OneHotEncoderDecoder(EncoderDecoder):
     """
-    Class for one-hot encoding and decoding material colors using sklearn's OneHotEncoder.
-
-    This class encodes color and material labels into one-hot encoded arrays and can
-    decode the one-hot encoded arrays back into the original labels.
+    Class for one-hot encoding and decoding color values using sklearn's OneHotEncoder.
     """
 
     def __init__(
         self,
-        materials_labels_array: np.ndarray,
-        material_list: Optional[List[Any]] = None,
+        colors_array: np.ndarray,
+        color_list: Optional[List[Any]] = None,
         verbose: bool = False,
     ):
         """
         Initialize the OneHotEncoderDecoder.
 
         Args:
-            materials_labels_array: Array of material labels to encode
-            material_list: List of all possible material values (if None, extracted from data)
+            colors_array: Array of colors to encode
+            color_list: List of all possible color values (if None, extracted from data)
             verbose: Whether to print detailed information
         """
-        super().__init__(materials_labels_array, verbose)
-        self.materials_labels_array = materials_labels_array
-        self.void_dim = self.materials_labels_array.shape[1]
-        self.n_samples = self.materials_labels_array.shape[0]
+        super().__init__(colors_array, verbose)
+        self.colors_array = colors_array
+        self.void_dim = self.colors_array.shape[1]
+        self.n_samples = self.colors_array.shape[0]
         self.n_classes = None
         self.classes = None
 
-        # Use provided material list or determine from data
-        if material_list is not None:
-            self.material_list = material_list
+        # Use provided color list or determine from data
+        if color_list is not None:
+            self.color_list = color_list
         else:
-            self.material_list = sorted(list(self.unique_colors), key=lambda x: str(x))
+            self.color_list = sorted(list(self.unique_colors), key=lambda x: str(x))
 
         # Initialize the one-hot encoder
         self.one_hot_encoder = OneHotEncoder(
-            categories=[self.material_list], handle_unknown="ignore"
+            categories=[self.color_list], handle_unknown="ignore"
         )
 
     def ohe_encode(self) -> Tuple[np.ndarray, List[Any]]:
         """
-        Encode materials using one-hot encoding.
+        Encode colors using one-hot encoding.
 
         Returns:
             Tuple of (encoded_array, color_classes)
         """
-        begin_section("One-Hot Encoding Materials")
+        begin_section("One-Hot Encoding Colors")
 
         try:
-            if not self.material_list:
-                raise ValueError("The list of materials cannot be empty.")
+            if not self.color_list:
+                raise ValueError("The list of colors cannot be empty.")
 
             # Reshape the array for encoding
-            flat_materials = self.materials_labels_array.reshape(-1, 1)
+            flat_colors = self.colors_array.reshape(-1, 1)
 
             # Fit and transform using sklearn's OneHotEncoder
-            encoded_array = self.one_hot_encoder.fit_transform(flat_materials)
+            encoded_array = self.one_hot_encoder.fit_transform(flat_colors)
 
             # Get the classes from the encoder
             self.classes = self.one_hot_encoder.categories_[0]
@@ -189,17 +181,17 @@ class OneHotEncoderDecoder(EncoderDecoder):
         self, one_hot_encoded_array: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Decode one-hot encoded materials back to colors.
+        Decode one-hot encoded colors back to original values.
 
         Args:
             one_hot_encoded_array: One-hot encoded array
 
         Returns:
-            Tuple of (volumes_array, materials_array) where:
-              - volumes_array has 1s where material exists and 0s elsewhere
-              - materials_array contains the original material names
+            Tuple of (structures_array, colors_array) where:
+              - structures_array has 1s where material exists and 0s elsewhere
+              - colors_array contains the original color values
         """
-        begin_section("One-Hot Decoding Materials")
+        begin_section("One-Hot Decoding Colors")
 
         try:
             self.n_samples = one_hot_encoded_array.shape[0]
@@ -213,26 +205,26 @@ class OneHotEncoderDecoder(EncoderDecoder):
             )
 
             # Inverse transform using the encoder
-            decoded_materials = self.one_hot_encoder.inverse_transform(flat_encoded)
+            decoded_colors = self.one_hot_encoder.inverse_transform(flat_encoded)
 
-            # Create a binary volume array (1 where material exists, 0 elsewhere)
-            decoded_volumes = np.where(decoded_materials == None, 0, 1)
+            # Create a binary structure array (1 where material exists, 0 elsewhere)
+            decoded_structures = np.where(decoded_colors == None, 0, 1)
 
             # Reshape back to original dimensions
-            decoded_volumes_reshaped = decoded_volumes.reshape(
+            decoded_structures_reshaped = decoded_structures.reshape(
                 (self.n_samples, self.void_dim, self.void_dim, self.void_dim)
             )
 
-            decoded_materials_reshaped = decoded_materials.reshape(
+            decoded_colors_reshaped = decoded_colors.reshape(
                 (self.n_samples, self.void_dim, self.void_dim, self.void_dim)
             )
 
             log_success(
-                f"Decoded to shapes: volumes {decoded_volumes_reshaped.shape}, materials {decoded_materials_reshaped.shape}"
+                f"Decoded to shapes: structures {decoded_structures_reshaped.shape}, colors {decoded_colors_reshaped.shape}"
             )
             end_section()
 
-            return decoded_volumes_reshaped, decoded_materials_reshaped
+            return decoded_structures_reshaped, decoded_colors_reshaped
 
         except Exception as e:
             log_error(f"Error during one-hot decoding: {str(e)}")
@@ -242,44 +234,40 @@ class OneHotEncoderDecoder(EncoderDecoder):
 
 class BinaryEncoderDecoder(EncoderDecoder):
     """
-    Class for binary encoding and decoding material colors using sklearn's LabelEncoder.
-
-    This class encodes material labels into binary format (using the minimum number of bits
-    needed to represent all unique materials) and can decode the binary representation
-    back to the original labels.
+    Class for binary encoding and decoding color values using sklearn's LabelEncoder.
     """
 
-    def __init__(self, materials_labels_array: np.ndarray, verbose: bool = False):
+    def __init__(self, colors_array: np.ndarray, verbose: bool = False):
         """
         Initialize the BinaryEncoderDecoder.
 
         Args:
-            materials_labels_array: Array of material labels to encode
+            colors_array: Array of colors to encode
             verbose: Whether to print detailed information
         """
-        super().__init__(materials_labels_array, verbose)
-        self.materials_labels_array = materials_labels_array
-        self.void_dim = self.materials_labels_array.shape[1]
-        self.n_samples = self.materials_labels_array.shape[0]
+        super().__init__(colors_array, verbose)
+        self.colors_array = colors_array
+        self.void_dim = self.colors_array.shape[1]
+        self.n_samples = self.colors_array.shape[0]
         self.classes = None
         self.n_bit = None
         self.binarizer_encoder = LabelEncoder()
 
     def binary_encode(self) -> Tuple[np.ndarray, List[Any]]:
         """
-        Encode materials using binary encoding.
+        Encode colors using binary encoding.
 
         Returns:
             Tuple of (encoded_array, color_classes)
         """
-        begin_section("Binary Encoding Materials")
+        begin_section("Binary Encoding Colors")
 
         try:
             # Flatten the array for label encoding
-            flat_materials = self.materials_labels_array.reshape(-1)
+            flat_colors = self.colors_array.reshape(-1)
 
             # Transform using sklearn's LabelEncoder
-            label_encoded = self.binarizer_encoder.fit_transform(flat_materials)
+            label_encoded = self.binarizer_encoder.fit_transform(flat_colors)
 
             # Get the classes from the encoder
             self.classes = self.binarizer_encoder.classes_
@@ -326,17 +314,17 @@ class BinaryEncoderDecoder(EncoderDecoder):
         self, binary_encoded_array: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Decode binary encoded materials back to colors.
+        Decode binary encoded colors back to original values.
 
         Args:
             binary_encoded_array: Binary encoded array
 
         Returns:
-            Tuple of (volumes_array, materials_array) where:
-              - volumes_array has 1s where material exists and 0s elsewhere
-              - materials_array contains the original material names
+            Tuple of (structures_array, colors_array) where:
+              - structures_array has 1s where material exists and 0s elsewhere
+              - colors_array contains the original color values
         """
-        begin_section("Binary Decoding Materials")
+        begin_section("Binary Decoding Colors")
 
         try:
             self.n_samples = binary_encoded_array.shape[0]
@@ -356,26 +344,26 @@ class BinaryEncoderDecoder(EncoderDecoder):
             label_indices = [int(binary, 2) for binary in binary_strings]
 
             # Convert integer labels back to original classes
-            decoded_materials = self.binarizer_encoder.inverse_transform(label_indices)
+            decoded_colors = self.binarizer_encoder.inverse_transform(label_indices)
 
-            # Create a binary volume array (1 where material exists, 0 elsewhere)
-            decoded_volumes = np.where(decoded_materials == None, 0, 1)
+            # Create a binary structure array (1 where material exists, 0 elsewhere)
+            decoded_structures = np.where(decoded_colors == None, 0, 1)
 
             # Reshape back to original dimensions
-            decoded_volumes_reshaped = decoded_volumes.reshape(
+            decoded_structures_reshaped = decoded_structures.reshape(
                 (self.n_samples, self.void_dim, self.void_dim, self.void_dim)
             )
 
-            decoded_materials_reshaped = decoded_materials.reshape(
+            decoded_colors_reshaped = decoded_colors.reshape(
                 (self.n_samples, self.void_dim, self.void_dim, self.void_dim)
             )
 
             log_success(
-                f"Decoded to shapes: volumes {decoded_volumes_reshaped.shape}, materials {decoded_materials_reshaped.shape}"
+                f"Decoded to shapes: structures {decoded_structures_reshaped.shape}, colors {decoded_colors_reshaped.shape}"
             )
             end_section()
 
-            return decoded_volumes_reshaped, decoded_materials_reshaped
+            return decoded_structures_reshaped, decoded_colors_reshaped
 
         except Exception as e:
             log_error(f"Error during binary decoding: {str(e)}")
@@ -385,15 +373,12 @@ class BinaryEncoderDecoder(EncoderDecoder):
 
 class RGBEncoderDecoder(EncoderDecoder):
     """
-    Class for RGB encoding and decoding material colors.
-
-    This class converts between material names and RGB color values,
-    supporting both built-in color mappings and custom color dictionaries.
+    Class for RGB encoding and decoding color values.
     """
 
     def __init__(
         self,
-        materials_labels_array: Optional[np.ndarray] = None,
+        colors_array: Optional[np.ndarray] = None,
         color_dict: Optional[Dict[Any, Tuple[int, int, int]]] = None,
         verbose: bool = False,
     ):
@@ -401,26 +386,18 @@ class RGBEncoderDecoder(EncoderDecoder):
         Initialize the RGBEncoderDecoder.
 
         Args:
-            materials_labels_array: Array of material labels to encode (optional)
-            color_dict: Dictionary mapping material names to RGB tuples (optional)
+            colors_array: Array of colors to encode (optional)
+            color_dict: Dictionary mapping color names to RGB tuples (optional)
             verbose: Whether to print detailed information
         """
-        if materials_labels_array is not None:
-            super().__init__(materials_labels_array, verbose)
-            self.materials_labels_array = materials_labels_array
-            self.void_dim = (
-                materials_labels_array.shape[1]
-                if len(materials_labels_array.shape) > 1
-                else 0
-            )
-            self.n_samples = (
-                materials_labels_array.shape[0]
-                if len(materials_labels_array.shape) > 0
-                else 0
-            )
+        if colors_array is not None:
+            super().__init__(colors_array, verbose)
+            self.colors_array = colors_array
+            self.void_dim = colors_array.shape[1] if len(colors_array.shape) > 1 else 0
+            self.n_samples = colors_array.shape[0] if len(colors_array.shape) > 0 else 0
         else:
             self.verbose = verbose
-            self.materials_labels_array = None
+            self.colors_array = None
             self.void_dim = 0
             self.n_samples = 0
 
@@ -434,7 +411,7 @@ class RGBEncoderDecoder(EncoderDecoder):
         Initialize the color dictionary with defaults if not provided.
 
         Args:
-            color_dict: Dictionary mapping material names to RGB tuples
+            color_dict: Dictionary mapping color names to RGB tuples
 
         Returns:
             Complete color dictionary
@@ -482,16 +459,16 @@ class RGBEncoderDecoder(EncoderDecoder):
 
     def rgb_encode(self) -> Tuple[np.ndarray, Dict[Any, Tuple[int, int, int]]]:
         """
-        Encode materials array using RGB values.
+        Encode colors array using RGB values.
 
         Returns:
             Tuple of (encoded_array, color_mapping)
         """
-        begin_section("RGB Encoding Materials")
+        begin_section("RGB Encoding Colors")
 
         try:
-            if self.materials_labels_array is None:
-                raise ValueError("Materials array not provided")
+            if self.colors_array is None:
+                raise ValueError("Colors array not provided")
 
             # Initialize output array with RGB channels
             rgb_array = np.zeros(
@@ -499,16 +476,16 @@ class RGBEncoderDecoder(EncoderDecoder):
                 dtype=np.uint8,
             )
 
-            # Convert each material to its RGB value
+            # Convert each color to its RGB value
             for s in range(self.n_samples):
                 for i in range(self.void_dim):
                     for j in range(self.void_dim):
                         for k in range(self.void_dim):
-                            material = self.materials_labels_array[s, i, j, k]
-                            if material in self.color_dict:
-                                rgb_array[s, i, j, k] = self.color_dict[material]
-                            elif material is not None:
-                                # Assign a default gray for unknown materials
+                            color = self.colors_array[s, i, j, k]
+                            if color in self.color_dict:
+                                rgb_array[s, i, j, k] = self.color_dict[color]
+                            elif color is not None:
+                                # Assign a default gray for unknown colors
                                 rgb_array[s, i, j, k] = (128, 128, 128)
 
             log_success(f"RGB encoded to shape {rgb_array.shape}")
@@ -525,35 +502,33 @@ class RGBEncoderDecoder(EncoderDecoder):
         self, rgb_array: np.ndarray, threshold: float = 10.0
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Decode RGB encoded array back to materials.
+        Decode RGB encoded array back to colors.
 
         Args:
             rgb_array: RGB encoded array
             threshold: Threshold for color matching (Euclidean distance)
 
         Returns:
-            Tuple of (volumes_array, materials_array) where:
-              - volumes_array has 1s where material exists and 0s elsewhere
-              - materials_array contains the original material names
+            Tuple of (structures_array, colors_array) where:
+              - structures_array has 1s where material exists and 0s elsewhere
+              - colors_array contains the original color values
         """
-        begin_section("RGB Decoding Materials")
+        begin_section("RGB Decoding Colors")
 
         try:
             n_samples = rgb_array.shape[0]
             void_dim = rgb_array.shape[1]
 
             # Prepare output arrays
-            materials_array = np.empty(
+            colors_array = np.empty(
                 (n_samples, void_dim, void_dim, void_dim), dtype=object
             )
-            volumes_array = np.zeros(
+            structures_array = np.zeros(
                 (n_samples, void_dim, void_dim, void_dim), dtype=np.uint8
             )
 
             # Invert the color dictionary for lookup
-            rgb_to_material = {
-                rgb: material for material, rgb in self.color_dict.items()
-            }
+            rgb_to_color = {rgb: color for color, rgb in self.color_dict.items()}
 
             # Process each voxel
             for s in range(n_samples):
@@ -564,19 +539,19 @@ class RGBEncoderDecoder(EncoderDecoder):
 
                             # Check for empty/black voxels
                             if rgb == (0, 0, 0):
-                                materials_array[s, i, j, k] = None
+                                colors_array[s, i, j, k] = None
                                 continue
 
                             # Try exact match first
-                            if rgb in rgb_to_material:
-                                materials_array[s, i, j, k] = rgb_to_material[rgb]
-                                volumes_array[s, i, j, k] = 1
+                            if rgb in rgb_to_color:
+                                colors_array[s, i, j, k] = rgb_to_color[rgb]
+                                structures_array[s, i, j, k] = 1
                             else:
                                 # Find closest color within threshold
                                 min_dist = float("inf")
-                                closest_material = None
+                                closest_color = None
 
-                                for known_rgb, material in rgb_to_material.items():
+                                for known_rgb, color in rgb_to_color.items():
                                     if known_rgb == (0, 0, 0):  # Skip None/black
                                         continue
 
@@ -589,24 +564,21 @@ class RGBEncoderDecoder(EncoderDecoder):
 
                                     if dist < min_dist:
                                         min_dist = dist
-                                        closest_material = material
+                                        closest_color = color
 
                                 # Assign if within threshold, otherwise None
-                                if (
-                                    min_dist <= threshold
-                                    and closest_material is not None
-                                ):
-                                    materials_array[s, i, j, k] = closest_material
-                                    volumes_array[s, i, j, k] = 1
+                                if min_dist <= threshold and closest_color is not None:
+                                    colors_array[s, i, j, k] = closest_color
+                                    structures_array[s, i, j, k] = 1
                                 else:
-                                    materials_array[s, i, j, k] = None
+                                    colors_array[s, i, j, k] = None
 
             log_success(
-                f"RGB decoded to shapes: volumes {volumes_array.shape}, materials {materials_array.shape}"
+                f"RGB decoded to shapes: structures {structures_array.shape}, colors {colors_array.shape}"
             )
             end_section()
 
-            return volumes_array, materials_array
+            return structures_array, colors_array
 
         except Exception as e:
             log_error(f"Error during RGB decoding: {str(e)}")
@@ -617,55 +589,306 @@ class RGBEncoderDecoder(EncoderDecoder):
 class Curator:
     """Class for preprocessing sculpture data for machine learning."""
 
-    def __init__(self, processing_method: str = "OHE", verbose: bool = False):
+    def __init__(
+        self,
+        processing_method: str = "OHE",
+        output_dir: str = "processed_data",
+        verbose: bool = False,
+    ):
         """
         Initialize the Curator instance.
 
         Args:
             processing_method: Type of encoding to use ('OHE', 'BINARY', or 'RGB')
+            output_dir: Directory to save processed data
             verbose: Whether to print detailed information
         """
         self.processing_method = processing_method
+        self.output_dir = output_dir
         self.verbose = verbose
         self.visualizer = Visualizer(figsize=15, dpi=100)
 
+        # Create output directory
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    def load_samples_from_collection(
+        self, collection_dir: str, limit: Optional[int] = None, shuffle: bool = True
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Load samples from a collection directory.
+
+        Args:
+            collection_dir: Path to the collection (date) directory
+            limit: Maximum number of samples to load (None for all)
+            shuffle: Whether to shuffle the samples
+
+        Returns:
+            Tuple of (structures, colors) arrays
+        """
+        begin_section(
+            f"Loading samples from collection {os.path.basename(collection_dir)}"
+        )
+
+        try:
+            # Path to samples directory
+            samples_dir = os.path.join(collection_dir, "samples")
+
+            if not os.path.exists(samples_dir):
+                raise ValueError(f"Samples directory not found: {samples_dir}")
+
+            # Check if we have the new directory structure or the old one
+            structures_dir = os.path.join(samples_dir, "structures")
+            colors_dir = os.path.join(samples_dir, "colors")
+
+            # List to hold all structure and color files
+            structure_files = []
+            colors_files = []
+
+            # Try the new directory structure first
+            if os.path.exists(structures_dir) and os.path.exists(colors_dir):
+                # Try new naming pattern
+                struct_files_new = glob.glob(
+                    os.path.join(structures_dir, "structure_*.npy")
+                )
+                if struct_files_new:
+                    structure_files.extend(struct_files_new)
+
+                # Try old naming pattern in new directory
+                struct_files_old = glob.glob(
+                    os.path.join(structures_dir, "volume_*.npy")
+                )
+                if struct_files_old:
+                    structure_files.extend(struct_files_old)
+
+                # Look for color files - new naming
+                color_files_new = glob.glob(os.path.join(colors_dir, "colors_*.npy"))
+                if color_files_new:
+                    colors_files.extend(color_files_new)
+
+                # Look for color files - old naming
+                color_files_old = glob.glob(os.path.join(colors_dir, "material_*.npy"))
+                if color_files_old:
+                    colors_files.extend(color_files_old)
+
+            # If no files found in subdirectories or they don't exist,
+            # look in the main samples directory
+            if not structure_files:
+                # Try all possible naming patterns directly in samples dir
+                struct_files_main = glob.glob(os.path.join(samples_dir, "volume_*.npy"))
+                if struct_files_main:
+                    structure_files.extend(struct_files_main)
+
+                struct_files_main_new = glob.glob(
+                    os.path.join(samples_dir, "structure_*.npy")
+                )
+                if struct_files_main_new:
+                    structure_files.extend(struct_files_main_new)
+
+                # Look for color files in main dir
+                color_files_main = glob.glob(
+                    os.path.join(samples_dir, "material_*.npy")
+                )
+                if color_files_main:
+                    colors_files.extend(color_files_main)
+
+                color_files_main_new = glob.glob(
+                    os.path.join(samples_dir, "colors_*.npy")
+                )
+                if color_files_main_new:
+                    colors_files.extend(color_files_main_new)
+
+            # Log what we found
+            log_info(
+                f"Found {len(structure_files)} structure files and {len(colors_files)} color files"
+            )
+
+            if not structure_files:
+                raise ValueError(f"No structure files found in {samples_dir}")
+
+            if not colors_files:
+                raise ValueError(f"No color files found in {samples_dir}")
+
+            # Sort the files to ensure consistent ordering
+            structure_files = sorted(structure_files)
+            colors_files = sorted(colors_files)
+
+            # Try to match files based on sample numbers
+            paired_files = []
+
+            # First, create a mapping of sample numbers to color files
+            color_file_map = {}
+            for color_file in colors_files:
+                basename = os.path.basename(color_file)
+                # Extract sample number from different naming patterns
+                if "colors_" in basename:
+                    sample_num = basename.replace("colors_", "").replace(".npy", "")
+                elif "material_" in basename:
+                    sample_num = basename.replace("material_", "").replace(".npy", "")
+                else:
+                    continue
+
+                color_file_map[sample_num] = color_file
+
+            # Now match structure files with color files
+            for struct_file in structure_files:
+                basename = os.path.basename(struct_file)
+                # Extract sample number
+                if "structure_" in basename:
+                    sample_num = basename.replace("structure_", "").replace(".npy", "")
+                elif "volume_" in basename:
+                    sample_num = basename.replace("volume_", "").replace(".npy", "")
+                else:
+                    continue
+
+                # Look for a matching color file
+                if sample_num in color_file_map:
+                    paired_files.append((struct_file, color_file_map[sample_num]))
+
+            if not paired_files:
+                log_warning("Could not find matching pairs using sample numbers")
+
+                # If we have equal numbers of files, just pair them by index
+                if len(structure_files) == len(colors_files):
+                    log_info("Using index-based pairing since file counts match")
+                    paired_files = list(zip(structure_files, colors_files))
+
+            if not paired_files:
+                raise ValueError(
+                    f"Could not match structure and color files in {samples_dir}"
+                )
+
+            log_info(f"Successfully paired {len(paired_files)} files")
+
+            # Update our file lists with the paired files
+            structure_files = [pair[0] for pair in paired_files]
+            colors_files = [pair[1] for pair in paired_files]
+
+            # Shuffle if requested
+            if shuffle:
+                indices = list(range(len(structure_files)))
+                random.shuffle(indices)
+                structure_files = [structure_files[i] for i in indices]
+                colors_files = [colors_files[i] for i in indices]
+
+            # Apply limit if specified
+            if limit is not None and limit > 0:
+                structure_files = structure_files[:limit]
+                colors_files = colors_files[:limit]
+
+            log_info(f"Loading {len(structure_files)} samples")
+
+            # Load all samples
+            structures = []
+            colors_list = []
+
+            for i, (struct_file, color_file) in enumerate(
+                zip(structure_files, colors_files)
+            ):
+                try:
+                    structure = np.load(struct_file, allow_pickle=True)
+                    colors = np.load(color_file, allow_pickle=True)
+
+                    structures.append(structure)
+                    colors_list.append(colors)
+
+                    if self.verbose and (i + 1) % 20 == 0:
+                        log_info(f"Loaded {i+1}/{len(structure_files)} samples")
+
+                except Exception as e:
+                    log_warning(f"Error loading sample {struct_file}: {str(e)}")
+
+            if not structures:
+                raise ValueError(f"Failed to load any samples from {samples_dir}")
+
+            # Convert to arrays
+            structures_array = np.array(structures)
+            colors_array = np.array(colors_list, dtype=object)
+
+            log_success(
+                f"Loaded {len(structures)} samples with shapes: structures {structures_array.shape}, colors {colors_array.shape}"
+            )
+            end_section()
+
+            return structures_array, colors_array
+
+        except Exception as e:
+            log_error(f"Error loading samples: {str(e)}")
+            end_section("Sample loading failed")
+            raise
+
     def preprocess_collection(
         self,
-        volumes_path: str,
-        materials_path: str,
-        plot_samples: int = 3,
-        buffer_size: int = 1000,
+        collection_dir: str,
         batch_size: int = 32,
+        buffer_size: int = 1000,
         train_size: Optional[int] = None,
-    ) -> Tuple[tf.data.Dataset, Any]:
+        validation_split: float = 0.2,
+        plot_samples: int = 3,
+    ) -> Dict[str, Any]:
         """
         Preprocess a collection for machine learning.
 
         Args:
-            volumes_path: Path to the volumes .npy file
-            materials_path: Path to the materials .npy file
-            plot_samples: Number of random samples to plot
-            buffer_size: Buffer size for dataset shuffling
+            collection_dir: Path to the collection directory
             batch_size: Batch size for the dataset
+            buffer_size: Buffer size for dataset shuffling
             train_size: Number of samples to take for training (None for all)
+            validation_split: Fraction of data to use for validation
+            plot_samples: Number of random samples to plot
 
         Returns:
-            Tuple of (tensorflow_dataset, encoder_decoder_instance)
+            Dictionary with processed datasets and encoders
         """
         begin_section(f"Preprocessing Collection with {self.processing_method}")
 
         try:
+            # Create output directory with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            collection_name = os.path.basename(collection_dir)
+            output_dir = os.path.join(
+                self.output_dir,
+                f"{collection_name}_{self.processing_method}_{timestamp}",
+            )
+            os.makedirs(output_dir, exist_ok=True)
+
+            # Create subdirectories
+            plots_dir = os.path.join(output_dir, "plots")
+            os.makedirs(plots_dir, exist_ok=True)
+
             # Load the data
             log_action("Loading sculpture data")
-            volumes, materials = Collector.load_chunk(volumes_path, materials_path)
-
-            log_info(
-                f"Loaded volumes with shape {volumes.shape} and materials with shape {materials.shape}"
+            structures, colors = self.load_samples_from_collection(
+                collection_dir=collection_dir, limit=train_size, shuffle=True
             )
 
-            # Plot some random samples
+            # Calculate actual train size
+            total_samples = structures.shape[0]
+            if train_size is None or train_size > total_samples:
+                train_size = total_samples
+
+            log_info(f"Using {train_size} samples for processing")
+
+            # Plot some random samples - two methods
             if plot_samples > 0:
-                self._plot_samples(volumes, materials, n_samples=plot_samples)
+                # Method 1: Use our helper method
+                self._plot_samples(
+                    structures=structures,
+                    colors=colors,
+                    n_samples=min(plot_samples, total_samples),
+                    output_dir=plots_dir,
+                )
+
+                # Method 2: Also visualize randomly from directory for comparison
+                samples_dir = os.path.join(collection_dir, "samples")
+                dir_viz_path = os.path.join(plots_dir, "from_directory")
+                os.makedirs(dir_viz_path, exist_ok=True)
+
+                self.visualizer.visualize_samples_from_directory(
+                    directory=samples_dir,
+                    n_samples=min(plot_samples, total_samples),
+                    output_dir=dir_viz_path,
+                    angles=[0, 1, 2, 3],  # Show all four angles
+                )
 
             # Process based on the selected method
             encoder_decoder = None
@@ -674,21 +897,27 @@ class Curator:
             if self.processing_method == "OHE":
                 # One-hot encoding
                 log_action("Applying one-hot encoding")
-                encoder_decoder = OneHotEncoderDecoder(materials, verbose=self.verbose)
+                encoder_decoder = OneHotEncoderDecoder(
+                    colors_array=colors, verbose=self.verbose
+                )
                 encoded_data, classes = encoder_decoder.ohe_encode()
                 log_success(f"One-hot encoded with {len(classes)} classes: {classes}")
 
             elif self.processing_method == "BINARY":
                 # Binary encoding
                 log_action("Applying binary encoding")
-                encoder_decoder = BinaryEncoderDecoder(materials, verbose=self.verbose)
+                encoder_decoder = BinaryEncoderDecoder(
+                    colors_array=colors, verbose=self.verbose
+                )
                 encoded_data, classes = encoder_decoder.binary_encode()
                 log_success(f"Binary encoded with classes: {classes}")
 
             elif self.processing_method == "RGB":
                 # RGB encoding
                 log_action("Applying RGB encoding")
-                encoder_decoder = RGBEncoderDecoder(materials, verbose=self.verbose)
+                encoder_decoder = RGBEncoderDecoder(
+                    colors_array=colors, verbose=self.verbose
+                )
                 encoded_data, color_mapping = encoder_decoder.rgb_encode()
                 log_success(f"RGB encoded with {len(color_mapping)} color mappings")
 
@@ -696,48 +925,120 @@ class Curator:
                 log_error(f"Unknown processing method: {self.processing_method}")
                 raise ValueError(f"Unknown processing method: {self.processing_method}")
 
-            # Create TensorFlow dataset
-            log_action("Creating TensorFlow dataset")
+            # Calculate validation split
+            val_size = int(train_size * validation_split)
+            train_size = train_size - val_size
 
-            # Determine how many samples to use
-            if train_size is None or train_size >= encoded_data.shape[0]:
-                train_size = encoded_data.shape[0]
+            log_info(f"Creating training set with {train_size} samples")
+            log_info(f"Creating validation set with {val_size} samples")
 
-            # Create dataset
-            dataset = tf.data.Dataset.from_tensor_slices(encoded_data)
+            # Create TensorFlow datasets
+            log_action("Creating TensorFlow datasets")
 
-            # Shuffle and batch
-            dataset = dataset.shuffle(buffer_size).take(train_size).batch(batch_size)
+            # Split the data for training and validation
+            train_data = encoded_data[:train_size]
+            val_data = encoded_data[train_size : train_size + val_size]
+
+            # Create datasets
+            train_dataset = tf.data.Dataset.from_tensor_slices(train_data)
+            train_dataset = train_dataset.shuffle(buffer_size).batch(batch_size)
+
+            val_dataset = tf.data.Dataset.from_tensor_slices(val_data)
+            val_dataset = val_dataset.batch(batch_size)
+
+            # Save information about the preprocessing
+            self._save_metadata(
+                output_dir=output_dir,
+                collection_dir=collection_dir,
+                train_size=train_size,
+                val_size=val_size,
+                batch_size=batch_size,
+                buffer_size=buffer_size,
+                encoded_shape=encoded_data.shape,
+                processing_method=self.processing_method,
+            )
+
+            # Create result dictionary
+            result = {
+                "train_dataset": train_dataset,
+                "val_dataset": val_dataset,
+                "encoder_decoder": encoder_decoder,
+                "output_dir": output_dir,
+                "train_size": train_size,
+                "val_size": val_size,
+                "encoded_shape": encoded_data.shape,
+            }
 
             log_success(
-                f"Created dataset with {train_size} samples and batch size {batch_size}"
+                f"Created datasets with {train_size} training and {val_size} validation samples"
             )
+            log_info(f"Processed data saved to {output_dir}")
             end_section()
 
-            return dataset, encoder_decoder
+            return result
 
         except Exception as e:
             log_error(f"Error preprocessing collection: {str(e)}")
             end_section("Preprocessing failed")
             raise
 
+    def _save_metadata(
+        self,
+        output_dir: str,
+        collection_dir: str,
+        train_size: int,
+        val_size: int,
+        batch_size: int,
+        buffer_size: int,
+        encoded_shape: Tuple[int, ...],
+        processing_method: str,
+    ):
+        """Save metadata about the preprocessing"""
+        metadata = {
+            "timestamp": datetime.now().isoformat(),
+            "collection_dir": collection_dir,
+            "train_size": train_size,
+            "val_size": val_size,
+            "batch_size": batch_size,
+            "buffer_size": buffer_size,
+            "encoded_shape": [int(dim) for dim in encoded_shape],
+            "processing_method": processing_method,
+        }
+
+        # Convert to pretty JSON string
+        import json
+
+        metadata_str = json.dumps(metadata, indent=4)
+
+        # Save to file
+        metadata_path = os.path.join(output_dir, "preprocessing_metadata.json")
+        with open(metadata_path, "w") as f:
+            f.write(metadata_str)
+
+        log_success(f"Saved preprocessing metadata to {metadata_path}")
+
     def _plot_samples(
-        self, volumes: np.ndarray, materials: np.ndarray, n_samples: int = 3
+        self,
+        structures: np.ndarray,
+        colors: np.ndarray,
+        n_samples: int = 3,
+        output_dir: Optional[str] = None,
     ):
         """
         Plot random samples from the loaded data.
 
         Args:
-            volumes: Array of volumes
-            materials: Array of materials
+            structures: Array of structures
+            colors: Array of colors
             n_samples: Number of samples to plot
+            output_dir: Directory to save plots (optional)
         """
         begin_section(f"Plotting {n_samples} sample sculptures")
 
         try:
             # Get indices of random samples
             indices = random.sample(
-                range(volumes.shape[0]), min(n_samples, volumes.shape[0])
+                range(structures.shape[0]), min(n_samples, structures.shape[0])
             )
 
             # Plot each sample
@@ -747,9 +1048,18 @@ class Curator:
                     is_last=(i == len(indices) - 1),
                 )
 
+                # Create output path if saving
+                save_path = None
+                if output_dir:
+                    save_path = os.path.join(output_dir, f"sample_{idx:05d}.png")
+
                 # Plot the sculpture
                 self.visualizer.plot_sculpture(
-                    volumes[idx], materials[idx], title=f"Sample {idx}", hide_axis=True
+                    structure=structures[idx],
+                    colors=colors[idx],
+                    title=f"Sample {idx}",
+                    hide_axis=True,
+                    save_path=save_path,
                 )
 
             log_success(f"Plotted {n_samples} samples")
@@ -765,7 +1075,8 @@ class Curator:
         encoded_data: np.ndarray,
         encoder_decoder: Any,
         sample_index: int = 0,
-        original_materials: Optional[np.ndarray] = None,
+        original_colors: Optional[np.ndarray] = None,
+        save_dir: Optional[str] = None,
     ):
         """
         Visualize an encoded sample and optionally compare to original.
@@ -774,7 +1085,8 @@ class Curator:
             encoded_data: Encoded data array
             encoder_decoder: EncoderDecoder instance used for encoding
             sample_index: Index of the sample to visualize
-            original_materials: Original materials array for comparison
+            original_colors: Original colors array for comparison
+            save_dir: Directory to save visualizations (optional)
         """
         begin_section(f"Visualizing encoded sample {sample_index}")
 
@@ -782,24 +1094,37 @@ class Curator:
             # Get the encoded sample
             encoded_sample = encoded_data[sample_index]
 
+            # Create save paths if needed
+            decoded_save_path = None
+            original_save_path = None
+
+            if save_dir:
+                os.makedirs(save_dir, exist_ok=True)
+                decoded_save_path = os.path.join(
+                    save_dir, f"decoded_sample_{sample_index:05d}.png"
+                )
+                original_save_path = os.path.join(
+                    save_dir, f"original_sample_{sample_index:05d}.png"
+                )
+
             # Decode the sample
             if isinstance(encoder_decoder, OneHotEncoderDecoder):
                 # Decode the sample
-                volumes, decoded_materials = encoder_decoder.ohe_decode(
+                structures, decoded_colors = encoder_decoder.ohe_decode(
                     encoded_sample[np.newaxis, ...]
                 )
                 title = "One-Hot Encoded Sample"
 
             elif isinstance(encoder_decoder, BinaryEncoderDecoder):
                 # Decode the sample
-                volumes, decoded_materials = encoder_decoder.binary_decode(
+                structures, decoded_colors = encoder_decoder.binary_decode(
                     encoded_sample[np.newaxis, ...]
                 )
                 title = "Binary Encoded Sample"
 
             elif isinstance(encoder_decoder, RGBEncoderDecoder):
                 # Decode the sample
-                volumes, decoded_materials = encoder_decoder.rgb_decode(
+                structures, decoded_colors = encoder_decoder.rgb_decode(
                     encoded_sample[np.newaxis, ...]
                 )
                 title = "RGB Encoded Sample"
@@ -810,25 +1135,30 @@ class Curator:
 
             # Visualize the decoded sample (removing the batch dimension)
             self.visualizer.plot_sculpture(
-                volumes[0], decoded_materials[0], title=title, hide_axis=True
+                structure=structures[0],
+                colors=decoded_colors[0],
+                title=title,
+                hide_axis=True,
+                save_path=decoded_save_path,
             )
 
             # Plot the original for comparison if provided
-            if original_materials is not None:
-                original_sample = original_materials[sample_index]
+            if original_colors is not None:
+                original_sample = original_colors[sample_index]
 
-                # Create a volume array for the original
-                original_volume = np.zeros(original_sample.shape, dtype=np.int8)
+                # Create a structure array for the original
+                original_structure = np.zeros(original_sample.shape, dtype=np.int8)
                 for idx in np.ndindex(original_sample.shape):
                     if original_sample[idx] is not None:
-                        original_volume[idx] = 1
+                        original_structure[idx] = 1
 
                 # Visualize the original sample
                 self.visualizer.plot_sculpture(
-                    original_volume,
-                    original_sample,
+                    structure=original_structure,
+                    colors=original_sample,
                     title="Original Sample",
                     hide_axis=True,
+                    save_path=original_save_path,
                 )
 
             log_success(f"Visualized encoded sample {sample_index}")
@@ -842,56 +1172,52 @@ class Curator:
 
 # Example usage
 if __name__ == "__main__":
-    # Define paths to test data
+    # Find the most recent collection
     import os
+    from collector import Collector
 
-    # Check if the data directory and file exists
-    data_dir = "data"
-    timestamp = datetime.now().strftime("%Y-%m-%d")
-    volumes_path = os.path.join(data_dir, f"volume_data[{timestamp}]chunk[1].npy")
-    materials_path = os.path.join(data_dir, f"material_data[{timestamp}]chunk[1].npy")
+    # List available collections
+    base_dir = "data"
+    collections = Collector.list_available_collections(base_dir)
 
-    # If the files don't exist, create some test data
-    if not os.path.exists(volumes_path) or not os.path.exists(materials_path):
-        # Create a collector for test data
-        collector = Collector(
-            void_dim=20,
-            edges=(2, 0.2, 0.5),
-            planes=(1, 0.3, 0.5),
-            pipes=(1, 0.3, 0.5),
-            directory=data_dir,
-            chunk_size=10,
-            n_chunks=1,
-            verbose=True,
+    if not collections:
+        print("No collections found. Please generate some samples first.")
+    else:
+        # Use the most recent collection
+        latest_collection = collections[-1]
+        collection_path = os.path.join(base_dir, latest_collection)
+        print(f"Using collection: {latest_collection}")
+
+        # First demonstrate the new visualizer directly
+        from visualization import Visualizer
+
+        samples_dir = os.path.join(collection_path, "samples")
+        print(f"\nVisualizing random samples from {samples_dir}")
+
+        visualizer = Visualizer(figsize=10, dpi=100)
+        visualizer.visualize_samples_from_directory(
+            directory=samples_dir,
+            n_samples=3,
+            output_dir=os.path.join(
+                collection_path, "visualizations", "random_showcase"
+            ),
+            angles=[0, 1, 2, 3],  # Show all four angles
         )
 
-        # Generate a small collection
-        volumes, materials = collector.create_collection()
+        # Create a curator with each encoding method
+        for method in ["OHE", "BINARY", "RGB"]:
+            print(f"\nTesting {method} encoding")
+            curator = Curator(processing_method=method, verbose=True)
 
-        # Update paths to the actual files
-        for filename in os.listdir(data_dir):
-            if filename.startswith("volume_data") and filename.endswith(".npy"):
-                volumes_path = os.path.join(data_dir, filename)
-            elif filename.startswith("material_data") and filename.endswith(".npy"):
-                materials_path = os.path.join(data_dir, filename)
+            # Process the collection
+            result = curator.preprocess_collection(
+                collection_dir=collection_path,
+                batch_size=8,
+                train_size=20,  # Use a small subset for testing
+                plot_samples=2,
+            )
 
-    # Create curators with different processing methods
-    log_action("Testing One-Hot Encoding")
-    curator_ohe = Curator(processing_method="OHE", verbose=True)
-    dataset_ohe, encoder_ohe = curator_ohe.preprocess_collection(
-        volumes_path, materials_path, plot_samples=1, batch_size=4
-    )
-
-    log_action("Testing Binary Encoding")
-    curator_binary = Curator(processing_method="BINARY", verbose=True)
-    dataset_binary, encoder_binary = curator_binary.preprocess_collection(
-        volumes_path, materials_path, plot_samples=1, batch_size=4
-    )
-
-    log_action("Testing RGB Encoding")
-    curator_rgb = Curator(processing_method="RGB", verbose=True)
-    dataset_rgb, encoder_rgb = curator_rgb.preprocess_collection(
-        volumes_path, materials_path, plot_samples=1, batch_size=4
-    )
-
-    log_success("All encoding methods tested successfully")
+            print(
+                f"Created datasets with {result['train_size']} training and {result['val_size']} validation samples"
+            )
+            print(f"Output directory: {result['output_dir']}")

@@ -22,6 +22,10 @@ Used by:
 - collector.py: For batch generation of training data
 - visualization.py: For creating sample shapes to visualize
 
+Terminology:
+- structure: 3D numpy array representing the sculpture shape (formerly "void")
+- colors: 3D numpy array with color information (formerly "color_void")
+
 TODO:
 - Add support for curved and organic shapes
 - Implement more complex geometric primitives
@@ -66,34 +70,34 @@ class ShapeType(Enum):
 
 
 def attach_edge(
-    void: np.ndarray,
-    color_void: np.ndarray,
+    structure: np.ndarray,
+    colors: np.ndarray,
     element_edge_min_ratio: float = 0.1,
     element_edge_max_ratio: float = 0.9,
     step: int = 1,
-    colors: Optional[Dict[str, Any]] = None,
+    colors_dict: Optional[Dict[str, Any]] = None,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Attach an edge (1D line) to the void.
+    Attach an edge (1D line) to the structure.
 
     Args:
-        void: 3D array representing the void space
-        color_void: 3D array with color information
+        structure: 3D array representing the structure space
+        colors: 3D array with color information
         element_edge_min_ratio: Minimum edge size ratio
         element_edge_max_ratio: Maximum edge size ratio
         step: Step size for edge dimensions
-        colors: Dictionary of colors for different shape types
+        colors_dict: Dictionary of colors for different shape types
         verbose: Whether to print detailed information
 
     Returns:
-        Updated void and color_void arrays
+        Updated structure and colors arrays
     """
     begin_section("Attaching edge (1D line)")
 
     try:
-        if colors is None:
-            colors = {"edges": "red"}
+        if colors_dict is None:
+            colors_dict = {"edges": "red"}
 
         # Select a random axis (0, 1, or 2)
         axis = random.randint(0, 2)
@@ -101,12 +105,12 @@ def attach_edge(
 
         # Generate edge size
         edge_size = generate_random_size(
-            element_edge_min_ratio, element_edge_max_ratio, void.shape[axis], step
+            element_edge_min_ratio, element_edge_max_ratio, structure.shape[axis], step
         )
         log_info(f"Edge size: {edge_size}")
 
         # Select edge position
-        edge_position = select_random_position(void.shape[axis], edge_size)
+        edge_position = select_random_position(structure.shape[axis], edge_size)
         log_info(f"Edge position on axis {axis}: {edge_position}")
 
         # Create the position indices for the edge
@@ -116,7 +120,7 @@ def attach_edge(
         # For the other two axes, select random positions
         other_axes = [i for i in range(3) if i != axis]
         for i in other_axes:
-            position[i] = random.randint(0, void.shape[i] - 1)
+            position[i] = random.randint(0, structure.shape[i] - 1)
 
         # Log position information
         pos_info = [
@@ -126,19 +130,19 @@ def attach_edge(
         log_info(f"Edge position indices: {pos_info}")
 
         # Select color
-        edge_color = select_random_color(colors["edges"])
+        edge_color = select_random_color(colors_dict["edges"])
         log_info(f"Selected color: {edge_color}")
 
-        # Insert the edge into the void
-        void[tuple(position)] = 1
+        # Insert the edge into the structure
+        structure[tuple(position)] = 1
 
         # Assign color
-        color_void[tuple(position)] = edge_color
+        colors[tuple(position)] = edge_color
 
         log_success("Edge attached successfully")
         end_section()
 
-        return void.astype("int8"), color_void
+        return structure.astype("int8"), colors
 
     except Exception as e:
         log_error(f"Error attaching edge: {str(e)}")
@@ -147,42 +151,42 @@ def attach_edge(
 
 
 def attach_plane(
-    void: np.ndarray,
-    color_void: np.ndarray,
+    structure: np.ndarray,
+    colors: np.ndarray,
     element_plane_min_ratio: float = 0.1,
     element_plane_max_ratio: float = 0.9,
     step: int = 1,
-    colors: Optional[Dict[str, Any]] = None,
+    colors_dict: Optional[Dict[str, Any]] = None,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Attach a plane (2D surface) to the void.
+    Attach a plane (2D surface) to the structure.
 
     Args:
-        void: 3D array representing the void space
-        color_void: 3D array with color information
+        structure: 3D array representing the structure space
+        colors: 3D array with color information
         element_plane_min_ratio: Minimum plane size ratio
         element_plane_max_ratio: Maximum plane size ratio
         step: Step size for plane dimensions
-        colors: Dictionary of colors for different shape types
+        colors_dict: Dictionary of colors for different shape types
         verbose: Whether to print detailed information
 
     Returns:
-        Updated void and color_void arrays
+        Updated structure and colors arrays
     """
     begin_section("Attaching plane (2D surface)")
 
     try:
-        if colors is None:
-            colors = {"planes": "green"}
+        if colors_dict is None:
+            colors_dict = {"planes": "green"}
 
         # Get a random working plane and its color parameters
-        working_plane, color_parameters, section = return_axis(void, color_void)
+        working_plane, color_parameters, section = return_axis(structure, colors)
         log_info(f"Working on plane with shape {working_plane.shape}")
 
         # Calculate size constraints
-        element_plane_min_index = int(element_plane_min_ratio * void.shape[0])
-        element_plane_max = int(element_plane_max_ratio * void.shape[0])
+        element_plane_min_index = int(element_plane_min_ratio * structure.shape[0])
+        element_plane_max = int(element_plane_max_ratio * structure.shape[0])
 
         # Create the element to be inserted (a rectangular plane)
         element = np.ones(
@@ -190,13 +194,13 @@ def attach_plane(
                 generate_random_size(
                     element_plane_min_ratio,
                     element_plane_max_ratio,
-                    void.shape[0],
+                    structure.shape[0],
                     step,
                 ),
                 generate_random_size(
                     element_plane_min_ratio,
                     element_plane_max_ratio,
-                    void.shape[1],
+                    structure.shape[1],
                     step,
                 ),
             )
@@ -210,7 +214,7 @@ def attach_plane(
         if np.any(delta < 0):
             log_warning("Plane too large for working plane, skipping")
             end_section("Plane attachment skipped")
-            return void, color_void
+            return structure, colors
 
         # Find random position for top-left corner
         top_left_corner = np.array(
@@ -228,7 +232,7 @@ def attach_plane(
         )
 
         # Select color
-        plane_color = select_random_color(colors["planes"])
+        plane_color = select_random_color(colors_dict["planes"])
         log_info(f"Selected color: {plane_color}")
 
         # Insert the plane into the working plane
@@ -246,7 +250,7 @@ def attach_plane(
         log_success("Plane attached successfully")
         end_section()
 
-        return void.astype("int8"), color_void
+        return structure.astype("int8"), colors
 
     except Exception as e:
         log_error(f"Error attaching plane: {str(e)}")
@@ -255,58 +259,58 @@ def attach_plane(
 
 
 def attach_pipe(
-    void: np.ndarray,
-    color_void: np.ndarray,
+    structure: np.ndarray,
+    colors: np.ndarray,
     element_volume_min_ratio: float = 0.1,
     element_volume_max_ratio: float = 0.9,
     step: int = 1,
-    colors: Optional[Dict[str, Any]] = None,
+    colors_dict: Optional[Dict[str, Any]] = None,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Attach a pipe (hollow 3D structure) to the void.
+    Attach a pipe (hollow 3D structure) to the structure.
 
     Args:
-        void: 3D array representing the void space
-        color_void: 3D array with color information
+        structure: 3D array representing the structure space
+        colors: 3D array with color information
         element_volume_min_ratio: Minimum volume size ratio
         element_volume_max_ratio: Maximum volume size ratio
         step: Step size for volume dimensions
-        colors: Dictionary of colors for different shape types
+        colors_dict: Dictionary of colors for different shape types
         verbose: Whether to print detailed information
 
     Returns:
-        Updated void and color_void arrays
+        Updated structure and colors arrays
     """
     begin_section("Attaching pipe (hollow 3D structure)")
 
     try:
-        if colors is None:
-            colors = {"pipes": ["blue", "cyan", "magenta"]}
+        if colors_dict is None:
+            colors_dict = {"pipes": ["blue", "cyan", "magenta"]}
 
         # Generate random dimensions for the pipe
         width = generate_random_size(
-            element_volume_min_ratio, element_volume_max_ratio, void.shape[0], step
+            element_volume_min_ratio, element_volume_max_ratio, structure.shape[0], step
         )
         height = generate_random_size(
-            element_volume_min_ratio, element_volume_max_ratio, void.shape[1], step
+            element_volume_min_ratio, element_volume_max_ratio, structure.shape[1], step
         )
         depth = generate_random_size(
-            element_volume_min_ratio, element_volume_max_ratio, void.shape[2], step
+            element_volume_min_ratio, element_volume_max_ratio, structure.shape[2], step
         )
 
         log_info(f"Pipe dimensions: width={width}, height={height}, depth={depth}")
 
-        # Check if dimensions fit within void
-        if not validate_dimensions([width, height, depth], void.shape):
-            log_warning("Pipe dimensions too large for void, skipping")
+        # Check if dimensions fit within structure
+        if not validate_dimensions([width, height, depth], structure.shape):
+            log_warning("Pipe dimensions too large for structure, skipping")
             end_section("Pipe attachment skipped")
-            return void, color_void
+            return structure, colors
 
         # Select random position for the pipe
-        x_pos = select_random_position(void.shape[0], width)
-        y_pos = select_random_position(void.shape[1], height)
-        z_pos = select_random_position(void.shape[2], depth)
+        x_pos = select_random_position(structure.shape[0], width)
+        y_pos = select_random_position(structure.shape[1], height)
+        z_pos = select_random_position(structure.shape[2], depth)
 
         log_info(f"Pipe position: x={x_pos}, y={y_pos}, z={z_pos}")
 
@@ -319,7 +323,7 @@ def attach_pipe(
         )
 
         # Select color
-        pipe_color = select_random_color(colors["pipes"])
+        pipe_color = select_random_color(colors_dict["pipes"])
         log_info(f"Selected color: {pipe_color}")
 
         # Create the corner coordinates
@@ -333,11 +337,11 @@ def attach_pipe(
         corner_8 = np.array((x_pos + width, y_pos + height, z_pos + depth))
 
         # Create floor and ceiling
-        void[x_pos : x_pos + width, y_pos : y_pos + height, z_pos] = 1
-        color_void[x_pos : x_pos + width, y_pos : y_pos + height, z_pos] = pipe_color
+        structure[x_pos : x_pos + width, y_pos : y_pos + height, z_pos] = 1
+        colors[x_pos : x_pos + width, y_pos : y_pos + height, z_pos] = pipe_color
 
-        void[x_pos : x_pos + width, y_pos : y_pos + height, z_pos + depth - 1] = 1
-        color_void[
+        structure[x_pos : x_pos + width, y_pos : y_pos + height, z_pos + depth - 1] = 1
+        colors[
             x_pos : x_pos + width, y_pos : y_pos + height, z_pos + depth - 1
         ] = pipe_color
 
@@ -345,64 +349,58 @@ def attach_pipe(
         if shape_selection == 0:
             if axis_selection == 0:
                 # First wall
-                void[x_pos, y_pos : y_pos + height, z_pos : z_pos + depth] = 1
-                color_void[
+                structure[x_pos, y_pos : y_pos + height, z_pos : z_pos + depth] = 1
+                colors[
                     x_pos, y_pos : y_pos + height, z_pos : z_pos + depth
                 ] = pipe_color
 
                 # Second wall
-                void[
+                structure[
                     x_pos + width - 1, y_pos : y_pos + height, z_pos : z_pos + depth
                 ] = 1
-                color_void[
+                colors[
                     x_pos + width - 1, y_pos : y_pos + height, z_pos : z_pos + depth
                 ] = pipe_color
             else:
                 # First wall
-                void[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = 1
-                color_void[
-                    x_pos : x_pos + width, y_pos, z_pos : z_pos + depth
-                ] = pipe_color
+                structure[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = 1
+                colors[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = pipe_color
 
                 # Second wall
-                void[
+                structure[
                     x_pos : x_pos + width, y_pos + height - 1, z_pos : z_pos + depth
                 ] = 1
-                color_void[
+                colors[
                     x_pos : x_pos + width, y_pos + height - 1, z_pos : z_pos + depth
                 ] = pipe_color
         else:
             if axis_selection == 0:
                 # First wall
-                void[x_pos, y_pos : y_pos + height, z_pos : z_pos + depth] = 1
-                color_void[
+                structure[x_pos, y_pos : y_pos + height, z_pos : z_pos + depth] = 1
+                colors[
                     x_pos, y_pos : y_pos + height, z_pos : z_pos + depth
                 ] = pipe_color
 
                 # Second wall
-                void[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = 1
-                color_void[
-                    x_pos : x_pos + width, y_pos, z_pos : z_pos + depth
-                ] = pipe_color
+                structure[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = 1
+                colors[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = pipe_color
             else:
                 # First wall
-                void[
+                structure[
                     x_pos + width - 1, y_pos : y_pos + height, z_pos : z_pos + depth
                 ] = 1
-                color_void[
+                colors[
                     x_pos + width - 1, y_pos : y_pos + height, z_pos : z_pos + depth
                 ] = pipe_color
 
                 # Second wall
-                void[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = 1
-                color_void[
-                    x_pos : x_pos + width, y_pos, z_pos : z_pos + depth
-                ] = pipe_color
+                structure[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = 1
+                colors[x_pos : x_pos + width, y_pos, z_pos : z_pos + depth] = pipe_color
 
         log_success("Pipe attached successfully")
         end_section()
 
-        return void.astype("int8"), color_void
+        return structure.astype("int8"), colors
 
     except Exception as e:
         log_error(f"Error attaching pipe: {str(e)}")
@@ -411,44 +409,44 @@ def attach_pipe(
 
 
 def attach_grid(
-    void: np.ndarray,
-    color_void: np.ndarray,
+    structure: np.ndarray,
+    colors: np.ndarray,
     step: int = 1,
-    colors: Optional[Dict[str, Any]] = None,
+    colors_dict: Optional[Dict[str, Any]] = None,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Attach a grid structure to the void.
+    Attach a grid structure to the structure.
 
     Args:
-        void: 3D array representing the void space
-        color_void: 3D array with color information
+        structure: 3D array representing the structure space
+        colors: 3D array with color information
         step: Step size for grid spacing
-        colors: Dictionary of colors for different shape types
+        colors_dict: Dictionary of colors for different shape types
         verbose: Whether to print detailed information
 
     Returns:
-        Updated void and color_void arrays
+        Updated structure and colors arrays
     """
     begin_section("Attaching grid structure")
 
     try:
-        if colors is None:
-            colors = {"edges": "red"}
+        if colors_dict is None:
+            colors_dict = {"edges": "red"}
 
-        void_dim = void.shape[0]
-        log_info(f"Creating grid in void of dimension {void_dim}")
+        structure_dim = structure.shape[0]
+        log_info(f"Creating grid in structure of dimension {structure_dim}")
 
         # Calculate grid positions
         locations = []
 
-        if void_dim % 2 == 0:
-            left_position = void_dim / 2 - (step / 2)
+        if structure_dim % 2 == 0:
+            left_position = structure_dim / 2 - (step / 2)
             right_position = left_position + (step + 1)
             locations.append(int(left_position))
             locations.append(int(right_position))
 
-            while left_position > 0 and right_position < (void_dim - (step + 1)):
+            while left_position > 0 and right_position < (structure_dim - (step + 1)):
                 left_position = left_position - (step + 1)
                 right_position = right_position + (step + 1)
                 locations.append(int(left_position))
@@ -463,28 +461,28 @@ def attach_grid(
 
         # Generate random heights for grid columns
         Z = np.random.randint(
-            low=void_dim // 4, high=void_dim // 2, size=(len(X), len(Y))
+            low=structure_dim // 4, high=structure_dim // 2, size=(len(X), len(Y))
         )
 
         # Create grid columns
         for i, x in enumerate(X):
             for j, y in enumerate(Y):
                 height = Z[i, j]
-                void[x, y, 0:height] = 1
-                color_void[x, y, 0:height] = select_random_color(colors["edges"])
+                structure[x, y, 0:height] = 1
+                colors[x, y, 0:height] = select_random_color(colors_dict["edges"])
                 log_info(
                     f"Created column at x={x}, y={y} with height={height}",
                     is_last=(i == len(X) - 1 and j == len(Y) - 1),
                 )
 
         # Create a base (floor)
-        void[:, :, 0] = 1
-        color_void[void[:, :, 0] == 1] = select_random_color(colors["edges"])
+        structure[:, :, 0] = 1
+        colors[structure[:, :, 0] == 1] = select_random_color(colors_dict["edges"])
 
         log_success(f"Grid created with {len(X) * len(Y)} columns")
         end_section()
 
-        return void.astype("int8"), color_void
+        return structure.astype("int8"), colors
 
     except Exception as e:
         log_error(f"Error attaching grid: {str(e)}")
@@ -493,36 +491,36 @@ def attach_grid(
 
 
 def attach_shape(
-    void: np.ndarray,
-    color_void: np.ndarray,
+    structure: np.ndarray,
+    colors: np.ndarray,
     shape_type: ShapeType,
     min_ratio: float = 0.1,
     max_ratio: float = 0.9,
     step: int = 1,
-    colors: Optional[Dict[str, Any]] = None,
+    colors_dict: Optional[Dict[str, Any]] = None,
     verbose: bool = False,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Generic function to attach any type of shape to the void.
+    Generic function to attach any type of shape to the structure.
 
     Args:
-        void: 3D array representing the void space
-        color_void: 3D array with color information
+        structure: 3D array representing the structure space
+        colors: 3D array with color information
         shape_type: Type of shape to attach (from ShapeType enum)
         min_ratio: Minimum size ratio
         max_ratio: Maximum size ratio
         step: Step size for dimensions
-        colors: Dictionary of colors for different shape types
+        colors_dict: Dictionary of colors for different shape types
         verbose: Whether to print detailed information
 
     Returns:
-        Updated void and color_void arrays
+        Updated structure and colors arrays
     """
     begin_section(f"Attaching {shape_type.name.lower()} shape")
 
     try:
-        if colors is None:
-            colors = {
+        if colors_dict is None:
+            colors_dict = {
                 "edges": "red",
                 "planes": "green",
                 "pipes": ["blue", "cyan", "magenta"],
@@ -532,21 +530,21 @@ def attach_shape(
         # Call the appropriate shape function based on type
         if shape_type == ShapeType.EDGE:
             result = attach_edge(
-                void, color_void, min_ratio, max_ratio, step, colors, verbose
+                structure, colors, min_ratio, max_ratio, step, colors_dict, verbose
             )
         elif shape_type == ShapeType.PLANE:
             result = attach_plane(
-                void, color_void, min_ratio, max_ratio, step, colors, verbose
+                structure, colors, min_ratio, max_ratio, step, colors_dict, verbose
             )
         elif shape_type == ShapeType.PIPE:
             result = attach_pipe(
-                void, color_void, min_ratio, max_ratio, step, colors, verbose
+                structure, colors, min_ratio, max_ratio, step, colors_dict, verbose
             )
         elif shape_type == ShapeType.VOLUME:
             # For volume, we could implement a solid 3D shape
             log_warning("Volume attachment not implemented, using pipe instead")
             result = attach_pipe(
-                void, color_void, min_ratio, max_ratio, step, colors, verbose
+                structure, colors, min_ratio, max_ratio, step, colors_dict, verbose
             )
         else:
             log_error(f"Unknown shape type: {shape_type}")
@@ -566,70 +564,74 @@ def attach_shape(
 
 # Example usage when run as main script
 if __name__ == "__main__":
-    # Create a void and color void
-    void_dim = 20
-    void = np.zeros((void_dim, void_dim, void_dim))
-    color_void = np.empty(void.shape, dtype=object)
+    # Create a structure and colors
+    structure_dim = 20
+    structure = np.zeros((structure_dim, structure_dim, structure_dim))
+    colors = np.empty(structure.shape, dtype=object)
 
-    # Define colors
-    colors = {"edges": "red", "planes": "green", "pipes": ["blue", "cyan", "magenta"]}
+    # Define colors dictionary
+    colors_dict = {
+        "edges": "red",
+        "planes": "green",
+        "pipes": ["blue", "cyan", "magenta"],
+    }
 
     # Test edge attachment
-    void, color_void = attach_edge(
-        void.copy(),
-        color_void.copy(),
+    structure, colors = attach_edge(
+        structure.copy(),
+        colors.copy(),
         element_edge_min_ratio=0.2,
         element_edge_max_ratio=0.5,
         step=2,
-        colors=colors,
+        colors_dict=colors_dict,
         verbose=True,
     )
 
-    log_info(f"Edge test complete. Filled voxels: {np.sum(void > 0)}")
+    log_info(f"Edge test complete. Filled voxels: {np.sum(structure > 0)}")
 
     # Test plane attachment
-    void, color_void = attach_plane(
-        void.copy(),
-        color_void.copy(),
+    structure, colors = attach_plane(
+        structure.copy(),
+        colors.copy(),
         element_plane_min_ratio=0.3,
         element_plane_max_ratio=0.6,
         step=2,
-        colors=colors,
+        colors_dict=colors_dict,
         verbose=True,
     )
 
-    log_info(f"Plane test complete. Filled voxels: {np.sum(void > 0)}")
+    log_info(f"Plane test complete. Filled voxels: {np.sum(structure > 0)}")
 
     # Test pipe attachment
-    void, color_void = attach_pipe(
-        void.copy(),
-        color_void.copy(),
+    structure, colors = attach_pipe(
+        structure.copy(),
+        colors.copy(),
         element_volume_min_ratio=0.4,
         element_volume_max_ratio=0.7,
         step=2,
-        colors=colors,
+        colors_dict=colors_dict,
         verbose=True,
     )
 
-    log_info(f"Pipe test complete. Filled voxels: {np.sum(void > 0)}")
+    log_info(f"Pipe test complete. Filled voxels: {np.sum(structure > 0)}")
 
     # Test grid attachment
-    void, color_void = attach_grid(
-        void.copy(), color_void.copy(), step=4, colors=colors, verbose=True
+    structure, colors = attach_grid(
+        structure.copy(), colors.copy(), step=4, colors_dict=colors_dict, verbose=True
     )
 
-    log_info(f"Grid test complete. Filled voxels: {np.sum(void > 0)}")
+    log_info(f"Grid test complete. Filled voxels: {np.sum(structure > 0)}")
 
     # Test generic shape attachment
-    void, color_void = attach_shape(
-        void.copy(),
-        color_void.copy(),
+    structure, colors = attach_shape(
+        structure.copy(),
+        colors.copy(),
         ShapeType.EDGE,
         min_ratio=0.2,
         max_ratio=0.5,
         step=2,
-        colors=colors,
+        colors_dict=colors_dict,
         verbose=True,
     )
 
-    log_info(f"Generic shape test complete. Filled voxels: {np.sum(void > 0)}")
+    log_info(f"Generic shape test complete. Filled voxels: {np.sum(structure > 0)}")
