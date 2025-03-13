@@ -1,1 +1,5 @@
 include requirements.txt
+include setup.py
+recursive-include deepSculpt *.py
+recursive-include tests *.py
+recursive-include scripts *
