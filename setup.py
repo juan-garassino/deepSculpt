@@ -1,11 +1,28 @@
 from setuptools import find_packages
 from setuptools import setup
-import os
 
 # Read the requirements from requirements.txt
-with open('requirements.txt') as f:
-    content = f.readlines()
-requirements = [x.strip() for x in content if 'git+' not in x]
+try:
+    with open('requirements.txt') as f:
+        content = f.readlines()
+    requirements = [x.strip() for x in content if 'git+' not in x and not x.startswith('#')]
+
+except FileNotFoundError:
+    # Fallback if requirements.txt is missing
+    requirements = [
+        'numpy>=1.19.5',
+        'tensorflow>=2.6.0',
+        'matplotlib>=3.4.0',
+        'scikit-learn==1.0.0',
+        'colorama>=0.4.4',
+        'google-cloud-bigquery<3.0.0',
+        'google-cloud-storage>=2.0.0',
+        'mlflow==1.27.0',
+        'imageio>=2.9.0',
+        'scipy>=1.7.0',
+        'plotly>=5.0.0',
+        'nbformat>=5.1.0',
+    ]
 
 setup(
     name='deepSculpt',
@@ -27,10 +44,15 @@ setup(
     
     # Testing
     test_suite='tests',
-    tests_require=[
-        'pytest',
-        'pytest-cov',
-    ],
+    
+    # Define extras for optional dependencies
+    extras_require={
+        'dev': [
+            'black>=22.0.0',
+            'ipykernel>=6.0.0',
+            'pytest>=6.2.5',
+        ],
+    },
     
     # Metadata
     keywords='deep-learning, 3d-generation, tensorflow, gan',

@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "deepsculpt"
+version = "0.1.0"
+description = ""
+authors = ["Juan Garassino <juan.garassino@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = ">=1.19.5"
+tensorflow = ">=2.6.0"
+black = ">=22.0.0"
+ipykernel = ">=6.0.0"
+matplotlib = ">=3.4.0"
+scikit-learn = ">=1.0.0"
+colorama = ">=0.4.4"
+google-cloud-bigquery = "<3.0.0"
+google-cloud-storage = ">=2.0.0"
+mlflow = "1.27.0"
+imageio = ">=2.9.0"
+scipy = ">=1.7.0"
+plotly = ">=5.0.0"
+nbformat = ">=5.1.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
