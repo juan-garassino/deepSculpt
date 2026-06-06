@@ -12,7 +12,7 @@ import shutil
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from deepSculpt.pytorch_trainer import (
+from deepsculpt.core.training.gan_trainer import (
     TrainingConfig, BaseTrainer, GANTrainer, DiffusionTrainer,
     NoiseScheduler, EarlyStopping, ModelCheckpointManager,
     TrainingMonitor, HyperparameterTuner, DistributedTrainingManager,

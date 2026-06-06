@@ -11,7 +11,7 @@ import os
 from unittest.mock import patch, MagicMock
 
 # Import the classes to test
-from deepSculpt.pytorch_utils import PyTorchUtils, MemoryOptimizer, MemoryProfiler
+from deepsculpt.core.utils.pytorch_utils import PyTorchUtils, MemoryOptimizer, MemoryProfiler
 
 
 class TestPyTorchUtils:

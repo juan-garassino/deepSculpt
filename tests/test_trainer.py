@@ -3,8 +3,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.training.pytorch_trainer import GANTrainer
-from core.training.base_trainer import TrainingConfig
+from deepsculpt.core.training.pytorch_trainer import GANTrainer
+from deepsculpt.core.training.base_trainer import TrainingConfig
 
 print(f"GANTrainer class: {GANTrainer}")
 print(f"Has train method: {hasattr(GANTrainer, 'train')}")

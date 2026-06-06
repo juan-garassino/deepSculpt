@@ -16,8 +16,8 @@ from typing import Tuple, Dict, Any
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'deepSculpt'))
 
-from pytorch_sculptor import PyTorchSculptor, create_pytorch_sculptor
-from pytorch_shapes import ShapeType, SparseTensorHandler
+from deepsculpt.core.data.generation.pytorch_sculptor import PyTorchSculptor, create_pytorch_sculptor
+from deepsculpt.core.data.generation.pytorch_shapes import ShapeType, SparseTensorHandler
 from sculptor import Sculptor  # Original implementation for comparison
 
 

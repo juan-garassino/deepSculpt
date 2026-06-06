@@ -6,7 +6,7 @@ from pathlib import Path
 # Add the current directory to Python path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.models.model_factory import PyTorchModelFactory
+from deepsculpt.core.models.model_factory import PyTorchModelFactory
 
 def test_factory():
     print("Testing PyTorchModelFactory...")

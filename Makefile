@@ -71,7 +71,7 @@ ifeq ($(GPU),h100)
   NUM_WORKERS := 4
 endif
 
-.PHONY: colab-train-mono colab-train-color colab-train-diffusion colab-train-diffusion-color autoresearch-build
+.PHONY: colab-train-mono colab-train-color colab-train-diffusion colab-train-diffusion-color
 
 colab-train-mono:
 	python scripts/colab_train.py \
@@ -174,9 +174,6 @@ colab-train-diffusion-color:
 		--num-workers "$(NUM_WORKERS)" \
 		--ema-decay "$(EMA_DECAY)" \
 		--color
-
-autoresearch-build:
-	docker build -f autoresearch/Dockerfile -t deepsculpt-autoresearch .
 
 # ----------------------------------
 #          INSTALL & TEST

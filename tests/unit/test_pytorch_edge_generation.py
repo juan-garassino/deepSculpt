@@ -12,7 +12,7 @@ import os
 # Add the deepSculpt module to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'deepSculpt'))
 
-from pytorch_shapes import attach_edge_pytorch, attach_edges_batch_pytorch, SparseTensorHandler
+from deepsculpt.core.data.generation.pytorch_shapes import attach_edge_pytorch, attach_edges_batch_pytorch, SparseTensorHandler
 from shapes import attach_edge
 
 

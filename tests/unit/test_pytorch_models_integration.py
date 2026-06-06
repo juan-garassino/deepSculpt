@@ -10,7 +10,7 @@ import os
 # Add the deepSculpt module to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from deepSculpt.pytorch_models import (
+from deepsculpt.core.models.pytorch_models import (
     PyTorchModelFactory, ModelUtils, create_generator, create_discriminator
 )
 

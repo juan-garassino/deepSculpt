@@ -19,10 +19,10 @@ from unittest.mock import patch, MagicMock
 import logging
 
 # Import DeepSculpt v2.0 modules
-from core.utils.logger import PyTorchLogger
-from core.workflow.pytorch_workflow import PyTorchWorkflowManager
-from core.models.model_factory import PyTorchModelFactory
-from core.data.generation.pytorch_collector import PyTorchCollector
+from deepsculpt.core.utils.logger import PyTorchLogger
+from deepsculpt.core.workflow.pytorch_workflow import PyTorchWorkflowManager
+from deepsculpt.core.models.model_factory import PyTorchModelFactory
+from deepsculpt.core.data.generation.pytorch_collector import PyTorchCollector
 
 
 class TestSystemLevel:

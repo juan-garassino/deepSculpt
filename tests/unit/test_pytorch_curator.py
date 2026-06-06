@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from deepSculpt.pytorch_curator import (
+from deepsculpt.core.data.transforms.pytorch_curator import (
     PyTorchOneHotEncoderDecoder,
     PyTorchBinaryEncoderDecoder,
     PyTorchRGBEncoderDecoder,

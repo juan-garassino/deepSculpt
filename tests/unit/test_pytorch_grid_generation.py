@@ -12,7 +12,7 @@ import os
 # Add the deepSculpt module to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'deepSculpt'))
 
-from pytorch_shapes import (
+from deepsculpt.core.data.generation.pytorch_shapes import (
     attach_grid_pytorch, 
     attach_grids_batch_pytorch,
     create_procedural_grid_pytorch,

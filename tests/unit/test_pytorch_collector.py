@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock
 # Add the deepSculpt module to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'deepSculpt'))
 
-from pytorch_collector import (
+from deepsculpt.core.data.generation.pytorch_collector import (
     PyTorchCollector,
     StreamingDataset,
     MemoryMonitor,

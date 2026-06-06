@@ -12,7 +12,7 @@ import os
 # Add the deepSculpt module to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'deepSculpt'))
 
-from pytorch_shapes import (
+from deepsculpt.core.data.generation.pytorch_shapes import (
     attach_pipe_pytorch, 
     attach_pipes_batch_pytorch,
     validate_pipe_dimensions_pytorch,

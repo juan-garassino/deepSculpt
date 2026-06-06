@@ -16,14 +16,14 @@ import time
 from typing import Dict, Any, List
 
 # Import DeepSculpt v2.0 modules
-from core.data.generation.pytorch_collector import PyTorchCollector
-from core.data.generation.pytorch_sculptor import PyTorchSculptor
-from core.data.transforms.pytorch_curator import PyTorchCurator
-from core.models.model_factory import PyTorchModelFactory
-from core.training.pytorch_trainer import GANTrainer
-from core.training.diffusion_trainer import DiffusionTrainer
-from core.visualization.pytorch_visualization import PyTorchVisualizer
-from core.utils.pytorch_utils import PyTorchUtils
+from deepsculpt.core.data.generation.pytorch_collector import PyTorchCollector
+from deepsculpt.core.data.generation.pytorch_sculptor import PyTorchSculptor
+from deepsculpt.core.data.transforms.pytorch_curator import PyTorchCurator
+from deepsculpt.core.models.model_factory import PyTorchModelFactory
+from deepsculpt.core.training.pytorch_trainer import GANTrainer
+from deepsculpt.core.training.diffusion_trainer import DiffusionTrainer
+from deepsculpt.core.visualization.pytorch_visualization import PyTorchVisualizer
+from deepsculpt.core.utils.pytorch_utils import PyTorchUtils
 
 
 class TestEndToEndPipeline:

@@ -22,7 +22,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from deepSculpt.pytorch_models import (
+from deepsculpt.core.models.pytorch_models import (
     SinusoidalPositionEmbedding,
     TimeEmbedding,
     ResidualBlock3D,
