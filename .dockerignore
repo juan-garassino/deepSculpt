@@ -1,0 +1,43 @@
+.git
+.gitignore
+.github
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.deepeval
+.DS_Store
+.env
+.env.docker
+.env.local
+
+# Large generated content — pulled from GCS at runtime, not baked into image
+data/
+notebooks/notebook_output/
+checkpoints/
+results/
+workspace/
+
+# Docs and notebooks aren't needed in the runtime image
+docs/
+notebooks/
+*.md
+!runpod/prompts/*.md
+!CLAUDE.md
+
+# Boilerplate / legacy
+boilerplate/
+
+# Local dev helpers
+resume
+sample_preview.png
+script.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo

@@ -94,19 +94,19 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 # Import DeepSculpt v2.0 modules
 try:
-    from core.models.model_factory import PyTorchModelFactory as PyTorchModelFactoryV2
-    from core.models.pytorch_models import *
-    from core.training.gan_trainer import GANTrainer
-    from core.training.diffusion_trainer import DiffusionTrainer
-    from core.training.base_trainer import BaseTrainer, TrainingConfig
-    from core.data.generation.pytorch_collector import PyTorchCollector
-    from core.data.generation.pytorch_sculptor import PyTorchSculptor
-    from core.data.transforms.pytorch_curator import PyTorchCurator
-    from core.data.loaders.data_loaders import StreamingDataLoader
-    from core.visualization.pytorch_visualization import PyTorchVisualizer
-    from core.workflow.pytorch_workflow import PyTorchWorkflowManager
-    from core.utils.pytorch_utils import PyTorchUtils
-    from core.utils.logger import RichLogger
+    from deepsculpt.core.models.model_factory import PyTorchModelFactory as PyTorchModelFactoryV2
+    from deepsculpt.core.models.pytorch_models import *
+    from deepsculpt.core.training.gan_trainer import GANTrainer
+    from deepsculpt.core.training.diffusion_trainer import DiffusionTrainer
+    from deepsculpt.core.training.base_trainer import BaseTrainer, TrainingConfig
+    from deepsculpt.core.data.generation.pytorch_collector import PyTorchCollector
+    from deepsculpt.core.data.generation.pytorch_sculptor import PyTorchSculptor
+    from deepsculpt.core.data.transforms.pytorch_curator import PyTorchCurator
+    from deepsculpt.core.data.loaders.data_loaders import StreamingDataLoader
+    from deepsculpt.core.visualization.pytorch_visualization import PyTorchVisualizer
+    from deepsculpt.core.workflow.pytorch_workflow import PyTorchWorkflowManager
+    from deepsculpt.core.utils.pytorch_utils import PyTorchUtils
+    from deepsculpt.core.utils.logger import RichLogger
     
 except ImportError as e:
     print(f"Error importing DeepSculpt v2.0 modules: {e}")

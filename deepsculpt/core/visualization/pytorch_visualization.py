@@ -41,7 +41,7 @@ except ImportError:
     TORCH_AVAILABLE = False
     torch = None
 
-from core.utils.logger import (
+from deepsculpt.core.utils.logger import (
     begin_section,
     end_section,
     log_action,

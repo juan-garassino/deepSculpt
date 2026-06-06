@@ -72,7 +72,7 @@ import torch
 from enum import Enum
 from typing import Tuple, List, Dict, Any, Optional, Union
 
-from core.utils.logger import (
+from deepsculpt.core.utils.logger import (
     begin_section,
     end_section,
     log_action,
@@ -690,25 +690,29 @@ class PyTorchSculptor:
             pipe_start = max(0, slab_margin - 1)
             pipe_end = min(self.void_dim, self.void_dim - slab_margin + 1)
 
-            # 3 pipes: red, blue, yellow — orthogonal, different levels
-            # One spans 1 gap, two span 2 gaps. Alternate x/y axes.
+            # 3 pipes: red, blue, yellow — orthogonal, intercepting.
+            # Two pipes share the same z-level but run x vs y → they intersect.
+            # Third pipe at a different level for variety.
             pipe_colors_list = ["red", "blue", "yellow"]
             pipe_configs = []  # (axis, gap_start_idx, num_gaps)
 
-            if len(gaps) >= 3:
-                # Spread across gaps: pipe 0 = 1 gap, pipe 1 = 2 gaps, pipe 2 = 2 gaps
-                used_gaps = random.sample(range(len(gaps)), min(3, len(gaps)))
-                used_gaps.sort()
+            if len(gaps) >= 2:
+                # Pipe 1 & 2: share a starting gap, orthogonal, different heights
+                #   - One is 1 floor tall, other is 2 floors tall → they intersect
+                # Pipe 3: at a completely different level
+                shared_gap = random.randint(0, max(0, len(gaps) - 2))  # leave room for 2-floor pipe
+                other_gaps = [i for i in range(len(gaps)) if i != shared_gap and i != shared_gap + 1]
+                third_gap = random.choice(other_gaps) if other_gaps else 0
                 pipe_configs = [
-                    (0, used_gaps[0], 1),  # x-aligned, 1 gap
-                    (1, used_gaps[1], 2 if used_gaps[1] + 1 < len(gaps) else 1),  # y-aligned, 2 gaps
-                    (0, used_gaps[2] if len(used_gaps) > 2 else used_gaps[0], 1),  # x-aligned, 1 gap
+                    (0, shared_gap, 1),   # red: x-aligned, 1 floor tall
+                    (1, shared_gap, 2 if shared_gap + 1 < len(gaps) else 1),  # blue: y-aligned, 2 floors tall → intersects red
+                    (0, third_gap, 1),    # yellow: x-aligned, different level entirely
                 ]
             elif len(gaps) >= 1:
                 pipe_configs = [
                     (0, 0, 1),
-                    (1, min(1, len(gaps) - 1), 1),
-                    (0, min(2, len(gaps) - 1), 1),
+                    (1, 0, 1),
+                    (0, 0, 1),
                 ]
 
             for pipe_idx, (axis_selection, gap_idx, num_gaps) in enumerate(pipe_configs):
@@ -729,11 +733,12 @@ class PyTorchSculptor:
                     "pipes": [pipe_colors_list[pipe_idx % len(pipe_colors_list)]]
                 }
 
-                pipe_span_pct = random.uniform(0.3, 0.6)
+                # x/y span should be 50-80% of canvas (big like the yellow one)
+                pipe_span_ratio = random.uniform(0.5, 0.8)
                 self.structure, self.colors = attach_pipe_pytorch(
                     self.structure, self.colors,
-                    element_volume_min_ratio=depth_ratio,
-                    element_volume_max_ratio=depth_ratio,
+                    element_volume_min_ratio=pipe_span_ratio,
+                    element_volume_max_ratio=pipe_span_ratio,
                     step=self.step,
                     colors_dict=pipe_color_override,
                     device=self.device,

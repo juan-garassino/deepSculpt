@@ -59,7 +59,7 @@ except ImportError:
     ZARR_AVAILABLE = False
     warnings.warn("zarr not available, Zarr format disabled")
 
-from core.utils.logger import (
+from deepsculpt.core.utils.logger import (
     begin_section,
     end_section,
     log_action,

@@ -72,7 +72,42 @@ Use the relevant skill interactively to write the code together.
 - "Write the shape generator" → interactive, uses ds-datagen
 
 ## Current status
-[ Fill in: what's working, what's broken, what you're trying to build next ]
+- **PyTorch v2 is the only path.** TensorFlow/Keras legacy is archived under `boilerplate/`.
+- **CLI works.** `python -m deepsculpt.main {train-gan,train-diffusion,generate-data,sample-gan,sample-diffusion,preprocess,visualize,benchmark,evaluate,export}`.
+- **Architectural data generator is the active mode** — columns + slabs + 3 orthogonal pipes (red/blue/yellow). See recent `git log` for the procedural-shape tuning history.
+- **Test suite has pre-existing import bugs** (all `tests/unit/*.py` and `tests/integration/*` import the dead `deepSculpt` casing — package is `deepsculpt`). Don't trust `pytest` as a green light; smoke-test via the CLI instead.
+- **Cloud training is live**: `runpod/` directory ships a CUDA 12.8 + Claude Code container that runs on RunPod and syncs checkpoints/results to GCS bucket `garassino-ml-artifacts`. See `runpod/README.md`.
+
+## Cloud training (RunPod + GCS + Claude-in-the-loop)
+The `runpod/` directory contains the full deploy. Four modes:
+- `MODE=train` — pure training, no Claude in the loop.
+- `MODE=research` — one-shot Claude reading `runpod/prompts/research.md`, runs experiments to `TIME_BUDGET`.
+- `MODE=improve` — one-shot Claude reading `runpod/prompts/improve.md`, drives the `ds-improve` skill once.
+- `MODE=self-improve` — **continuous** Claude loop; each iteration uses `runpod/prompts/self_improve.md` which references `runpod/prompts/autoresearch_program.md` (mirrored from the [020-autoresearch](../020-autoresearch/) reference repo). **Toggleable on/off** via a GCS-synced object (`gs://garassino-ml-artifacts/deepsculpt/control/self_improve.enabled`); `make toggle-on` / `make toggle-off` from the `runpod/` Makefile — no pod restart needed.
+
+GCS layout: `gs://garassino-ml-artifacts/deepsculpt/{data,checkpoints/<run_id>,results/<run_id>,prompts-archive}/`. Crash-safe: periodic background `gsutil rsync` + final sync on `EXIT`. Image: `ghcr.io/juan-garassino/deepsculpt-runpod:latest`. See `runpod/README.md` and `docs/runpod.md`.
 
 ## File structure
-[ Fill in once you have files: e.g. "train.py runs training, models/ has the networks" ]
+```
+deepsculpt/
+├── main.py                       # CLI entry — 11 subcommands
+├── config.yaml                   # central hyperparameters
+├── core/
+│   ├── data/{generation,loaders,sparse,transforms}/   # shape gen, dataloaders, encoding
+│   ├── models/
+│   │   ├── gan/{generator,discriminator}.py           # 5 gens, 8 discs incl. SelfAttention3D, LightDiscriminator
+│   │   ├── diffusion/{unet,noise_scheduler,pipeline,pytorch_diffusion}.py
+│   │   ├── base_models.py, model_factory.py
+│   ├── training/{gan_trainer,diffusion_trainer,base_trainer,optimizers,schedulers}.py
+│   ├── utils/{logger,pytorch_utils,monitoring,performance_optimizer}.py
+│   ├── visualization/pytorch_visualization.py
+│   └── workflow/{pytorch_workflow,pytorch_mlflow_tracking}.py
+notebooks/                        # 18 Jupyter notebooks (Colab + local)
+scripts/                          # colab_train.py, colab_train_diffusion.py, autoresearch_report.py
+tests/                            # pytest suite (currently broken — see Current status)
+runpod/                           # RunPod + GCS deploy (Dockerfile, entrypoint.sh, prompts/, scripts/)
+autoresearch/                     # local Claude-Code-in-container research loop (predecessor to runpod/)
+docs/                             # architecture, training, operations, inference, colab recipes
+boilerplate/                      # archived TF/Keras v1 code
+checkpoints/                      # local checkpoint dir (also under data/legacy_samples for samples)
+```

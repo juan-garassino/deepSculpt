@@ -94,9 +94,47 @@ Dataset visualizations are supported via `/visualize-dataset` for `.npy` volumes
 1. `BACKEND_STORE_URI`
 2. `ARTIFACT_ROOT`
 
+## Train on RunPod (GPU + GCS + Claude-in-the-loop)
+
+The `runpod/` directory ships a CUDA 12.8 + Claude Code container that runs on RunPod and syncs checkpoints/results to GCS.
+
+```bash
+cd runpod
+export GHCR_USER=juan-garassino GHCR_TOKEN=ghp_...
+make login
+make push                               # ghcr.io/juan-garassino/deepsculpt-runpod:latest
+```
+
+Then on RunPod create a GPU Pod with that image and set env vars:
+
+| Var | Notes |
+|---|---|
+| `ANTHROPIC_API_KEY` | required for `MODE=research` / `improve` |
+| `GCS_BUCKET` | `garassino-ml-artifacts` |
+| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | base64-encoded service-account JSON |
+| `MODE` | `train` \| `research` \| `improve` \| `self-improve` (continuous + toggleable; see [`docs/runpod.md`](docs/runpod.md)) |
+| `RUN_ID` | run identifier (used in GCS paths) |
+| `TIME_BUDGET` | seconds (research/improve modes) |
+
+Full deploy guide: [`docs/runpod.md`](docs/runpod.md). GCS layout: [`docs/gcs_layout.md`](docs/gcs_layout.md). Container reference: [`runpod/README.md`](runpod/README.md).
+
+### GCS layout
+
+```
+gs://garassino-ml-artifacts/deepsculpt/
+├── data/<dataset_name>/...
+├── checkpoints/<RUN_ID>/{generator.pt, discriminator.pt, optimizer.pt, config.yaml}
+├── results/<RUN_ID>/{experiments.tsv, claude.log, samples/, summary.md}
+└── prompts-archive/<timestamp>-<mode>.md
+```
+
+The entrypoint pulls existing state on startup (resume support), rsyncs every 10 minutes during the run, and does a final push on `EXIT`.
+
 ## Docs
 
 1. `docs/architecture.md`
 2. `docs/training.md`
 3. `docs/inference.md`
 4. `docs/operations.md`
+5. `docs/runpod.md` — RunPod + GCS deploy
+6. `docs/gcs_layout.md` — GCS bucket structure and run_id convention

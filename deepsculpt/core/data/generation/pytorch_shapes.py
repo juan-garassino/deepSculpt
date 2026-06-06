@@ -9,7 +9,7 @@ import torch
 import random
 from enum import Enum
 from typing import Tuple, List, Dict, Any, Optional, Union
-from core.utils.logger import (
+from deepsculpt.core.utils.logger import (
     begin_section,
     end_section,
     log_action,

@@ -35,7 +35,7 @@ setup(
     # For CLI commands
     entry_points={
         'console_scripts': [
-            'deepsculpt=deepSculpt.main:main',
+            'deepsculpt=deepsculpt.main:main',
         ],
     },
     
