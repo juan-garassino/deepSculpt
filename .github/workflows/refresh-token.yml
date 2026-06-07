@@ -38,6 +38,7 @@ jobs:
           curl -L -o /tmp/runpodctl https://github.com/runpod/runpodctl/releases/latest/download/runpodctl-linux-amd64
           chmod +x /tmp/runpodctl
           sudo mv /tmp/runpodctl /usr/local/bin/runpodctl
+          mkdir -p "$HOME/.runpod"
           runpodctl config --apiKey "${{ secrets.RUNPOD_API_KEY }}"
 
       - name: List + refresh tokens on matching pods
