@@ -39,7 +39,9 @@ jobs:
           chmod +x /tmp/runpodctl
           sudo mv /tmp/runpodctl /usr/local/bin/runpodctl
           mkdir -p "$HOME/.runpod"
-          runpodctl config --apiKey "${{ secrets.RUNPOD_API_KEY }}"
+          # runpodctl config won't create the file if it doesn't exist (viper limitation)
+          echo "apikey: \"${{ secrets.RUNPOD_API_KEY }}\"" > "$HOME/.runpod/config.yaml"
+          runpodctl config --apiKey "${{ secrets.RUNPOD_API_KEY }}" || true
 
       - name: List + refresh tokens on matching pods
         env:
