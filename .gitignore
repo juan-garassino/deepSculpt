@@ -27,3 +27,14 @@ results/snapshots/*
 results/checkpoints/*
 results/saves/*
 results/network/variables/*.data*
+
+# Generated training data dirs (locally regenerated; large)
+/data/
+notebooks/notebook_output/data/
+
+# Terraform provider plugins (the lock file IS committed)
+infra/**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
