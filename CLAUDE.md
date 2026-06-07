@@ -1,5 +1,7 @@
 # DeepSculpt
 
+> **GCP migration note (2026-06-06):** Lives in `garassino-ml`. Images on `ghcr.io/juan-garassino/deepsculpt-runpod` (public). Artifacts in `gs://garassino-ml-artifacts/deepsculpt/`. No always-on resources — training is RunPod-driven. See root `CLAUDE.md` § "GCP architecture".
+
 ## What this project is
 A 3D generative art system that learns to create sculptures from scratch.
 It uses two types of AI models:
@@ -85,7 +87,9 @@ The `runpod/` directory contains the full deploy. Four modes:
 - `MODE=improve` — one-shot Claude reading `runpod/prompts/improve.md`, drives the `ds-improve` skill once.
 - `MODE=self-improve` — **continuous** Claude loop; each iteration uses `runpod/prompts/self_improve.md` which references `runpod/prompts/autoresearch_program.md` (mirrored from the [020-autoresearch](../020-autoresearch/) reference repo). **Toggleable on/off** via a GCS-synced object (`gs://garassino-ml-artifacts/deepsculpt/control/self_improve.enabled`); `make toggle-on` / `make toggle-off` from the `runpod/` Makefile — no pod restart needed.
 
-GCS layout: `gs://garassino-ml-artifacts/deepsculpt/{data,checkpoints/<run_id>,results/<run_id>,prompts-archive}/`. Crash-safe: periodic background `gsutil rsync` + final sync on `EXIT`. Image: `ghcr.io/juan-garassino/deepsculpt-runpod:latest`. See `runpod/README.md` and `docs/runpod.md`.
+Pod auth: **GHA-minted short-lived bearer token (WIF through `garassino-op`'s `gh-actions` pool). No SA JSON anywhere.** Refreshed every 50 min by `.github/workflows/refresh-token.yml`. Canonical deploy path: `gh workflow run deploy-runpod.yml -f mode=...` (or `make deploy MODE=...`). Infra is show-and-destroy via `infra/gcp/` Terraform.
+
+GCS layout: `gs://garassino-ml-artifacts/deepsculpt/{data,checkpoints/<run_id>,results/<run_id>,prompts-archive,control,state}/` (bucket region: **`europe-west1`**). Crash-safe: periodic background `gsutil rsync` + final sync on `EXIT`. Image: `ghcr.io/juan-garassino/deepsculpt-runpod:latest` (built/pushed by `.github/workflows/build-push.yml` on every master push). See `runpod/README.md`, `docs/runpod.md`, and `infra/gcp/README.md`.
 
 ## File structure
 ```

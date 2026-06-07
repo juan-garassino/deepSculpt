@@ -1,0 +1,156 @@
+name: deploy-runpod
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Pod mode'
+        required: true
+        type: choice
+        default: research
+        options: [train, research, improve, self-improve]
+      run_id:
+        description: 'Run ID (default = timestamp)'
+        required: false
+        default: ''
+      time_budget:
+        description: 'Global time budget in seconds (0 = no global cap)'
+        required: false
+        default: '3600'
+      iter_budget:
+        description: 'self-improve: seconds per iteration'
+        required: false
+        default: '1800'
+      cooldown:
+        description: 'self-improve: seconds between iterations'
+        required: false
+        default: '300'
+      gpu_type:
+        description: 'RunPod GPU type'
+        required: true
+        type: choice
+        default: 'NVIDIA A100 80GB PCIe'
+        options:
+          - 'NVIDIA A100 80GB PCIe'
+          - 'NVIDIA H100 80GB HBM3'
+          - 'NVIDIA L40S'
+
+# id-token: write is required for google-github-actions/auth via WIF
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve RUN_ID
+        id: runid
+        run: |
+          if [ -z "${{ inputs.run_id }}" ]; then
+            echo "value=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ inputs.run_id }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Authenticate to GCP via WIF
+        id: gcp_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_RUNTIME_SA }}
+          token_format: access_token
+          access_token_lifetime: 3600s
+          # storage.objectAdmin is the only scope we need; default cloud-platform
+          # is wider but RunPod's pod only ever uses it against the bucket.
+
+      - name: Confirm token minted
+        run: |
+          echo "Token expires at: ${{ steps.gcp_auth.outputs.expiration }}"
+          # Don't echo the token itself to logs.
+
+      - name: Submit pod to RunPod
+        env:
+          RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+          GCS_ACCESS_TOKEN: ${{ steps.gcp_auth.outputs.access_token }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MODE: ${{ inputs.mode }}
+          RUN_ID: ${{ steps.runid.outputs.value }}
+          TIME_BUDGET: ${{ inputs.time_budget }}
+          ITER_BUDGET: ${{ inputs.iter_budget }}
+          COOLDOWN: ${{ inputs.cooldown }}
+          GPU_TYPE: ${{ inputs.gpu_type }}
+        run: |
+          set -euo pipefail
+          # Build the env array for the RunPod GraphQL podFindAndDeployOnDemand mutation.
+          ENV_JSON=$(jq -nc \
+            --arg mode "$MODE" \
+            --arg run_id "$RUN_ID" \
+            --arg time_budget "$TIME_BUDGET" \
+            --arg iter_budget "$ITER_BUDGET" \
+            --arg cooldown "$COOLDOWN" \
+            --arg gcs_bucket "garassino-ml-artifacts" \
+            --arg gcs_project "garassino-ml" \
+            --arg gcs_access_token "$GCS_ACCESS_TOKEN" \
+            --arg anthropic "$ANTHROPIC_API_KEY" \
+            '[
+              {key:"MODE", value:$mode},
+              {key:"RUN_ID", value:$run_id},
+              {key:"TIME_BUDGET", value:$time_budget},
+              {key:"ITER_BUDGET", value:$iter_budget},
+              {key:"COOLDOWN", value:$cooldown},
+              {key:"GCS_BUCKET", value:$gcs_bucket},
+              {key:"GCS_PROJECT", value:$gcs_project},
+              {key:"GCS_ACCESS_TOKEN", value:$gcs_access_token},
+              {key:"ANTHROPIC_API_KEY", value:$anthropic}
+            ]')
+
+          # Find a matching GPU type ID, then deploy.
+          # RunPod GraphQL is at https://api.runpod.io/graphql
+          QUERY=$(jq -nc \
+            --arg image "ghcr.io/juan-garassino/deepsculpt-runpod:latest" \
+            --arg name "deepsculpt-$RUN_ID" \
+            --arg gpu "$GPU_TYPE" \
+            --argjson env "$ENV_JSON" \
+            '{
+              query: "mutation Deploy($input: PodFindAndDeployOnDemandInput!) { podFindAndDeployOnDemand(input: $input) { id imageName machineId env { key } } }",
+              variables: {
+                input: {
+                  cloudType: "SECURE",
+                  gpuCount: 1,
+                  volumeInGb: 50,
+                  containerDiskInGb: 30,
+                  minVcpuCount: 8,
+                  minMemoryInGb: 32,
+                  gpuTypeId: $gpu,
+                  name: $name,
+                  imageName: $image,
+                  dockerArgs: "",
+                  ports: "",
+                  volumeMountPath: "/workspace",
+                  env: $env
+                }
+              }
+            }')
+
+          RESP=$(curl -s -X POST https://api.runpod.io/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $RUNPOD_API_KEY" \
+            -d "$QUERY")
+
+          echo "$RESP" | jq -e '.data.podFindAndDeployOnDemand.id' > /dev/null || {
+            echo "::error::Pod deploy failed"; echo "$RESP" | jq .; exit 1;
+          }
+          POD_ID=$(echo "$RESP" | jq -r '.data.podFindAndDeployOnDemand.id')
+          {
+            echo "## RunPod deploy"
+            echo ""
+            echo "- **Pod ID:** \`$POD_ID\`"
+            echo "- **Mode:** $MODE"
+            echo "- **RUN_ID:** $RUN_ID"
+            echo "- **Image:** \`ghcr.io/juan-garassino/deepsculpt-runpod:latest\`"
+            echo ""
+            echo "Token expires in 1h; \`refresh-token.yml\` will keep it warm."
+          } >> "$GITHUB_STEP_SUMMARY"

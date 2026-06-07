@@ -20,8 +20,11 @@
 # Required env (.env or shell):
 #   ANTHROPIC_API_KEY
 #   GCS_BUCKET                              default: garassino-ml-artifacts
-#   GOOGLE_APPLICATION_CREDENTIALS_JSON     base64-encoded SA key (for container)
-#   GHCR_USER, GHCR_TOKEN                   for `make push`
+#   GHCR_USER, GHCR_TOKEN                   for manual `make push`
+#                                           (CI uses GITHUB_TOKEN automatically)
+#
+# Auth model: pods receive a short-lived GCS_ACCESS_TOKEN minted by GHA via
+# WIF. No service-account JSON keys anywhere. See ../docs/runpod.md.
 
 IMAGE_NAME   ?= deepsculpt-runpod
 REGISTRY     ?= ghcr.io/juan-garassino
@@ -69,13 +72,17 @@ push: build
 	@echo "  3. Env vars:"
 	@echo "       ANTHROPIC_API_KEY=sk-ant-..."
 	@echo "       GCS_BUCKET=$(GCS_BUCKET)"
-	@echo "       GOOGLE_APPLICATION_CREDENTIALS_JSON=<base64 of SA key>"
-	@echo "       MODE=train|research|improve"
+	@echo "       GCS_ACCESS_TOKEN=<minted by gcloud auth print-access-token>"
+	@echo "       MODE=train|research|improve|self-improve"
 	@echo "       RUN_ID=<your-run-id>"
 	@echo "       TIME_BUDGET=$(TIME_BUDGET)"
+	@echo ""
+	@echo "Or skip all this and use the GHA workflow: gh workflow run deploy-runpod.yml"
 
 # ---------------------------------------------------------------------------
-# Run locally (needs NVIDIA GPU + docker --gpus)
+# Run locally (needs NVIDIA GPU + docker --gpus). Local runs assume you've
+# minted a token yourself via `gcloud auth print-access-token` and exported
+# it as GCS_ACCESS_TOKEN. CI does this automatically.
 # ---------------------------------------------------------------------------
 
 define DOCKER_RUN_BASE
@@ -84,7 +91,8 @@ docker run -d \
 	--name $(CONTAINER) \
 	-e ANTHROPIC_API_KEY=$(API_KEY) \
 	-e GCS_BUCKET=$(GCS_BUCKET) \
-	-e GOOGLE_APPLICATION_CREDENTIALS_JSON=$$GOOGLE_APPLICATION_CREDENTIALS_JSON \
+	-e GCS_PROJECT=garassino-ml \
+	-e GCS_ACCESS_TOKEN=$$GCS_ACCESS_TOKEN \
 	-e RUN_ID=$(RUN_ID) \
 	-e TIME_BUDGET=$(TIME_BUDGET) \
 	-v $(PWD)/workspace:/workspace
@@ -123,6 +131,21 @@ endif
 		$(IMAGE_NAME)
 	@echo "=== Started $(CONTAINER) (MODE=self-improve, RUN_ID=$(RUN_ID)) ==="
 	@echo "=== Loop is OFF by default. Enable with: make toggle-on ==="
+
+# ---------------------------------------------------------------------------
+# Remote deploy via GHA (the canonical path — no local Docker required)
+# ---------------------------------------------------------------------------
+
+.PHONY: deploy
+deploy:
+	@if [ -z "$(MODE)" ]; then echo "Usage: make deploy MODE=train|research|improve|self-improve [RUN_ID=...] [TIME_BUDGET=...]"; exit 1; fi
+	gh workflow run deploy-runpod.yml \
+		-f mode=$(MODE) \
+		-f run_id=$(RUN_ID) \
+		-f time_budget=$(TIME_BUDGET) \
+		-f iter_budget=$(ITER_BUDGET) \
+		-f cooldown=$(COOLDOWN)
+	@echo "=== Dispatched deploy-runpod.yml. Watch: gh run watch ==="
 
 # ---------------------------------------------------------------------------
 # Self-improve toggle (GCS-synced; works whether pod is local or on RunPod)

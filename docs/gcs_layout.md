@@ -62,7 +62,11 @@ gs://garassino-ml-artifacts/deepsculpt/
 
 ## Auth
 
-The container reads `GOOGLE_APPLICATION_CREDENTIALS_JSON` (base64-encoded service-account key), decodes to `/tmp/gcp-key.json`, and runs `gcloud auth activate-service-account`. The SA needs roles `roles/storage.objectAdmin` on the bucket (or finer-grained on the `deepsculpt/` prefix).
+Bucket region: **`europe-west1`** (per project policy).
+
+Pod auth: GHA-minted short-lived bearer token (`GCS_ACCESS_TOKEN`), refreshed every 50 min via WIF impersonation of `deepsculpt-runpod-runtime@garassino-ml.iam.gserviceaccount.com`. The SA has `roles/storage.objectAdmin` scoped to `gs://garassino-ml-artifacts/deepsculpt/*` via IAM condition. **No SA JSON keys** are issued or stored anywhere. See [`runpod.md` § How auth works](./runpod.md#how-auth-works).
+
+Lifecycle: objects under `prompts-archive/` are deleted after 90 days (cost-management; managed via console, documented in `infra/gcp/README.md`).
 
 ## Local sync (dev convenience)
 

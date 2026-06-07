@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and edit. Defaults in variables.tf are correct
+# for the canonical setup; you only need this file to override.
+
+# project_id         = "garassino-ml"
+# region             = "europe-west1"
+# bucket_name        = "garassino-ml-artifacts"
+# github_repo        = "juan-garassino/deep_sculpt"
+# budget_alert_email = "juan.garassino@gmail.com"
+# monthly_budget_eur = 25

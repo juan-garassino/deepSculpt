@@ -96,22 +96,23 @@ Dataset visualizations are supported via `/visualize-dataset` for `.npy` volumes
 
 ## Train on RunPod (GPU + GCS + Claude-in-the-loop)
 
-The `runpod/` directory ships a CUDA 12.8 + Claude Code container that runs on RunPod and syncs checkpoints/results to GCS.
+The `runpod/` directory ships a CUDA 12.8 + Claude Code container that runs on RunPod and syncs checkpoints/results to GCS. The image is built + pushed automatically by `.github/workflows/build-push.yml` on every push to `master`; deployment is a `gh workflow run` away — no local Docker required.
 
 ```bash
-cd runpod
-export GHCR_USER=juan-garassino GHCR_TOKEN=ghp_...
-make login
-make push                               # ghcr.io/juan-garassino/deepsculpt-runpod:latest
+# Deploy via CI (canonical)
+gh workflow run deploy-runpod.yml -f mode=research -f time_budget=3600 -f gpu_type='NVIDIA A100 80GB PCIe'
+# or
+make -C runpod deploy MODE=research TIME_BUDGET=3600
 ```
 
-Then on RunPod create a GPU Pod with that image and set env vars:
+If you prefer the manual UI route, on RunPod create a GPU Pod with the image and set env vars (note: you must supply `GCS_ACCESS_TOKEN` yourself via `gcloud auth print-access-token`):
 
 | Var | Notes |
 |---|---|
-| `ANTHROPIC_API_KEY` | required for `MODE=research` / `improve` |
-| `GCS_BUCKET` | `garassino-ml-artifacts` |
-| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | base64-encoded service-account JSON |
+| `ANTHROPIC_API_KEY` | required for `MODE=research` / `improve` / `self-improve`. GHA repo secret. |
+| `GCS_BUCKET` | `garassino-ml-artifacts` (region `europe-west1`) |
+| `GCS_PROJECT` | `garassino-ml` |
+| `GCS_ACCESS_TOKEN` | short-lived OAuth2 token minted by GHA via WIF. No SA JSON. |
 | `MODE` | `train` \| `research` \| `improve` \| `self-improve` (continuous + toggleable; see [`docs/runpod.md`](docs/runpod.md)) |
 | `RUN_ID` | run identifier (used in GCS paths) |
 | `TIME_BUDGET` | seconds (research/improve modes) |

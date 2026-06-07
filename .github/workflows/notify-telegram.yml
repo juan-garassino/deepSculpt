@@ -1,0 +1,107 @@
+name: notify-telegram
+
+# Poll GCS for new rows in any active RUN's experiments.tsv / improvements.tsv,
+# diff against the last-seen state object in GCS, and post deltas to Telegram.
+#
+# Skips silently when TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID are absent —
+# this lets the workflow live in master before you wire up the bot.
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: notify-telegram
+  cancel-in-progress: false
+
+jobs:
+  poll-and-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if Telegram secrets missing
+        id: gate
+        run: |
+          if [ -z "${{ secrets.TELEGRAM_BOT_TOKEN }}" ] || [ -z "${{ secrets.TELEGRAM_CHAT_ID }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Telegram secrets not set — exiting cleanly."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Authenticate to GCP via WIF
+        if: steps.gate.outputs.skip != 'true'
+        id: gcp_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_RUNTIME_SA }}
+          token_format: access_token
+          access_token_lifetime: 600s
+
+      - name: Set up gcloud
+        if: steps.gate.outputs.skip != 'true'
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Poll experiments.tsv and notify
+        if: steps.gate.outputs.skip != 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          BUCKET: garassino-ml-artifacts
+          STATE_OBJ: gs://garassino-ml-artifacts/deepsculpt/state/telegram-last-seen.txt
+        run: |
+          set -euo pipefail
+
+          # Pull the last-seen line count per run (one line per "run_id\tcount").
+          mkdir -p /tmp/notify
+          gsutil -q cp "$STATE_OBJ" /tmp/notify/last-seen.tsv 2>/dev/null \
+            || : > /tmp/notify/last-seen.tsv
+
+          declare -A LAST_SEEN
+          while IFS=$'\t' read -r rid n; do
+            [ -n "$rid" ] && LAST_SEEN["$rid"]="$n"
+          done < /tmp/notify/last-seen.tsv
+
+          : > /tmp/notify/new-state.tsv
+          NEW_ROWS_TOTAL=0
+
+          # Enumerate all runs that have experiments.tsv.
+          mapfile -t RUNS < <(
+            gsutil ls "gs://${BUCKET}/deepsculpt/results/*/experiments.tsv" 2>/dev/null \
+              | awk -F/ '{print $(NF-1)}'
+          )
+
+          for RUN_ID in "${RUNS[@]}"; do
+            [ -z "$RUN_ID" ] && continue
+            TSV="/tmp/notify/${RUN_ID}.tsv"
+            gsutil -q cp "gs://${BUCKET}/deepsculpt/results/${RUN_ID}/experiments.tsv" "$TSV" || continue
+
+            TOTAL=$(wc -l < "$TSV" | tr -d ' ')
+            PREV="${LAST_SEEN[$RUN_ID]:-1}"   # skip header line by default
+            if [ "$TOTAL" -le "$PREV" ]; then
+              echo -e "${RUN_ID}\t${TOTAL}" >> /tmp/notify/new-state.tsv
+              continue
+            fi
+
+            # Send each new row.
+            tail -n "+$((PREV + 1))" "$TSV" | while IFS= read -r LINE; do
+              MSG=$(printf '🔬 *%s* — new experiment\n```\n%s\n```' "$RUN_ID" "$LINE")
+              curl -s -X POST \
+                "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                -d "chat_id=${TELEGRAM_CHAT_ID}" \
+                --data-urlencode "text=${MSG}" \
+                -d "parse_mode=Markdown" > /dev/null
+              NEW_ROWS_TOTAL=$((NEW_ROWS_TOTAL + 1))
+            done
+
+            echo -e "${RUN_ID}\t${TOTAL}" >> /tmp/notify/new-state.tsv
+          done
+
+          # Persist the new last-seen state.
+          gsutil -q cp /tmp/notify/new-state.tsv "$STATE_OBJ"
+          echo "Notified $NEW_ROWS_TOTAL new rows."

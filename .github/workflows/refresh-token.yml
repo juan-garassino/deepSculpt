@@ -1,0 +1,74 @@
+name: refresh-token
+
+# Mint a fresh GCS access token via WIF every 50 min and push it into every
+# running DeepSculpt pod by writing /workspace/control/gcs_token via
+# `runpodctl exec`. The pod's entrypoint helper re-reads from that file
+# before every gsutil call.
+#
+# No-op when no matching pods are running.
+
+on:
+  schedule:
+    - cron: '*/50 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: refresh-token
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to GCP via WIF
+        id: gcp_auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_RUNTIME_SA }}
+          token_format: access_token
+          access_token_lifetime: 3600s
+
+      - name: Install runpodctl
+        run: |
+          curl -L -o /tmp/runpodctl https://github.com/runpod/runpodctl/releases/latest/download/runpodctl-linux-amd64
+          chmod +x /tmp/runpodctl
+          sudo mv /tmp/runpodctl /usr/local/bin/runpodctl
+          runpodctl config --apiKey "${{ secrets.RUNPOD_API_KEY }}"
+
+      - name: List + refresh tokens on matching pods
+        env:
+          GCS_ACCESS_TOKEN: ${{ steps.gcp_auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          # Query RunPod GraphQL for running pods on our image.
+          RESP=$(curl -s -X POST https://api.runpod.io/graphql \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.RUNPOD_API_KEY }}" \
+            -d '{"query":"query Pods { myself { pods { id name desiredStatus imageName } } }"}')
+
+          POD_IDS=$(echo "$RESP" | jq -r '
+            .data.myself.pods[]
+            | select(.imageName | test("deepsculpt-runpod"))
+            | select(.desiredStatus == "RUNNING")
+            | .id
+          ')
+
+          if [ -z "$POD_IDS" ]; then
+            echo "No running deepsculpt-runpod pods. No-op."
+            exit 0
+          fi
+
+          for POD_ID in $POD_IDS; do
+            echo "::group::Refreshing token on pod $POD_ID"
+            # runpodctl exec runs in the pod's shell; we pipe the token to
+            # the writer script which atomically renames it into place.
+            echo "$GCS_ACCESS_TOKEN" | runpodctl exec --pod-id "$POD_ID" -- \
+              bash /app/runpod/scripts/token_writer.sh \
+              || echo "::warning::Failed to refresh on pod $POD_ID (may be starting up)"
+            echo "::endgroup::"
+          done

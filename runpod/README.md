@@ -37,10 +37,11 @@ In all three modes the container:
 
 | Var | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Required for `MODE=research` and `MODE=improve`. |
+| `ANTHROPIC_API_KEY` | Required for `MODE=research`, `improve`, `self-improve`. Sourced from `~/.zshrc` → GHA repo secret. |
 | `GCS_BUCKET` | Required. Default value used here: `garassino-ml-artifacts`. |
-| `GOOGLE_APPLICATION_CREDENTIALS_JSON` | base64-encoded service-account JSON (decoded at runtime). |
-| `MODE` | One of `train` \| `research` \| `improve`. Default `train`. |
+| `GCS_PROJECT` | `garassino-ml`. Informational. |
+| `GCS_ACCESS_TOKEN` | **Short-lived OAuth2 bearer token** minted by GHA via Workload Identity Federation. Pod never sees a service-account JSON. Refreshed every 50 min by `.github/workflows/refresh-token.yml`. |
+| `MODE` | One of `train` \| `research` \| `improve` \| `self-improve`. Default `train`. |
 | `RUN_ID` | Run identifier; used in GCS paths. Default = timestamp. |
 | `TIME_BUDGET` | Seconds (Claude modes stop near this). Default 3600. |
 | `TRAIN_CMD` | CLI subcommand for `MODE=train`. Default `train-gan`. |
@@ -49,6 +50,17 @@ In all three modes the container:
 | `ITER_BUDGET` | `MODE=self-improve` only: seconds per Claude iteration. Default 1800 (30 min). |
 | `COOLDOWN` | `MODE=self-improve` only: seconds between iterations. Default 300. |
 | `POLL_INTERVAL` | `MODE=self-improve` only: seconds between toggle checks. Default 60. |
+
+## Auth (no service-account JSON anywhere)
+
+Per project policy ([root CLAUDE.md § GCP architecture](../../../CLAUDE.md)), pods are forbidden from carrying static GCP credentials. The flow:
+
+1. GitHub Actions `deploy-runpod.yml` authenticates to GCP via **Workload Identity Federation** through `garassino-op`'s `gh-actions` pool. No JSON key.
+2. The workflow impersonates `deepsculpt-runpod-runtime@garassino-ml.iam.gserviceaccount.com` and mints a 1-hour OAuth2 access token via `gcloud auth print-access-token`.
+3. The token is passed to the RunPod pod as the `GCS_ACCESS_TOKEN` env var at create-time.
+4. Inside the pod, `entrypoint.sh` writes the token to `/workspace/control/gcs_token` and exports `CLOUDSDK_AUTH_ACCESS_TOKEN` for `gsutil`.
+5. `.github/workflows/refresh-token.yml` runs every 50 min, mints a fresh token, and pushes it into every running pod via `runpodctl exec` → `runpod/scripts/token_writer.sh` (atomic rename).
+6. The pod's `gsutil` wrapper and the Python checkpoint helper re-read from the control file before every call, picking up the refresh transparently.
 
 ## GCS layout
 
@@ -60,45 +72,42 @@ gs://garassino-ml-artifacts/deepsculpt/
 └── prompts-archive/<timestamp>-<mode>.md
 ```
 
-## Deploy flow
+## Deploy flow (canonical: GHA, no local Docker required)
 
 ```bash
-# 1. Build + push (one-time, or whenever code changes)
-export GHCR_USER=your-github-username
-export GHCR_TOKEN=ghp_...           # PAT with write:packages
-cd runpod
-make login
-make push
+# 1. Image is built + pushed automatically by .github/workflows/build-push.yml
+#    on every push to master that touches runpod/, deepsculpt/, or deps.
 
-# 2. On RunPod (web UI):
-#    - New GPU Pod → H100 or A100
-#    - Container image: ghcr.io/juan-garassino/deepsculpt-runpod:latest
-#    - Env vars (see table above)
-#    - Start Pod — entrypoint auto-runs
+# 2. Deploy a pod
+gh workflow run deploy-runpod.yml \
+  -f mode=research \
+  -f run_id=$(date +%Y%m%d-%H%M%S) \
+  -f time_budget=3600 \
+  -f gpu_type='NVIDIA A100 80GB PCIe'
 
 # 3. Monitor
 #    - RunPod UI → Logs tab
-#    - Or after-the-fact via GCS:
+#    - Or via GCS (token via local `gcloud auth login`):
 gsutil cat gs://garassino-ml-artifacts/deepsculpt/results/<RUN_ID>/experiments.tsv
 
-# 4. Resume after stop/crash
-#    Start a new pod with the same RUN_ID — entrypoint pulls last state.
+# 4. Resume after crash
+#    Re-run deploy-runpod.yml with the same run_id — entrypoint pulls last state.
 ```
 
-## Local smoke test (needs NVIDIA GPU)
+## Local deploy (rare — only when iterating on the entrypoint)
+
+Manual Docker requires that you mint a token yourself:
 
 ```bash
 cd runpod
-# .env in the repo root or shell-exported
-export ANTHROPIC_API_KEY=sk-ant-...
-export GOOGLE_APPLICATION_CREDENTIALS_JSON=$(base64 -i ~/keys/gcs-sa.json)
+export ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY                  # from your ~/.zshrc
+export GCS_ACCESS_TOKEN=$(CLOUDSDK_PYTHON=/usr/local/bin/python3.12 gcloud auth print-access-token)
 make build
 make run-train RUN_ID=local-smoke TRAIN_ARGS="--void-dim 16 --epochs 1 --batch-size 4"
 make logs
-# When done:
-gsutil ls gs://garassino-ml-artifacts/deepsculpt/checkpoints/local-smoke/
 make stop
 ```
+
 
 ## Continuous self-improvement (toggleable)
 

@@ -13,7 +13,12 @@ set -euo pipefail
 # Required env:
 #   ANTHROPIC_API_KEY                 (research / improve only)
 #   GCS_BUCKET                        e.g. garassino-ml-artifacts
-#   GOOGLE_APPLICATION_CREDENTIALS_JSON   base64-encoded service-account JSON
+#   GCS_PROJECT                       e.g. garassino-ml (informational; used by gcloud)
+#   GCS_ACCESS_TOKEN                  short-lived OAuth2 token minted by GHA via WIF.
+#                                     Pod NEVER receives a service-account JSON key.
+#                                     Refreshed by .github/workflows/refresh-token.yml
+#                                     every 50 min via `runpodctl exec` writing to
+#                                     /workspace/control/gcs_token.
 #
 # Optional env:
 #   RUN_ID            default: timestamp
@@ -40,26 +45,45 @@ POLL_INTERVAL="${POLL_INTERVAL:-60}"
 CKPT_DIR="${WORKSPACE_DIR}/checkpoints/${RUN_ID}"
 RESULTS_DIR="${WORKSPACE_DIR}/results/${RUN_ID}"
 DATA_DIR="${WORKSPACE_DIR}/data"
+CONTROL_DIR="${WORKSPACE_DIR}/control"
+GCS_TOKEN_FILE="${CONTROL_DIR}/gcs_token"
 
-mkdir -p "$CKPT_DIR" "$RESULTS_DIR" "$DATA_DIR"
+mkdir -p "$CKPT_DIR" "$RESULTS_DIR" "$DATA_DIR" "$CONTROL_DIR"
 
 # ---------------------------------------------------------------------------
-# Auth: GCS service-account key from env
+# Auth: short-lived bearer token from env, refreshed by GHA cron
 # ---------------------------------------------------------------------------
 if [ -z "${GCS_BUCKET:-}" ]; then
     echo "ERROR: GCS_BUCKET not set." >&2
     exit 1
 fi
 
-if [ -n "${GOOGLE_APPLICATION_CREDENTIALS_JSON:-}" ]; then
-    echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" | base64 -d > /tmp/gcp-key.json
-    export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-    gcloud auth activate-service-account --key-file=/tmp/gcp-key.json --quiet
-elif [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
-    gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+if [ -n "${GCS_ACCESS_TOKEN:-}" ]; then
+    # Atomic write: rename is atomic on POSIX, refreshers may overwrite this
+    # file concurrently while gsutil is reading it.
+    umask 077
+    printf '%s' "$GCS_ACCESS_TOKEN" > "${GCS_TOKEN_FILE}.new"
+    mv "${GCS_TOKEN_FILE}.new" "$GCS_TOKEN_FILE"
+    export CLOUDSDK_AUTH_ACCESS_TOKEN="$GCS_ACCESS_TOKEN"
+    [ -n "${GCS_PROJECT:-}" ] && export CLOUDSDK_CORE_PROJECT="$GCS_PROJECT"
+    echo "=== GCS auth: short-lived token (refresher writes to ${GCS_TOKEN_FILE}) ==="
+elif [ -s "$GCS_TOKEN_FILE" ]; then
+    export CLOUDSDK_AUTH_ACCESS_TOKEN="$(cat "$GCS_TOKEN_FILE")"
+    [ -n "${GCS_PROJECT:-}" ] && export CLOUDSDK_CORE_PROJECT="$GCS_PROJECT"
+    echo "=== GCS auth: existing token at ${GCS_TOKEN_FILE} ==="
 else
-    echo "WARN: no GCS credentials provided — gsutil will fail on private buckets." >&2
+    echo "WARN: no GCS_ACCESS_TOKEN and ${GCS_TOKEN_FILE} is empty — gsutil will fail." >&2
 fi
+
+# Helper: refresh gsutil's view of the bearer token from the control file.
+# Called before every gsutil invocation in case the refresher updated it.
+gcs_reload_token() {
+    if [ -s "$GCS_TOKEN_FILE" ]; then
+        CLOUDSDK_AUTH_ACCESS_TOKEN="$(cat "$GCS_TOKEN_FILE")"
+        export CLOUDSDK_AUTH_ACCESS_TOKEN
+    fi
+}
+export -f gcs_reload_token
 
 # ---------------------------------------------------------------------------
 # Pull existing checkpoints + data for this RUN_ID (resume support)
@@ -67,8 +91,10 @@ fi
 GCS_ROOT="gs://${GCS_BUCKET}/deepsculpt"
 
 echo "=== Pulling state from ${GCS_ROOT} (RUN_ID=${RUN_ID}) ==="
+gcs_reload_token
 gsutil -m -q rsync -r "${GCS_ROOT}/checkpoints/${RUN_ID}" "$CKPT_DIR" 2>/dev/null || \
     echo "  (no prior checkpoints for run ${RUN_ID} — fresh start)"
+gcs_reload_token
 gsutil -m -q rsync -r "${GCS_ROOT}/data" "$DATA_DIR" 2>/dev/null || \
     echo "  (no warm data cache)"
 
@@ -76,6 +102,7 @@ gsutil -m -q rsync -r "${GCS_ROOT}/data" "$DATA_DIR" 2>/dev/null || \
 # Background periodic checkpoint sync (crash-safe)
 # ---------------------------------------------------------------------------
 push_state() {
+    gcs_reload_token
     gsutil -m -q rsync -r "$CKPT_DIR" "${GCS_ROOT}/checkpoints/${RUN_ID}" || true
     gsutil -m -q rsync -r "$RESULTS_DIR" "${GCS_ROOT}/results/${RUN_ID}" || true
 }
