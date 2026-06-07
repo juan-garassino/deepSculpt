@@ -106,12 +106,13 @@ deepsculpt/
 │   ├── utils/{logger,pytorch_utils,monitoring,performance_optimizer}.py
 │   ├── visualization/pytorch_visualization.py
 │   └── workflow/{pytorch_workflow,pytorch_mlflow_tracking}.py
-notebooks/                        # 18 Jupyter notebooks (Colab + local)
-scripts/                          # colab_train.py, colab_train_diffusion.py, autoresearch_report.py
-tests/                            # pytest suite (currently broken — see Current status)
-runpod/                           # RunPod + GCS deploy (Dockerfile, entrypoint.sh, prompts/, scripts/)
-autoresearch/                     # local Claude-Code-in-container research loop (predecessor to runpod/)
-docs/                             # architecture, training, operations, inference, colab recipes
-boilerplate/                      # archived TF/Keras v1 code
-checkpoints/                      # local checkpoint dir (also under data/legacy_samples for samples)
+notebooks/                        # 9 Jupyter notebooks (Colab + local)
+scripts/                          # colab_train.py, colab_train_diffusion.py, autoresearch_report.py, preview_sample.py
+tests/                            # pytest suite (most fixed via sed; 11 tier-2 errors remain — see Current status)
+runpod/                           # RunPod + GCS deploy (Dockerfile, entrypoint.sh, Makefile, prompts/, scripts/)
+infra/gcp/                        # show-and-destroy Terraform: runtime SA + WIF impersonation binding
+.github/workflows/                # build-push, deploy-runpod, refresh-token (cron), notify-telegram (cron)
+docs/                             # architecture, training, operations, inference, runpod, gcs_layout
+boilerplate/                      # archived TF/Keras v1 code (do not propagate)
+checkpoints/                      # local checkpoint dir; legacy samples committed under data/11/
 ```

@@ -1,6 +1,20 @@
 # Operations
 
-## Docker Compose
+## RunPod (canonical training path)
+
+| Action | Command |
+|---|---|
+| Deploy a pod (any mode) | `gh workflow run deploy-runpod.yml -f mode={train,research,improve,self-improve} -f run_id=... -f time_budget=... -f gpu_type='NVIDIA A100 80GB PCIe'` |
+| Build + push image | `git push origin master` (auto via `.github/workflows/build-push.yml`) |
+| Refresh GCS token in running pods | automatic (cron every 50 min via `refresh-token.yml`); manual: `gh workflow run refresh-token.yml` |
+| Read live results | `gsutil cat gs://garassino-ml-artifacts/deepsculpt/results/<RUN_ID>/experiments.tsv` |
+| Toggle self-improve loop | `make -C runpod toggle-{on,off,status}` (writes to `gs://.../control/self_improve.enabled`) |
+| Show / destroy infra | `make -C infra/gcp {show,destroy}` |
+| Telegram notify (optional) | cron `notify-telegram.yml`; no-ops until `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` secrets exist |
+
+Full deploy guide: [`docs/runpod.md`](./runpod.md). Infra reference: [`infra/gcp/README.md`](../infra/gcp/README.md).
+
+## Docker Compose (local dev only)
 
 1. Build images.
 ```bash

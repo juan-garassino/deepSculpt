@@ -1,7 +1,9 @@
-# DeepSculpt 3-Service Architecture (FastAPI + MLflow)
+# DeepSculpt Architecture
 
-## Overview
-This repo is adapted into three services:
+> **Post-2026-06-07 GCP migration:** the canonical training path is **RunPod-driven** (`runpod/` + `.github/workflows/`), with artifacts in `gs://garassino-ml-artifacts/deepsculpt/` (region `europe-west1`, project `garassino-ml`). See [`runpod.md`](./runpod.md) and [`gcs_layout.md`](./gcs_layout.md). The Cloud Run inference/MLflow services described below remain valid for local docker-compose dev and on-demand inference, but **no GCP compute is always-on** — training is show-and-destroy. Pod auth uses Workload Identity Federation via `garassino-op`'s `gh-actions` pool; **no service-account JSON keys anywhere**.
+
+## Overview (local + on-demand compute layout)
+This repo also ships a three-service shape for local dev and on-demand inference:
 1. **GPU Training Job (Cloud Run Job)**: runs on-demand training, logs to MLflow, uploads model artifacts to GCS, updates a latest model pointer.
 2. **GPU Inference API (Cloud Run Service)**: FastAPI service for `/infer`, `/train` trigger, and model reload. Loads the latest model from GCS on startup.
 3. **CPU MLflow Tracking Server (Cloud Run Service)**: stateless MLflow server backed by Cloud SQL Postgres and GCS artifact store.
@@ -138,3 +140,5 @@ curl http://localhost:8080/mlflow/last-run
 2. `docs/training.md`
 3. `docs/inference.md`
 4. `docs/operations.md`
+5. `docs/runpod.md` — RunPod + GCS deploy (canonical training path)
+6. `docs/gcs_layout.md` — bucket structure + run_id convention

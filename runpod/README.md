@@ -6,17 +6,22 @@ Run DeepSculpt training, autonomous research, or self-improvement loops on a Run
 
 ```
 runpod/
-├── Dockerfile           # CUDA 12.8 + PyTorch + Claude Code + gcloud
-├── entrypoint.sh        # MODE dispatcher (train | research | improve)
-├── Makefile             # build / push / run-* / sync-* / logs / stop
+├── Dockerfile               # CUDA 12.8 + PyTorch + Claude Code + gcloud
+├── entrypoint.sh            # MODE dispatcher (train | research | improve | self-improve)
+├── Makefile                 # build / push / deploy / run-* / sync-* / toggle-* / logs / stop
 ├── prompts/
-│   ├── research.md      # Brief for autonomous research loop
-│   └── improve.md       # Brief for ds-improve self-improvement loop
+│   ├── research.md          # Brief for one-shot research loop
+│   ├── improve.md           # Brief for one-shot ds-improve run
+│   ├── self_improve.md      # Brief for continuous self-improve iteration
+│   └── autoresearch_program.md   # Operational manual mirrored from 020-autoresearch
 ├── scripts/
-│   ├── gcs_sync.py      # local ↔ GCS rsync helper
-│   ├── checkpoint_io.py # backend-aware save/load (local | gcs)
-│   └── run_research.sh  # standalone Claude Code launcher
-└── README.md            # this file
+│   ├── gcs_sync.py          # local ↔ GCS rsync helper
+│   ├── checkpoint_io.py     # bearer-token-aware save/load (google.oauth2 Credentials)
+│   ├── gcs_with_token.sh    # gsutil wrapper that reloads the token before each call
+│   ├── token_writer.sh      # atomic-rename helper; called by refresh-token.yml via runpodctl exec
+│   ├── self_improve_toggle.sh   # on/off/status — flips the GCS-synced toggle object
+│   └── run_research.sh      # standalone Claude Code launcher (manual reruns)
+└── README.md                # this file
 ```
 
 ## Modes
@@ -28,7 +33,7 @@ runpod/
 | `improve` | One-shot Claude Code with `prompts/improve.md` — drives the `ds-improve` skill, exits at `TIME_BUDGET`. |
 | `self-improve` | **Continuous** Claude loop: each iteration follows `prompts/self_improve.md` (which references `prompts/autoresearch_program.md`, the [020-autoresearch](../020-autoresearch/) brief). Sleeps `COOLDOWN` between iterations. Polls a **GCS-synced toggle** every `POLL_INTERVAL` to start/stop without restarting the pod. |
 
-In all three modes the container:
+In all four modes the container:
 1. Pulls existing state (`gs://$GCS_BUCKET/deepsculpt/checkpoints/$RUN_ID` and `/data`) at startup.
 2. Periodically rsyncs back to GCS every `$SYNC_INTERVAL` seconds (default 600).
 3. Does a final rsync on `EXIT` (crash-safe via `trap`).

@@ -1,6 +1,11 @@
 # Training
 
-This project supports two training modes: GAN and diffusion. Training runs in the GPU job container and logs to MLflow.
+This project supports two training modes: GAN and diffusion. Two compute paths:
+
+- **RunPod (canonical)**: `gh workflow run deploy-runpod.yml -f mode=train -f train_args="--void-dim 64 --epochs 50"` — image `ghcr.io/juan-garassino/deepsculpt-runpod:latest`, artifacts to `gs://garassino-ml-artifacts/deepsculpt/`. See [`docs/runpod.md`](./runpod.md).
+- **Cloud Run Job (legacy/on-demand)**: training runs in the GPU job container and logs to MLflow. Described below.
+
+For local CLI training without any cloud: `python -m deepsculpt.main train-gan --void-dim 32 --epochs 5 --batch-size 16` (or `train-diffusion`).
 
 ## Common Inputs
 
