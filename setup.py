@@ -39,9 +39,6 @@ setup(
         ],
     },
     
-    # Add scripts
-    scripts=['scripts/deep-sculpt-run'],
-    
     # Testing
     test_suite='tests',
     
