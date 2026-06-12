@@ -596,52 +596,24 @@ class DeepSculptV2Main:
     def sample_gan(self, args):
         """Generate samples from trained GAN model."""
         print(f"Generating {args.num_samples} samples from GAN: {args.checkpoint}")
-        
-        # Load model configuration
-        checkpoint_dir = Path(args.checkpoint).parent
-        config_path = checkpoint_dir / "config.json"
-        
-        if config_path.exists():
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-        else:
-            print("Warning: Model configuration not found. Using defaults.")
-            config = {
-                "model_type": "skip",
-                "void_dim": 64,
-                "noise_dim": 100,
-                "color_mode": 1,
-                "sparse": False
-            }
-        
-        # Create model factory
-        model_factory = PyTorchModelFactoryV2()
-        
-        # Create model
-        generator = model_factory.create_gan_generator(
-            model_type=config['model_type'],
-            void_dim=config['void_dim'],
-            noise_dim=config['noise_dim'],
-            color_mode=config['color_mode'],
-            sparse=config.get('sparse', False),
-            **({"gen_channels": config['gen_channels']} if 'gen_channels' in config else {})
-        ).to(self.device)
-        
-        # Load checkpoint
-        generator.load_state_dict(torch.load(args.checkpoint, map_location=self.device))
-        generator.eval()
-        
+
+        # Same loader as the latent-* commands: handles bare state_dicts and
+        # trainer .pth checkpoints, rebuilds the architecture from config.json.
+        from deepsculpt.core.latent import load_generator
+        loaded = load_generator(Path(args.checkpoint), device=self.device, prefer_ema=False)
+        generator = loaded.generator
+
         # Create output directory
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Generate samples
         print(f"Generating {args.num_samples} samples...")
         samples = []
-        
+
         with torch.no_grad():
             for i in range(args.num_samples):
-                noise = torch.randn(1, config['noise_dim'], device=self.device)
+                noise = torch.randn(1, loaded.noise_dim, device=self.device)
                 sample = generator(noise)
                 samples.append(sample.cpu())
                 

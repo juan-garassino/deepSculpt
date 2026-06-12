@@ -1,3 +1,7 @@
+# NOTE: the render helpers here are intentionally duplicated from
+# deepsculpt/core/visualization/volume_export.py (the canonical copy) —
+# this service image installs only its own requirements.txt, not the
+# deepsculpt package. Fix bugs in core first, then mirror here.
 import os
 import tempfile
 from typing import Iterable, Tuple
