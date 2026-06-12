@@ -335,9 +335,12 @@ class DeepSculptV2Main:
             "model_type": args.model_type,
             "void_dim": args.void_dim,
             "noise_dim": args.noise_dim,
-            "color_mode": 1 if args.color else 0,
+            # Must mirror the color_mode the models were actually built with above,
+            # otherwise sample-gan rebuilds the wrong architecture.
+            "color_mode": 0,
             "sparse": args.sparse,
             "discriminator_type": args.discriminator_type,
+            **({"gen_channels": args.gen_channels} if getattr(args, 'gen_channels', None) is not None else {}),
             "use_ema": args.use_ema,
             "sample_from_ema": args.sample_from_ema,
             "training_params": {
@@ -621,7 +624,8 @@ class DeepSculptV2Main:
             void_dim=config['void_dim'],
             noise_dim=config['noise_dim'],
             color_mode=config['color_mode'],
-            sparse=config.get('sparse', False)
+            sparse=config.get('sparse', False),
+            **({"gen_channels": config['gen_channels']} if 'gen_channels' in config else {})
         ).to(self.device)
         
         # Load checkpoint

@@ -356,28 +356,37 @@ class MultiScaleDiscriminator(BaseDiscriminator):
         
         self.num_scales = num_scales
         self.discriminators = nn.ModuleList()
-        
-        # Create discriminators for different scales
+
+        # Each sub-discriminator must match the resolution it actually receives
+        # (full, /2, /4, ...). SimpleDiscriminator needs void_dim // 16 >= 1.
+        smallest = void_dim // (2 ** (num_scales - 1))
+        if smallest < 16:
+            raise ValueError(
+                f"MultiScaleDiscriminator with num_scales={num_scales} needs "
+                f"void_dim >= {16 * 2 ** (num_scales - 1)} (got void_dim={void_dim})"
+            )
         for i in range(num_scales):
-            scale_discriminator = SimpleDiscriminator(void_dim, color_mode, sparse)
+            scale_discriminator = SimpleDiscriminator(void_dim // (2 ** i), color_mode, sparse)
             self.discriminators.append(scale_discriminator)
-        
+
         # Downsampling layers for different scales
         self.downsample = nn.AvgPool3d(2, 2)
-    
-    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         outputs = []
         current_x = x
-        
+
         for i, discriminator in enumerate(self.discriminators):
             output = discriminator(current_x)
             outputs.append(output)
-            
+
             # Downsample for next scale (except for the last one)
             if i < self.num_scales - 1:
                 current_x = self.downsample(current_x)
-        
-        return outputs
+
+        # Mean of per-scale logits -> (B, 1); keeps gradients flowing to all scales
+        # and satisfies the trainer contract shared by every discriminator.
+        return torch.stack(outputs, dim=0).mean(dim=0)
 
 
 class PatchDiscriminator(BaseDiscriminator):
@@ -426,8 +435,10 @@ class PatchDiscriminator(BaseDiscriminator):
         x = self.bn4(x)
         x = self.leaky_relu(x)
         
-        # Final patch classification — return logits for softplus loss
+        # Final patch logits (B, 1, d, h, w) -> mean-pool patches to (B, 1):
+        # standard PatchGAN aggregation, keeps the trainer contract uniform.
         x = self.conv5(x)
+        x = x.mean(dim=[2, 3, 4])
 
         return x
 

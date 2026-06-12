@@ -36,7 +36,6 @@ class BaseGenerator(nn.Module, ABC):
         
         # Output channels based on color mode
         # color_mode=0: monochrome (1 channel), color_mode=1: OHE color classes (6 channels)
-        # MonochromeGenerator overrides to 3 channels for continuous RGB
         self.output_channels = 6 if color_mode == 1 else 1
 
         # Statistics tracking

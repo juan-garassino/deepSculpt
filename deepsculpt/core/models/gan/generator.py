@@ -25,9 +25,12 @@ class SelfAttention3D(nn.Module):
 
     def __init__(self, channels: int, num_heads: int = 4):
         super().__init__()
-        self.num_heads = num_heads
-        self.head_dim = channels // num_heads
-        self.norm = nn.GroupNorm(min(8, channels), channels)
+        # channels must split evenly across heads and norm groups; fall back to
+        # the largest divisor so arbitrary widths (e.g. noise_dim=100 -> 50) work.
+        self.num_heads = next(h for h in range(min(num_heads, channels), 0, -1) if channels % h == 0)
+        self.head_dim = channels // self.num_heads
+        num_groups = next(g for g in range(min(8, channels), 0, -1) if channels % g == 0)
+        self.norm = nn.GroupNorm(num_groups, channels)
         self.qkv = nn.Conv3d(channels, channels * 3, 1)
         self.proj = nn.Conv3d(channels, channels, 1)
 
@@ -184,13 +187,10 @@ class ComplexGenerator(BaseGenerator):
         x = self.leaky_relu(x)
         skip_connections.append(x)
 
-        # Final layer with skip connection
+        # Final layer with skip connection — channels-first (B, C, D, H, W)
         x = torch.cat([x, skip_connections[-1]], dim=1)
         x = self.conv4(x)
         x = self._apply_final_activation(x)
-
-        # Reshape to final output
-        x = x.view(-1, self.void_dim, self.void_dim, self.void_dim, self.output_channels)
 
         return x
 
@@ -315,10 +315,9 @@ class MonochromeGenerator(BaseGenerator):
     """Monochrome generator model."""
     
     def __init__(self, void_dim: int = 64, noise_dim: int = 100, color_mode: int = 0, sparse: bool = False):
-        super().__init__(void_dim, noise_dim, color_mode, sparse)
-        
-        # Always 3 channels for monochrome
-        self.output_channels = 3
+        # Monochrome by definition: 1 occupancy channel regardless of requested color_mode
+        super().__init__(void_dim, noise_dim, 0, sparse)
+
         self.initial_size = void_dim // 8
         
         # Initial dense layer
@@ -363,12 +362,9 @@ class MonochromeGenerator(BaseGenerator):
         x = self.bn4(x)
         x = self.relu(x)
 
-        # Final transposed conv block
+        # Final transposed conv block — channels-first (B, C, D, H, W) like the trainer expects
         x = self.conv4(x)
         x = self._apply_final_activation(x)
-
-        # Reshape to final output
-        x = x.view(-1, self.void_dim, self.void_dim, self.void_dim, self.output_channels)
 
         return x
 
@@ -378,38 +374,37 @@ class AutoencoderGenerator(BaseGenerator):
     
     def __init__(self, void_dim: int = 64, noise_dim: int = 100, color_mode: int = 1, sparse: bool = False):
         super().__init__(void_dim, noise_dim, color_mode, sparse)
-        
-        # Dense layer to expand the latent dimension
-        self.fc = nn.Linear(noise_dim, 4 * 4 * 4 * 16)  # 1024 values for 4x4x4x16
-        
+
+        # Three stride-2 upsampling stages: initial_size * 8 == void_dim
+        self.initial_size = void_dim // 8
+        self.fc = nn.Linear(noise_dim, self.initial_size ** 3 * 16)
+
         # Upsampling layers
         ConvTranspose = SparseConvTranspose3d if sparse else nn.ConvTranspose3d
-        
+
         self.conv1 = ConvTranspose(16, 128, 5, 2, 2, 1)
         self.conv2 = ConvTranspose(128, 64, 5, 2, 2, 1)
         self.conv3 = ConvTranspose(64, self.output_channels, 5, 2, 2, 1)
-        
+
         self.relu = nn.ReLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Dense layer to expand latent dimension
         x = self.fc(x)
         x = self.relu(x)
-        x = x.view(-1, 16, 4, 4, 4)  # Reshape to 4x4x4x16
-        
-        # Upsampling layers
-        x = self.conv1(x)  # 4x4x4 -> 8x8x8
+        x = x.view(-1, 16, self.initial_size, self.initial_size, self.initial_size)
+
+        # Upsampling layers: initial_size -> *2 -> *4 -> *8 == void_dim
+        x = self.conv1(x)
         x = self.relu(x)
-        
-        x = self.conv2(x)  # 8x8x8 -> 16x16x16
+
+        x = self.conv2(x)
         x = self.relu(x)
-        
-        x = self.conv3(x)  # 16x16x16 -> 32x32x32
+
+        x = self.conv3(x)
         x = self._apply_final_activation(x)
-        
-        # Reshape to match expected format (batch, depth, height, width, channels)
-        x = x.permute(0, 2, 3, 4, 1)
-        
+
+        # Channels-first (B, C, D, H, W) like the trainer expects
         return x
 
 
