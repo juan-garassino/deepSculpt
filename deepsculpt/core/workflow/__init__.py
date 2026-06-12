@@ -8,14 +8,14 @@ PyTorch-based workflow orchestration and experiment tracking.
 try:
     from .pytorch_workflow import PyTorchWorkflowManager
     WORKFLOW_AVAILABLE = True
-except ImportError:
+except Exception:
     PyTorchWorkflowManager = None
     WORKFLOW_AVAILABLE = False
 
 try:
     from .pytorch_mlflow_tracking import PyTorchMLflowTracker
     MLFLOW_AVAILABLE = True
-except ImportError:
+except Exception:
     PyTorchMLflowTracker = None
     MLFLOW_AVAILABLE = False
 

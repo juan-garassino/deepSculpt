@@ -104,7 +104,6 @@ try:
     from deepsculpt.core.data.transforms.pytorch_curator import PyTorchCurator
     from deepsculpt.core.data.loaders.data_loaders import StreamingDataLoader
     from deepsculpt.core.visualization.pytorch_visualization import PyTorchVisualizer
-    from deepsculpt.core.workflow.pytorch_workflow import PyTorchWorkflowManager
     from deepsculpt.core.utils.pytorch_utils import PyTorchUtils
     from deepsculpt.core.utils.logger import RichLogger
     

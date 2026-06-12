@@ -63,7 +63,10 @@ try:
     from prefect.executors import LocalDaskExecutor
     from prefect.run_configs import LocalRun
     PREFECT_AVAILABLE = True
-except ImportError:
+except Exception:
+    # Prefect 2/3 raises pydantic ValidationError (not ImportError) when
+    # ~/.prefect/profiles.toml contains settings it doesn't recognize —
+    # any failure here must not brick the whole package import.
     PREFECT_AVAILABLE = False
     # Create dummy decorators for when prefect is not available
     def task(func):
