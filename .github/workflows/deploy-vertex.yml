@@ -30,6 +30,15 @@ on:
           - 'g2-standard-8 / 1x L4'
           - 'a2-highgpu-1g / 1x A100-40GB'
           - 'n1-standard-8 / 1x T4'
+          - 'n1-standard-8 / CPU only'
+      data_samples:
+        description: 'Samples to generate when GCS data cache is empty'
+        required: false
+        default: '2000'
+      void_dim:
+        description: 'Voxel grid size for generated data'
+        required: false
+        default: '64'
       time_budget:
         description: 'Global time budget in seconds (research/improve modes)'
         required: false
@@ -60,6 +69,7 @@ jobs:
             'g2-standard-8 / 1x L4')        echo "mt=g2-standard-8"  >> "$GITHUB_OUTPUT"; echo "acc=NVIDIA_L4" >> "$GITHUB_OUTPUT" ;;
             'a2-highgpu-1g / 1x A100-40GB') echo "mt=a2-highgpu-1g"  >> "$GITHUB_OUTPUT"; echo "acc=NVIDIA_TESLA_A100" >> "$GITHUB_OUTPUT" ;;
             'n1-standard-8 / 1x T4')        echo "mt=n1-standard-8"  >> "$GITHUB_OUTPUT"; echo "acc=NVIDIA_TESLA_T4" >> "$GITHUB_OUTPUT" ;;
+            'n1-standard-8 / CPU only')     echo "mt=n1-standard-8"  >> "$GITHUB_OUTPUT"; echo "acc=" >> "$GITHUB_OUTPUT" ;;
           esac
 
       - name: Authenticate to GCP via WIF
@@ -84,12 +94,17 @@ jobs:
           set -euo pipefail
           # Env vars go via config file — the --worker-pool-spec flag has no env key.
           # No GCS token plumbing: the job runs AS the runtime SA (ADC via metadata).
+          if [ -n "$ACC" ]; then
+            ACC_LINES="
+                acceleratorType: ${ACC}
+                acceleratorCount: 1"
+          else
+            ACC_LINES=""
+          fi
           cat > /tmp/job.yaml <<EOF
           workerPoolSpecs:
             - machineSpec:
-                machineType: ${MT}
-                acceleratorType: ${ACC}
-                acceleratorCount: 1
+                machineType: ${MT}${ACC_LINES}
               replicaCount: 1
               diskSpec:
                 bootDiskType: pd-ssd
@@ -111,6 +126,10 @@ jobs:
                     value: "garassino-ml-artifacts"
                   - name: GCS_PROJECT
                     value: "${PROJECT}"
+                  - name: DATA_SAMPLES
+                    value: "${{ inputs.data_samples }}"
+                  - name: VOID_DIM
+                    value: "${{ inputs.void_dim }}"
           EOF
           # Vertex rejects env entries with empty values — only research/improve
           # modes need the key, and only when the secret is actually set.
