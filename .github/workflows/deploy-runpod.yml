@@ -129,7 +129,7 @@ jobs:
             --arg gpu "$GPU_TYPE" \
             --argjson env "$ENV_JSON" \
             '{
-              query: "mutation Deploy($input: PodFindAndDeployOnDemandInput!) { podFindAndDeployOnDemand(input: $input) { id imageName machineId env { key } } }",
+              query: "mutation Deploy($input: PodFindAndDeployOnDemandInput!) { podFindAndDeployOnDemand(input: $input) { id imageName machineId } }",
               variables: {
                 input: {
                   cloudType: "SECURE",
