@@ -74,7 +74,9 @@ elif [ -s "$GCS_TOKEN_FILE" ]; then
     [ -n "${GCS_PROJECT:-}" ] && export CLOUDSDK_CORE_PROJECT="$GCS_PROJECT"
     echo "=== GCS auth: existing token at ${GCS_TOKEN_FILE} ==="
 else
-    echo "WARN: no GCS_ACCESS_TOKEN and ${GCS_TOKEN_FILE} is empty — gsutil will fail." >&2
+    # On Vertex AI the job runs AS the runtime SA — gsutil/gcloud use ADC via
+    # the metadata server, so no bearer token is needed (RunPod-only plumbing).
+    echo "=== GCS auth: no bearer token — relying on ADC (Vertex AI / metadata server) ==="
 fi
 
 # Helper: refresh gsutil's view of the bearer token from the control file.

@@ -1,0 +1,134 @@
+name: deploy-vertex
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Container mode'
+        required: true
+        type: choice
+        default: train
+        options: [train, research, improve, self-improve]
+      run_id:
+        description: 'Run ID (default = timestamp)'
+        required: false
+        default: ''
+      train_cmd:
+        description: 'train: deepsculpt CLI subcommand'
+        required: false
+        default: 'train-gan'
+      train_args:
+        description: 'train: extra CLI args (e.g. --model-type skip --epochs 200)'
+        required: false
+        default: ''
+      machine:
+        description: 'GPU machine'
+        required: true
+        type: choice
+        default: 'g2-standard-8 / 1x L4'
+        options:
+          - 'g2-standard-8 / 1x L4'
+          - 'a2-highgpu-1g / 1x A100-40GB'
+          - 'n1-standard-8 / 1x T4'
+      time_budget:
+        description: 'Global time budget in seconds (research/improve modes)'
+        required: false
+        default: '3600'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT: garassino-ml
+  REGION: europe-west1
+  IMAGE: europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve RUN_ID + machine spec
+        id: cfg
+        run: |
+          if [ -z "${{ inputs.run_id }}" ]; then
+            echo "run_id=$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_id=${{ inputs.run_id }}" >> "$GITHUB_OUTPUT"
+          fi
+          case "${{ inputs.machine }}" in
+            'g2-standard-8 / 1x L4')        echo "mt=g2-standard-8"  >> "$GITHUB_OUTPUT"; echo "acc=NVIDIA_L4" >> "$GITHUB_OUTPUT" ;;
+            'a2-highgpu-1g / 1x A100-40GB') echo "mt=a2-highgpu-1g"  >> "$GITHUB_OUTPUT"; echo "acc=NVIDIA_TESLA_A100" >> "$GITHUB_OUTPUT" ;;
+            'n1-standard-8 / 1x T4')        echo "mt=n1-standard-8"  >> "$GITHUB_OUTPUT"; echo "acc=NVIDIA_TESLA_T4" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_RUNTIME_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Submit Vertex AI custom job
+        env:
+          RUN_ID: ${{ steps.cfg.outputs.run_id }}
+          MODE: ${{ inputs.mode }}
+          TRAIN_CMD: ${{ inputs.train_cmd }}
+          TRAIN_ARGS: ${{ inputs.train_args }}
+          TIME_BUDGET: ${{ inputs.time_budget }}
+          MT: ${{ steps.cfg.outputs.mt }}
+          ACC: ${{ steps.cfg.outputs.acc }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          # Env vars go via config file — the --worker-pool-spec flag has no env key.
+          # No GCS token plumbing: the job runs AS the runtime SA (ADC via metadata).
+          cat > /tmp/job.yaml <<EOF
+          workerPoolSpecs:
+            - machineSpec:
+                machineType: ${MT}
+                acceleratorType: ${ACC}
+                acceleratorCount: 1
+              replicaCount: 1
+              diskSpec:
+                bootDiskType: pd-ssd
+                bootDiskSizeGb: 200
+              containerSpec:
+                imageUri: ${IMAGE}
+                env:
+                  - name: MODE
+                    value: "${MODE}"
+                  - name: RUN_ID
+                    value: "${RUN_ID}"
+                  - name: TRAIN_CMD
+                    value: "${TRAIN_CMD}"
+                  - name: TRAIN_ARGS
+                    value: "${TRAIN_ARGS}"
+                  - name: TIME_BUDGET
+                    value: "${TIME_BUDGET}"
+                  - name: GCS_BUCKET
+                    value: "garassino-ml-artifacts"
+                  - name: GCS_PROJECT
+                    value: "${PROJECT}"
+                  - name: ANTHROPIC_API_KEY
+                    value: "${ANTHROPIC_API_KEY}"
+          EOF
+          gcloud ai custom-jobs create \
+            --project="$PROJECT" \
+            --region="$REGION" \
+            --display-name="deepsculpt-${RUN_ID}" \
+            --service-account="${{ secrets.GCP_RUNTIME_SA }}" \
+            --config=/tmp/job.yaml \
+            --format='value(name)' | tee /tmp/job_name.txt
+
+          JOB=$(cat /tmp/job_name.txt)
+          {
+            echo "## Vertex AI custom job"
+            echo ""
+            echo "- **Job:** \`$JOB\`"
+            echo "- **Mode:** $MODE — **RUN_ID:** $RUN_ID"
+            echo "- **Machine:** $MT + $ACC"
+            echo "- Monitor: \`gcloud ai custom-jobs describe $JOB --region=$REGION --project=$PROJECT\`"
+            echo "- Outputs: \`gs://garassino-ml-artifacts/deepsculpt/{checkpoints,results}/$RUN_ID/\`"
+          } >> "$GITHUB_STEP_SUMMARY"
