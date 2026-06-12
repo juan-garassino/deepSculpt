@@ -134,6 +134,18 @@ export RUN_ID GCS_BUCKET CKPT_DIR RESULTS_DIR DATA_DIR TIME_BUDGET
 
 echo "=== MODE=${MODE} RUN_ID=${RUN_ID} ==="
 
+# GPU diagnostics — always log what the container can actually see, so a
+# driver/wheel mismatch shows up in the first log page instead of as a
+# silent CPU fallback hours into a paid run.
+echo "=== GPU diagnostics ==="
+nvidia-smi --query-gpu=name,driver_version,memory.total --format=csv 2>&1 | head -5 || echo "nvidia-smi: not available"
+python - <<'PYEOF' 2>&1 || true
+import torch
+print(f"torch {torch.__version__} | built for CUDA {torch.version.cuda} | cuda available: {torch.cuda.is_available()}")
+if not torch.cuda.is_available():
+    print("WARNING: training will run on CPU")
+PYEOF
+
 case "$MODE" in
     train)
         # Bootstrap training data if neither the GCS warm cache nor a prior
