@@ -282,8 +282,16 @@ class UNet3D(BaseDiffusionModel):
         timestep: torch.Tensor,
         conditioning: Optional[torch.Tensor] = None
     ) -> torch.Tensor:
-        # Reshape input if needed (batch, depth, height, width, channels) -> (batch, channels, depth, height, width)
-        if len(x.shape) == 5 and x.shape[-1] == self.in_channels:
+        # Accept legacy channels-last input (B, D, H, W, C) and convert to
+        # channels-first. Only treat it as channels-last when dim 1 does NOT
+        # already match in_channels — otherwise (B, C, D, H, W) with D == C
+        # would be permuted by mistake.
+        channels_last_input = (
+            len(x.shape) == 5
+            and x.shape[1] != self.in_channels
+            and x.shape[-1] == self.in_channels
+        )
+        if channels_last_input:
             x = x.permute(0, 4, 1, 2, 3)
         
         # Time embedding
@@ -341,10 +349,11 @@ class UNet3D(BaseDiffusionModel):
         # Output projection
         h = self.output_proj(h)
         
-        # Reshape output to match input format if needed
-        if len(x.shape) == 5:
+        # Mirror the input convention: only emit channels-last if the caller
+        # passed channels-last. Channels-first in -> channels-first out.
+        if channels_last_input:
             h = h.permute(0, 2, 3, 4, 1)
-        
+
         return h
 
 
