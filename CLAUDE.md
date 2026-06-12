@@ -75,10 +75,13 @@ Use the relevant skill interactively to write the code together.
 
 ## Current status
 - **PyTorch v2 is the only path.** TensorFlow/Keras legacy is archived under `boilerplate/`.
-- **CLI works.** `python -m deepsculpt.main {train-gan,train-diffusion,generate-data,sample-gan,sample-diffusion,preprocess,visualize,benchmark,evaluate,export}`.
+- **CLI works.** `python -m deepsculpt.main {train-gan,train-diffusion,generate-data,sample-gan,sample-diffusion,latent-walk,latent-traverse,latent-directions,preprocess,visualize,benchmark,evaluate,export}`.
+- **Latent navigation is live** (`core/latent/`): slerp/lerp walks, per-dim traversal, GANSpace/PCA semantic directions, diffusion noise-space walks (`latent-walk --backend diffusion`), rendered as GIF/PNG/OBJ/STL via `core/visualization/volume_export.py`. Pass negative alpha lists as `--alphas="-2,0,2"`.
+- **Optional-dep imports are guarded with `except Exception`** (Prefect 2/3 raises ValidationError, not ImportError — don't narrow these back).
 - **Architectural data generator is the active mode** — columns + slabs + 3 orthogonal pipes (red/blue/yellow). See recent `git log` for the procedural-shape tuning history.
-- **Test suite has pre-existing import bugs** (all `tests/unit/*.py` and `tests/integration/*` import the dead `deepSculpt` casing — package is `deepsculpt`). Don't trust `pytest` as a green light; smoke-test via the CLI instead.
-- **Cloud training is live**: `runpod/` directory ships a CUDA 12.8 + Claude Code container that runs on RunPod and syncs checkpoints/results to GCS bucket `garassino-ml-artifacts`. See `runpod/README.md`.
+- **Test suite has pre-existing import bugs** (all `tests/unit/*.py` and `tests/integration/*` import the dead `deepSculpt` casing — package is `deepsculpt`). Don't trust `pytest` as a green light; smoke-test via the CLI instead. `tests/test_latent_ops.py` is the exception (pure tensor tests) — run it with `--noconftest` because the legacy `tests/conftest.py` imports TensorFlow.
+- **Cloud training is live**: `runpod/` directory ships a CUDA 12.8 + Claude Code container that runs on RunPod and syncs checkpoints/results to GCS bucket `garassino-ml-artifacts`. See `runpod/README.md`. `MODE=train` accepts `train_cmd`/`train_args` workflow inputs and auto-generates data when the GCS cache is empty.
+- **This dev machine is old — no local training.** Verify with forward passes and nano runs only (void_dim 16, 1-2 minibatches max); real training goes to RunPod.
 
 ## Cloud training (RunPod + GCS + Claude-in-the-loop)
 The `runpod/` directory contains the full deploy. Four modes:
@@ -94,18 +97,20 @@ GCS layout: `gs://garassino-ml-artifacts/deepsculpt/{data,checkpoints/<run_id>,r
 ## File structure
 ```
 deepsculpt/
-├── main.py                       # CLI entry — 11 subcommands
+├── main.py                       # CLI entry — 13 subcommands
 ├── config.yaml                   # central hyperparameters
 ├── core/
 │   ├── data/{generation,loaders,sparse,transforms}/   # shape gen, dataloaders, encoding
+│   ├── latent/{ops,loader,directions}.py              # latent navigation: walks, traversal, PCA directions
 │   ├── models/
 │   │   ├── gan/{generator,discriminator}.py           # 5 gens, 8 discs incl. SelfAttention3D, LightDiscriminator
-│   │   ├── diffusion/{unet,noise_scheduler,pipeline,pytorch_diffusion}.py
+│   │   ├── diffusion/{unet,noise_scheduler,pipeline,pytorch_diffusion}.py  # pytorch_diffusion is unused reference code
 │   │   ├── base_models.py, model_factory.py
 │   ├── training/{gan_trainer,diffusion_trainer,base_trainer,optimizers,schedulers}.py
 │   ├── utils/{logger,pytorch_utils,monitoring,performance_optimizer}.py
-│   ├── visualization/pytorch_visualization.py
+│   ├── visualization/{pytorch_visualization,volume_export}.py  # volume_export: pure GIF/PNG/mesh writers (no GCS)
 │   └── workflow/{pytorch_workflow,pytorch_mlflow_tracking}.py
+services/                         # Cloud Run trio: trainer job, inference FastAPI (has its own latent_walk endpoint), mlflow
 notebooks/                        # 9 Jupyter notebooks (Colab + local)
 scripts/                          # colab_train.py, colab_train_diffusion.py, autoresearch_report.py, preview_sample.py
 tests/                            # pytest suite (most fixed via sed; 11 tier-2 errors remain — see Current status)

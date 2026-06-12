@@ -114,11 +114,12 @@ class Diffusion3DPipeline:
         num_inference_steps: Optional[int] = None,
         guidance_scale: Optional[float] = None,
         generator: Optional[torch.Generator] = None,
-        return_intermediate: bool = False
+        return_intermediate: bool = False,
+        init_noise: Optional[torch.Tensor] = None
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, List[torch.Tensor]]]:
         """
         Generate samples using the reverse diffusion process.
-        
+
         Args:
             shape: Shape of samples to generate
             conditioning: Optional conditioning information
@@ -126,7 +127,9 @@ class Diffusion3DPipeline:
             guidance_scale: Scale for classifier-free guidance
             generator: Random number generator for reproducibility
             return_intermediate: Whether to return intermediate samples
-            
+            init_noise: Custom initial noise tensor (latent-space navigation:
+                interpolate between noise tensors, sample each deterministically)
+
         Returns:
             Generated samples, optionally with intermediate steps
         """
@@ -134,9 +137,16 @@ class Diffusion3DPipeline:
             num_inference_steps = self.num_inference_steps
         if guidance_scale is None:
             guidance_scale = self.guidance_scale
-        
-        # Initialize with random noise
-        sample = torch.randn(shape, device=self.device, generator=generator)
+
+        # Initialize with provided or random noise
+        if init_noise is not None:
+            if tuple(init_noise.shape) != tuple(shape):
+                raise ValueError(
+                    f"init_noise shape {tuple(init_noise.shape)} != requested {tuple(shape)}"
+                )
+            sample = init_noise.to(self.device)
+        else:
+            sample = torch.randn(shape, device=self.device, generator=generator)
         
         # Create timestep schedule
         timesteps = torch.linspace(
@@ -408,14 +418,16 @@ class FastSamplingPipeline(Diffusion3DPipeline):
         guidance_scale: Optional[float] = None,
         generator: Optional[torch.Generator] = None,
         return_intermediate: bool = False,
-        use_fast_scheduler: bool = True
+        use_fast_scheduler: bool = True,
+        init_noise: Optional[torch.Tensor] = None
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, List[torch.Tensor]]]:
         """
         Generate samples with optional fast scheduling.
-        
+
         Args:
             use_fast_scheduler: Whether to use the fast scheduler
-            
+            init_noise: Custom initial noise (passed through to the base sampler)
+
         Returns:
             Generated samples
         """
@@ -423,19 +435,21 @@ class FastSamplingPipeline(Diffusion3DPipeline):
             # Temporarily replace scheduler
             original_scheduler = self.noise_scheduler
             self.noise_scheduler = self.fast_scheduler
-            
+
             try:
                 result = super().sample(
-                    shape, conditioning, num_inference_steps, guidance_scale, generator, return_intermediate
+                    shape, conditioning, num_inference_steps, guidance_scale, generator,
+                    return_intermediate, init_noise=init_noise
                 )
             finally:
                 # Restore original scheduler
                 self.noise_scheduler = original_scheduler
-            
+
             return result
         else:
             return super().sample(
-                shape, conditioning, num_inference_steps, guidance_scale, generator, return_intermediate
+                shape, conditioning, num_inference_steps, guidance_scale, generator,
+                return_intermediate, init_noise=init_noise
             )
 
 

@@ -16,7 +16,12 @@ from .ops import (
     traverse_dimension,
     walk_path,
 )
-from .loader import LoadedGenerator, find_config, load_generator
+from .loader import (
+    LoadedGenerator,
+    find_config,
+    load_diffusion_pipeline,
+    load_generator,
+)
 from .directions import (
     LatentDirections,
     apply_direction,
@@ -41,5 +46,6 @@ __all__ = [
     "walk_path",
     "LoadedGenerator",
     "find_config",
+    "load_diffusion_pipeline",
     "load_generator",
 ]

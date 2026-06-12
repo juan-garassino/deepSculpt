@@ -40,7 +40,13 @@ Registry: GitHub Container Registry, `ghcr.io/juan-garassino/deepsculpt-runpod:l
 ## Modes
 
 ### `MODE=train`
-Runs `python -m deepsculpt.main $TRAIN_CMD $TRAIN_ARGS --ckpt-dir $CKPT_DIR --data-dir $DATA_DIR`. Output goes to `${RESULTS_DIR}/train.log`.
+Runs `python -m deepsculpt.main $TRAIN_CMD --data-folder $DATA_DIR --output-dir $CKPT_DIR $TRAIN_ARGS`. Output goes to `${RESULTS_DIR}/train.log`.
+
+If `$DATA_DIR` is empty (no GCS warm cache), the entrypoint first generates training data via `generate-data` — controlled by `DATA_SAMPLES` (default 2000) and `VOID_DIM` (default 64) — and rsyncs it to `gs://$GCS_BUCKET/deepsculpt/data` so later runs start warm.
+
+Checkpoints land in `$CKPT_DIR/<run_dir>/` (e.g. `gan_skip_<ts>/generator_final.pt`, `ema_generator_final.pt`, `config.json`, epoch checkpoints) and are rsynced to `gs://$GCS_BUCKET/deepsculpt/checkpoints/$RUN_ID/` every `SYNC_INTERVAL` and on exit.
+
+Dispatch via GHA inputs: `gh workflow run deploy-runpod.yml -f mode=train -f train_cmd=train-gan -f train_args='--model-type skip --epochs 200'` (or `make deploy MODE=train TRAIN_ARGS=...`).
 
 ### `MODE=research`
 Launches `claude --dangerously-skip-permissions -p "$(cat runpod/prompts/research.md)" --verbose`. Claude runs experiments autonomously, logs each run to `experiments.tsv`, and stops near `TIME_BUDGET`. The prompt is archived to `gs://$GCS_BUCKET/deepsculpt/prompts-archive/<ts>-research.md` for reproducibility.

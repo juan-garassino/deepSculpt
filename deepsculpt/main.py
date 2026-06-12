@@ -934,15 +934,18 @@ class DeepSculptV2Main:
         print(f"Latent outputs written to {output_dir} (formats: {', '.join(formats)})")
 
     def latent_walk(self, args):
-        """Interpolation walk between seeded anchors in z-space."""
-        from deepsculpt.core.latent import (
-            batched_generate, latent_arithmetic, seeded_z, walk_path,
-        )
-        loaded = self._load_latent_generator(args)
+        """Interpolation walk between seeded anchors (GAN z-space or diffusion noise-space)."""
+        from deepsculpt.core.latent import latent_arithmetic, walk_path
 
         seeds = [int(s) for s in args.seeds.split(",")] if args.seeds else [0, 1]
         if len(seeds) < 2 and not args.arithmetic:
             raise ValueError("latent-walk needs at least 2 seeds (--seeds 12,77)")
+
+        if args.backend == 'diffusion':
+            return self._latent_walk_diffusion(args, seeds)
+
+        from deepsculpt.core.latent import batched_generate, seeded_z
+        loaded = self._load_latent_generator(args)
 
         anchors = torch.stack([seeded_z(s, loaded.noise_dim)[0] for s in seeds])
         if args.arithmetic:
@@ -957,6 +960,39 @@ class DeepSculptV2Main:
         volumes = batched_generate(loaded.generator, path,
                                    batch_size=args.batch_size, device=self.device)
         self._export_latent_outputs(volumes, args, stem="walk")
+        return 0
+
+    def _latent_walk_diffusion(self, args, seeds):
+        """Walk in diffusion noise-space: interpolate initial noise, sample
+        each step deterministically (DDIM/DPM-Solver, eta=0)."""
+        from deepsculpt.core.latent import load_diffusion_pipeline, seeded_noise, walk_path
+
+        if args.sampler == 'ddpm':
+            raise ValueError("--backend diffusion needs a deterministic sampler (ddim or dpm_solver)")
+
+        pipeline, config = load_diffusion_pipeline(
+            Path(args.checkpoint), device=self.device,
+            sampler=args.sampler, num_steps=args.diffusion_steps,
+        )
+        shape = (1, config.get('num_channels', 1),
+                 config['void_dim'], config['void_dim'], config['void_dim'])
+
+        anchors = torch.stack([seeded_noise(s, shape) for s in seeds])
+        path = walk_path(anchors, args.steps, mode=args.interp, closed=args.closed)
+        print(f"Diffusion walk: {path.shape[0]} steps x {args.diffusion_steps} "
+              f"{args.sampler} denoising steps (void_dim={config['void_dim']})")
+
+        volumes = []
+        with torch.no_grad():
+            for i in range(path.shape[0]):
+                sample = pipeline.sample(
+                    shape=shape,
+                    num_inference_steps=args.diffusion_steps,
+                    init_noise=path[i],
+                )
+                volumes.append(sample.cpu())
+                print(f"  step {i + 1}/{path.shape[0]} done")
+        self._export_latent_outputs(torch.cat(volumes), args, stem="walk_diffusion")
         return 0
 
     def latent_traverse(self, args):
@@ -1400,6 +1436,12 @@ def create_parser():
     walk_parser.add_argument('--closed', action='store_true', help='Loop back to the first anchor')
     walk_parser.add_argument('--arithmetic', default='',
                              help='Latent expression over seed letters (a=1st seed, b=2nd, ...), e.g. "a - b + c"; walks from a to the result')
+    walk_parser.add_argument('--backend', default='gan', choices=['gan', 'diffusion'],
+                             help='gan: walk z-space; diffusion: walk initial-noise space (deterministic DDIM per step)')
+    walk_parser.add_argument('--sampler', default='ddim', choices=['ddim', 'dpm_solver'],
+                             help='Deterministic sampler for --backend diffusion')
+    walk_parser.add_argument('--diffusion-steps', type=int, default=10,
+                             help='Denoising steps per walk frame for --backend diffusion')
 
     traverse_parser = subparsers.add_parser('latent-traverse', help='Vary one latent dimension at a time')
     _add_latent_common_args(traverse_parser)

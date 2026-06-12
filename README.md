@@ -46,6 +46,29 @@ curl -X POST http://localhost:8081/infer \
 7. `GET /train/status/{execution_id}`
 8. `GET /mlflow/last-run`
 
+## Latent-space navigation (CLI)
+
+Explore a trained model's latent space directly from the CLI (CPU-friendly; the checkpoint's `config.json` must sit beside the weights):
+
+```bash
+# Interpolation walk between two seeds (GIF + meshes)
+python -m deepsculpt.main --cpu latent-walk --checkpoint <run_dir>/ema_generator_final.pt \
+  --seeds 12,77 --steps 30 --interp slerp --format gif --format obj
+
+# Vary one z dimension at a time (contact-sheet PNG)
+python -m deepsculpt.main --cpu latent-traverse --checkpoint <ckpt> --dims 0,3,9 --steps 9 --format png
+
+# Discover semantic directions (GANSpace PCA) and render one
+python -m deepsculpt.main --cpu latent-directions --checkpoint <ckpt> \
+  --method ganspace --components 10 --apply 0 --alphas="-3,-1.5,0,1.5,3"
+
+# Walk diffusion initial-noise space (deterministic DDIM per frame)
+python -m deepsculpt.main --cpu latent-walk --backend diffusion \
+  --checkpoint <run_dir>/diffusion_final.pt --seeds 5,9 --steps 12 --diffusion-steps 25
+```
+
+Pull trained weights from a RunPod run first: `gsutil -m rsync -r gs://garassino-ml-artifacts/deepsculpt/checkpoints/<run_id> ./checkpoints/<run_id>`.
+
 ## Training Modes
 
 ### GAN

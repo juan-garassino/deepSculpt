@@ -2,6 +2,8 @@
 
 The inference service loads the latest model from GCS and serves a FastAPI API.
 
+> Latent-space navigation (walks, traversal, semantic directions) lives in the core CLI — see "Latent-space navigation" in the root README. The service's `latent_walk` request option is a separate lerp-only implementation and keeps working unchanged.
+
 ## Endpoints
 
 1. `GET /health`

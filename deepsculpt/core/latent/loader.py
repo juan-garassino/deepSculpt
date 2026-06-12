@@ -94,3 +94,53 @@ def load_generator(
         void_dim=config["void_dim"],
         source=source,
     )
+
+
+def load_diffusion_pipeline(
+    checkpoint_path: Path,
+    device: str = "cpu",
+    sampler: str = "ddim",
+    num_steps: int = 10,
+    guidance_scale: float = 1.0,
+):
+    """Rebuild a FastSamplingPipeline from a diffusion_final.pt checkpoint
+    (same recipe as the sample-diffusion CLI). Returns (pipeline, config).
+
+    Only deterministic samplers make sense for noise-space walks — the
+    caller should reject 'ddpm'.
+    """
+    from deepsculpt.core.models.model_factory import PyTorchModelFactory
+    from deepsculpt.core.models.diffusion.pipeline import FastSamplingPipeline
+
+    checkpoint = torch.load(Path(checkpoint_path), map_location=device, weights_only=False)
+    config = checkpoint["config"]
+
+    factory = PyTorchModelFactory(device=device)
+    model = factory.create_diffusion_model(
+        model_type="unet3d",
+        void_dim=config["void_dim"],
+        in_channels=config.get("num_channels", 1),
+        out_channels=config.get("num_channels", 1),
+        timesteps=config.get("timesteps", 1000),
+        sparse=config.get("sparse", False),
+    ).to(device)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    model.eval()
+
+    noise_scheduler = checkpoint["noise_scheduler"]
+    if hasattr(noise_scheduler, "device"):
+        noise_scheduler.device = device
+    if hasattr(noise_scheduler, "_to_device"):
+        noise_scheduler._to_device()
+
+    pipeline = FastSamplingPipeline(
+        model=model,
+        noise_scheduler=noise_scheduler,
+        device=device,
+        guidance_scale=guidance_scale,
+        num_inference_steps=num_steps,
+        scheduler_type=sampler,
+    )
+    logger.info("Loaded diffusion pipeline from %s (%s, %d steps)",
+                checkpoint_path, sampler, num_steps)
+    return pipeline, config
