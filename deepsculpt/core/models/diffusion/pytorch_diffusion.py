@@ -4,6 +4,9 @@ PyTorch diffusion pipeline implementation for DeepSculpt 3D generation.
 This module provides comprehensive noise scheduling and diffusion pipeline
 implementations for 3D sculpture generation, including advanced sampling
 techniques and conditional generation support.
+
+NOTE: unused reference implementation — the CLI path (sample-diffusion) goes
+through noise_scheduler.py + pipeline.py. Nothing imports this module.
 """
 
 import torch

@@ -283,49 +283,56 @@ class DDIMScheduler(NoiseScheduler):
         timestep: int,
         sample: torch.Tensor,
         prediction_type: str = "epsilon",
-        eta: Optional[float] = None
+        eta: Optional[float] = None,
+        prev_timestep: Optional[int] = None
     ) -> torch.Tensor:
         """
         DDIM sampling step.
-        
+
         Args:
             model_output: Output from the diffusion model
             timestep: Current timestep
             sample: Current sample
             prediction_type: Type of prediction
             eta: Override eta value for this step
-            
+            prev_timestep: Next scheduled timestep when sampling with strided
+                steps (e.g. 50 inference steps over 1000 trained). Defaults to
+                timestep - 1 (unstrided).
+
         Returns:
             Previous sample
         """
         if eta is None:
             eta = self.eta
-        
+
         t = timestep
-        prev_t = t - self.timesteps // self.timesteps  # Assuming uniform spacing
-        
+        prev_t = prev_timestep if prev_timestep is not None else t - 1
+
         alpha_prod_t = self.alphas_cumprod[t]
         alpha_prod_t_prev = self.alphas_cumprod[prev_t] if prev_t >= 0 else torch.tensor(1.0)
-        
+
         beta_prod_t = 1 - alpha_prod_t
         beta_prod_t_prev = 1 - alpha_prod_t_prev
-        
+
         if prediction_type == "epsilon":
             pred_original_sample = (sample - beta_prod_t ** 0.5 * model_output) / alpha_prod_t ** 0.5
         elif prediction_type == "sample":
             pred_original_sample = model_output
         else:
             raise ValueError(f"Unsupported prediction type: {prediction_type}")
-        
+
         if self.clip_sample:
             pred_original_sample = torch.clamp(pred_original_sample, -1, 1)
-        
+
         # Compute variance
         variance = (beta_prod_t_prev / beta_prod_t) * (1 - alpha_prod_t / alpha_prod_t_prev)
         std_dev_t = eta * variance ** 0.5
-        
-        # Compute predicted previous sample
-        pred_sample_direction = (1 - alpha_prod_t_prev - std_dev_t**2) ** 0.5 * model_output
+
+        # Direction term uses the epsilon implied by the (possibly clipped)
+        # pred_original_sample, not the raw model output — correct for both
+        # epsilon and sample prediction after clipping.
+        pred_epsilon = (sample - alpha_prod_t ** 0.5 * pred_original_sample) / beta_prod_t ** 0.5
+        pred_sample_direction = (1 - alpha_prod_t_prev - std_dev_t**2) ** 0.5 * pred_epsilon
         pred_prev_sample = alpha_prod_t_prev ** 0.5 * pred_original_sample + pred_sample_direction
         
         if eta > 0:
@@ -386,7 +393,7 @@ class DPMSolverScheduler(NoiseScheduler):
             Previous sample
         """
         if prev_timestep is None:
-            prev_timestep = timestep - self.timesteps // self.timesteps
+            prev_timestep = timestep - 1
         
         lambda_t = self.lambda_t[timestep]
         lambda_s = self.lambda_t[prev_timestep] if prev_timestep >= 0 else torch.tensor(float('inf'))

@@ -161,8 +161,17 @@ class Diffusion3DPipeline:
                 else:
                     model_output = self.reverse_process(sample, timestep_batch, conditioning)
                 
-                # Compute previous sample
-                if hasattr(self.noise_scheduler, 'step'):
+                # Compute previous sample. Strided schedules (num_inference_steps <
+                # trained timesteps) must tell the scheduler which timestep comes
+                # next; DDIM/DPM-Solver default to t-1 otherwise and produce garbage.
+                prev_t = int(timesteps[i + 1].item()) if i + 1 < len(timesteps) else -1
+                if isinstance(self.noise_scheduler, DDIMScheduler):
+                    sample = self.noise_scheduler.step(
+                        model_output, t.item(), sample, self.prediction_type, prev_timestep=prev_t
+                    )
+                elif isinstance(self.noise_scheduler, DPMSolverScheduler):
+                    sample = self.noise_scheduler.step(model_output, t.item(), sample, prev_timestep=prev_t)
+                elif hasattr(self.noise_scheduler, 'step'):
                     sample = self.noise_scheduler.step(model_output, t.item(), sample, self.prediction_type)
                 else:
                     # Fallback to basic DDPM step
