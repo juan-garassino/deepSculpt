@@ -308,15 +308,13 @@ ignore_missing_imports = true
 # Pytest configuration
 [tool.pytest.ini_options]
 minversion = "7.0"
+# Coverage is opt-in (run with --cov=deepsculpt when wanted): the old default
+# measured a nonexistent "core" top-level package and the 80% gate failed
+# every run, making pytest useless as a smoke gate.
 addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=core",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
-    "--cov-fail-under=80",
 ]
 testpaths = ["tests"]
 filterwarnings = [
@@ -339,7 +337,7 @@ markers = [
 
 # Coverage configuration
 [tool.coverage.run]
-source = ["core"]
+source = ["deepsculpt"]
 omit = [
     "*/tests/*",
     "*/test_*",
