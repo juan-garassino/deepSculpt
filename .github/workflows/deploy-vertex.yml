@@ -111,9 +111,15 @@ jobs:
                     value: "garassino-ml-artifacts"
                   - name: GCS_PROJECT
                     value: "${PROJECT}"
+          EOF
+          # Vertex rejects env entries with empty values — only research/improve
+          # modes need the key, and only when the secret is actually set.
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            cat >> /tmp/job.yaml <<EOF
                   - name: ANTHROPIC_API_KEY
                     value: "${ANTHROPIC_API_KEY}"
           EOF
+          fi
           gcloud ai custom-jobs create \
             --project="$PROJECT" \
             --region="$REGION" \
