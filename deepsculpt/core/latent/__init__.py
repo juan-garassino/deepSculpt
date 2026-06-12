@@ -17,8 +17,20 @@ from .ops import (
     walk_path,
 )
 from .loader import LoadedGenerator, find_config, load_generator
+from .directions import (
+    LatentDirections,
+    apply_direction,
+    compute_directions,
+    load_directions,
+    save_directions,
+)
 
 __all__ = [
+    "LatentDirections",
+    "apply_direction",
+    "compute_directions",
+    "load_directions",
+    "save_directions",
     "batched_generate",
     "latent_arithmetic",
     "lerp",

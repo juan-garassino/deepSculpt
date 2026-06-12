@@ -960,29 +960,91 @@ class DeepSculptV2Main:
         return 0
 
     def latent_traverse(self, args):
-        """Per-dimension traversal: vary one z coordinate at a time."""
-        from deepsculpt.core.latent import batched_generate, seeded_z, traverse_dimension
+        """Per-dimension (or per-principal-direction) traversal."""
+        from deepsculpt.core.latent import (
+            apply_direction, batched_generate, load_directions, seeded_z,
+            traverse_dimension,
+        )
         loaded = self._load_latent_generator(args)
-
-        if args.dims:
-            dims = [int(d) for d in args.dims.split(",")]
-        else:
-            dims = list(range(min(args.num_dims, loaded.noise_dim)))
-
         z_base = seeded_z(args.base_seed, loaded.noise_dim)[0]
+        alphas = torch.linspace(-args.sigma_range, args.sigma_range, args.steps)
+
         all_volumes, titles = [], []
-        for dim in dims:
-            zs = traverse_dimension(z_base, dim, args.steps, sigma_range=args.sigma_range)
-            vols = batched_generate(loaded.generator, zs,
-                                    batch_size=args.batch_size, device=self.device)
-            all_volumes.append(vols)
-            titles.extend([f"z[{dim}]={v:+.1f}" for v in
-                           torch.linspace(-args.sigma_range, args.sigma_range, args.steps)])
+        if args.directions:
+            d = load_directions(Path(args.directions))
+            if d.noise_dim != loaded.noise_dim:
+                raise ValueError(
+                    f"directions were computed for noise_dim={d.noise_dim}, "
+                    f"checkpoint has noise_dim={loaded.noise_dim}"
+                )
+            indices = ([int(i) for i in args.dims.split(",")] if args.dims
+                       else list(range(min(args.num_dims, d.directions.shape[0]))))
+            for idx in indices:
+                zs = apply_direction(z_base, d.directions[idx], alphas.tolist())
+                vols = batched_generate(loaded.generator, zs,
+                                        batch_size=args.batch_size, device=self.device)
+                all_volumes.append(vols)
+                titles.extend([f"pc{idx} a={v:+.1f}" for v in alphas])
+            label = f"{len(indices)} principal directions"
+            rows = len(indices)
+        else:
+            dims = ([int(i) for i in args.dims.split(",")] if args.dims
+                    else list(range(min(args.num_dims, loaded.noise_dim))))
+            for dim in dims:
+                zs = traverse_dimension(z_base, dim, args.steps, sigma_range=args.sigma_range)
+                vols = batched_generate(loaded.generator, zs,
+                                        batch_size=args.batch_size, device=self.device)
+                all_volumes.append(vols)
+                titles.extend([f"z[{dim}]={v:+.1f}" for v in alphas])
+            label = f"{len(dims)} dims"
+            rows = len(dims)
+
         volumes = torch.cat(all_volumes)
-        print(f"Traversed {len(dims)} dims x {args.steps} steps "
+        print(f"Traversed {label} x {args.steps} steps "
               f"(base seed {args.base_seed}, ±{args.sigma_range}σ)")
         self._export_latent_outputs(volumes, args, stem="traverse",
-                                    titles=titles, rows=len(dims), cols=args.steps)
+                                    titles=titles, rows=rows, cols=args.steps)
+        return 0
+
+    def latent_directions(self, args):
+        """Discover semantic directions (PCA/GANSpace) and optionally render one."""
+        from deepsculpt.core.latent import (
+            apply_direction, batched_generate, compute_directions, save_directions,
+            seeded_z,
+        )
+        loaded = self._load_latent_generator(args)
+        d = compute_directions(
+            loaded.generator,
+            noise_dim=loaded.noise_dim,
+            num_samples=args.num_samples,
+            num_components=args.components,
+            method=args.method,
+            batch_size=args.batch_size,
+            device=self.device,
+            seed=args.seed,
+        )
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        save_path = Path(args.save) if args.save else output_dir / "directions.pt"
+        save_directions(d, save_path)
+        print(f"Saved {d.directions.shape[0]} {d.method} directions to {save_path}")
+        print("Explained variance:", ", ".join(f"{v:.3f}" for v in d.explained_variance))
+
+        if args.apply is not None:
+            alphas = [float(a) for a in args.alphas.split(",")]
+            all_volumes, titles = [], []
+            for s in range(args.num_seeds):
+                z = seeded_z(args.seed + s, loaded.noise_dim)[0]
+                zs = apply_direction(z, d.directions[args.apply], alphas)
+                vols = batched_generate(loaded.generator, zs,
+                                        batch_size=args.batch_size, device=self.device)
+                all_volumes.append(vols)
+                titles.extend([f"seed{args.seed + s} a={a:+.1f}" for a in alphas])
+            volumes = torch.cat(all_volumes)
+            self._export_latent_outputs(
+                volumes, args, stem=f"direction_pc{args.apply}",
+                titles=titles, rows=args.num_seeds, cols=len(alphas),
+            )
         return 0
 
     def _create_data_loader(self, args):
@@ -1341,11 +1403,24 @@ def create_parser():
 
     traverse_parser = subparsers.add_parser('latent-traverse', help='Vary one latent dimension at a time')
     _add_latent_common_args(traverse_parser)
-    traverse_parser.add_argument('--dims', default='', help='Comma-separated z dims to traverse, e.g. 0,3,9')
+    traverse_parser.add_argument('--dims', default='', help='Comma-separated z dims (or direction indices with --directions), e.g. 0,3,9')
     traverse_parser.add_argument('--num-dims', type=int, default=8, help='Traverse the first N dims when --dims is not given')
     traverse_parser.add_argument('--steps', type=int, default=9, help='Steps across the ±sigma range')
     traverse_parser.add_argument('--sigma-range', type=float, default=3.0, help='Traversal range in standard deviations')
     traverse_parser.add_argument('--base-seed', type=int, default=42, help='Seed for the base z vector')
+    traverse_parser.add_argument('--directions', default='', help='Path to a directions.pt from latent-directions; traverse principal directions instead of raw dims')
+
+    directions_parser = subparsers.add_parser('latent-directions', help='Discover semantic directions via PCA/GANSpace')
+    _add_latent_common_args(directions_parser)
+    directions_parser.add_argument('--num-samples', type=int, default=2048, help='z samples for PCA')
+    directions_parser.add_argument('--components', type=int, default=10, help='Number of principal directions')
+    directions_parser.add_argument('--method', default='ganspace', choices=['ganspace', 'output-pca'],
+                                   help='ganspace: PCA on first-linear activations (fast); output-pca: PCA on generated volumes (slow)')
+    directions_parser.add_argument('--save', default='', help='Where to save directions (.pt; default <output-dir>/directions.pt)')
+    directions_parser.add_argument('--apply', type=int, default=None, help='Render this direction index after computing')
+    directions_parser.add_argument('--alphas', default='-3,-1.5,0,1.5,3', help='Comma-separated strengths for --apply')
+    directions_parser.add_argument('--num-seeds', type=int, default=4, help='Base seeds to render for --apply')
+    directions_parser.add_argument('--seed', type=int, default=0, help='Sampling seed for PCA (and base for --apply renders)')
 
     # Data preprocessing
     preprocess_parser = subparsers.add_parser('preprocess', help='Preprocess and curate data')
@@ -1427,6 +1502,8 @@ def main():
             return main_app.latent_walk(args)
         elif args.command == 'latent-traverse':
             return main_app.latent_traverse(args)
+        elif args.command == 'latent-directions':
+            return main_app.latent_directions(args)
         elif args.command == 'sample-diffusion':
             return main_app.sample_diffusion(args)
         elif args.command == 'preprocess':
