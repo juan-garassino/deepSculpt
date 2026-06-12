@@ -95,7 +95,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 # Import DeepSculpt v2.0 modules
 try:
     from deepsculpt.core.models.model_factory import PyTorchModelFactory as PyTorchModelFactoryV2
-    from deepsculpt.core.models.pytorch_models import *
     from deepsculpt.core.training.gan_trainer import GANTrainer
     from deepsculpt.core.training.diffusion_trainer import DiffusionTrainer
     from deepsculpt.core.training.base_trainer import BaseTrainer, TrainingConfig
@@ -419,7 +418,7 @@ class DeepSculptV2Main:
         ).to(self.device)
         
         # Create noise scheduler
-        from core.models.diffusion.noise_scheduler import NoiseScheduler
+        from deepsculpt.core.models.diffusion.noise_scheduler import NoiseScheduler
         noise_scheduler = NoiseScheduler(
             schedule_type=args.noise_schedule,
             timesteps=args.timesteps,
@@ -429,7 +428,7 @@ class DeepSculptV2Main:
         )
         
         # Create diffusion pipeline
-        from core.models.diffusion.pipeline import Diffusion3DPipeline
+        from deepsculpt.core.models.diffusion.pipeline import Diffusion3DPipeline
         diffusion_pipeline = Diffusion3DPipeline(
             model=model,
             noise_scheduler=noise_scheduler,
@@ -693,7 +692,7 @@ class DeepSculptV2Main:
         if hasattr(noise_scheduler, "_to_device"):
             noise_scheduler._to_device()
 
-        from core.models.diffusion.pipeline import Diffusion3DPipeline, FastSamplingPipeline
+        from deepsculpt.core.models.diffusion.pipeline import Diffusion3DPipeline, FastSamplingPipeline
         if args.sampler == "ddpm":
             diffusion_pipeline = Diffusion3DPipeline(
                 model=model,

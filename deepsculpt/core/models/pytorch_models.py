@@ -1,6 +1,11 @@
 """
 PyTorch model definitions for DeepSculpt.
 This file contains all PyTorch model architectures equivalent to the TensorFlow versions.
+
+LEGACY — parallel implementation superseded by gan/{generator,discriminator}.py,
+diffusion/{unet,noise_scheduler,pipeline}.py and model_factory.py. Only the
+guarded legacy workflow import and old unit tests reference it. Do not import
+from here in live code (its classes shadow the canonical ones).
 """
 
 import torch
