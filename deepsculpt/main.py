@@ -888,7 +888,103 @@ class DeepSculptV2Main:
         
         print(f"Model exported successfully to {args.output}")
         return 0
-    
+
+    def _load_latent_generator(self, args):
+        """Load a generator for latent navigation, honoring --use-ema/--no-ema."""
+        from deepsculpt.core.latent import load_generator
+        return load_generator(
+            Path(args.checkpoint), device=self.device, prefer_ema=args.use_ema
+        )
+
+    def _export_latent_outputs(self, volumes, args, stem, titles=None, rows=None, cols=None):
+        """Write the requested --format outputs for a (N,C,D,H,W) volume tensor."""
+        from deepsculpt.core.visualization.volume_export import (
+            render_contact_sheet, save_gif_from_volumes, save_mesh,
+        )
+        output_dir = Path(args.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        vols_np = volumes.numpy()
+
+        # Always dump raw volumes so runs are comparable/deterministic
+        torch.save(volumes, output_dir / f"{stem}_volumes.pt")
+
+        formats = args.format or ["gif"]
+        for fmt in formats:
+            if fmt == "gif":
+                save_gif_from_volumes(
+                    list(vols_np), str(output_dir / f"{stem}.gif"),
+                    fps=args.fps, mode=args.render, threshold=args.threshold,
+                )
+            elif fmt == "png":
+                n = vols_np.shape[0]
+                r = rows or 1
+                c = cols or n
+                render_contact_sheet(
+                    list(vols_np), str(output_dir / f"{stem}.png"),
+                    rows=r, cols=c, titles=titles,
+                    threshold=args.threshold, mode=args.render,
+                )
+            elif fmt in ("obj", "stl"):
+                for i, vol in enumerate(vols_np):
+                    try:
+                        save_mesh(vol, str(output_dir / f"{stem}_{i:03d}.{fmt}"),
+                                  fmt=fmt, threshold=args.threshold)
+                    except ValueError as e:
+                        print(f"  skip mesh for step {i}: {e}")
+        print(f"Latent outputs written to {output_dir} (formats: {', '.join(formats)})")
+
+    def latent_walk(self, args):
+        """Interpolation walk between seeded anchors in z-space."""
+        from deepsculpt.core.latent import (
+            batched_generate, latent_arithmetic, seeded_z, walk_path,
+        )
+        loaded = self._load_latent_generator(args)
+
+        seeds = [int(s) for s in args.seeds.split(",")] if args.seeds else [0, 1]
+        if len(seeds) < 2 and not args.arithmetic:
+            raise ValueError("latent-walk needs at least 2 seeds (--seeds 12,77)")
+
+        anchors = torch.stack([seeded_z(s, loaded.noise_dim)[0] for s in seeds])
+        if args.arithmetic:
+            named = {chr(ord('a') + i): z for i, z in enumerate(anchors)}
+            target = latent_arithmetic(named, args.arithmetic)
+            anchors = torch.stack([anchors[0], target])
+            print(f"Walking from seed {seeds[0]} to arithmetic result ({args.arithmetic})")
+
+        path = walk_path(anchors, args.steps, mode=args.interp, closed=args.closed)
+        print(f"Generating {path.shape[0]} steps along a {args.interp} walk "
+              f"({len(seeds)} anchors, noise_dim={loaded.noise_dim})")
+        volumes = batched_generate(loaded.generator, path,
+                                   batch_size=args.batch_size, device=self.device)
+        self._export_latent_outputs(volumes, args, stem="walk")
+        return 0
+
+    def latent_traverse(self, args):
+        """Per-dimension traversal: vary one z coordinate at a time."""
+        from deepsculpt.core.latent import batched_generate, seeded_z, traverse_dimension
+        loaded = self._load_latent_generator(args)
+
+        if args.dims:
+            dims = [int(d) for d in args.dims.split(",")]
+        else:
+            dims = list(range(min(args.num_dims, loaded.noise_dim)))
+
+        z_base = seeded_z(args.base_seed, loaded.noise_dim)[0]
+        all_volumes, titles = [], []
+        for dim in dims:
+            zs = traverse_dimension(z_base, dim, args.steps, sigma_range=args.sigma_range)
+            vols = batched_generate(loaded.generator, zs,
+                                    batch_size=args.batch_size, device=self.device)
+            all_volumes.append(vols)
+            titles.extend([f"z[{dim}]={v:+.1f}" for v in
+                           torch.linspace(-args.sigma_range, args.sigma_range, args.steps)])
+        volumes = torch.cat(all_volumes)
+        print(f"Traversed {len(dims)} dims x {args.steps} steps "
+              f"(base seed {args.base_seed}, ±{args.sigma_range}σ)")
+        self._export_latent_outputs(volumes, args, stem="traverse",
+                                    titles=titles, rows=len(dims), cols=args.steps)
+        return 0
+
     def _create_data_loader(self, args):
         """Create data loader based on arguments."""
         collection_dir = self._resolve_collection_dir(Path(args.data_folder))
@@ -1216,7 +1312,41 @@ def create_parser():
                                    help='Classifier-free guidance scale. Keep at 1.0 for unconditional models.')
     sample_diff_parser.add_argument('--output-dir', default='./samples', help='Output directory')
     sample_diff_parser.add_argument('--visualize', action='store_true', help='Create visualizations')
-    
+
+    # Latent-space navigation
+    def _add_latent_common_args(p):
+        p.add_argument('--checkpoint', required=True, help='Path to generator checkpoint (config.json must sit beside it)')
+        p.add_argument('--output-dir', default='./latent', help='Output directory')
+        p.add_argument('--format', action='append', choices=['gif', 'png', 'obj', 'stl'],
+                       help='Output format(s); repeat to combine (default: gif)')
+        p.add_argument('--render', default='slice', choices=['slice', 'voxel'],
+                       help='Frame renderer: slice (fast) or voxel (3D, slow)')
+        p.add_argument('--fps', type=float, default=8.0, help='GIF frames per second')
+        p.add_argument('--threshold', type=float, default=0.5, help='Occupancy threshold for voxel/mesh renders')
+        p.add_argument('--batch-size', type=int, default=8, help='Generator batch size')
+        ema = p.add_mutually_exclusive_group()
+        ema.add_argument('--use-ema', dest='use_ema', action='store_true', default=True,
+                         help='Prefer EMA weights when the checkpoint has them (default)')
+        ema.add_argument('--no-ema', dest='use_ema', action='store_false',
+                         help='Use raw generator weights')
+
+    walk_parser = subparsers.add_parser('latent-walk', help='Interpolate between latent anchors')
+    _add_latent_common_args(walk_parser)
+    walk_parser.add_argument('--seeds', default='0,1', help='Comma-separated anchor seeds (2+), e.g. 12,77')
+    walk_parser.add_argument('--steps', type=int, default=30, help='Steps per segment (endpoints included)')
+    walk_parser.add_argument('--interp', default='slerp', choices=['lerp', 'slerp'], help='Interpolation mode')
+    walk_parser.add_argument('--closed', action='store_true', help='Loop back to the first anchor')
+    walk_parser.add_argument('--arithmetic', default='',
+                             help='Latent expression over seed letters (a=1st seed, b=2nd, ...), e.g. "a - b + c"; walks from a to the result')
+
+    traverse_parser = subparsers.add_parser('latent-traverse', help='Vary one latent dimension at a time')
+    _add_latent_common_args(traverse_parser)
+    traverse_parser.add_argument('--dims', default='', help='Comma-separated z dims to traverse, e.g. 0,3,9')
+    traverse_parser.add_argument('--num-dims', type=int, default=8, help='Traverse the first N dims when --dims is not given')
+    traverse_parser.add_argument('--steps', type=int, default=9, help='Steps across the ±sigma range')
+    traverse_parser.add_argument('--sigma-range', type=float, default=3.0, help='Traversal range in standard deviations')
+    traverse_parser.add_argument('--base-seed', type=int, default=42, help='Seed for the base z vector')
+
     # Data preprocessing
     preprocess_parser = subparsers.add_parser('preprocess', help='Preprocess and curate data')
     preprocess_parser.add_argument('--input-dir', required=True, help='Input data directory')
@@ -1293,6 +1423,10 @@ def main():
             return main_app.generate_data(args)
         elif args.command == 'sample-gan':
             return main_app.sample_gan(args)
+        elif args.command == 'latent-walk':
+            return main_app.latent_walk(args)
+        elif args.command == 'latent-traverse':
+            return main_app.latent_traverse(args)
         elif args.command == 'sample-diffusion':
             return main_app.sample_diffusion(args)
         elif args.command == 'preprocess':
