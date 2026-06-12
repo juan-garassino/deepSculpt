@@ -1,0 +1,53 @@
+name: runpod-ctl
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Pod action'
+        required: true
+        type: choice
+        default: list
+        options: [list, stop, terminate]
+      pod_id:
+        description: 'Pod ID (for stop/terminate)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  ctl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run action
+        env:
+          RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+          ACTION: ${{ inputs.action }}
+          POD_ID: ${{ inputs.pod_id }}
+        run: |
+          set -euo pipefail
+          gql() {
+            curl -s -X POST https://api.runpod.io/graphql \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer $RUNPOD_API_KEY" \
+              -d "$1"
+          }
+          case "$ACTION" in
+            list)
+              RESP=$(gql '{"query":"query { myself { pods { id name desiredStatus costPerHr gpuCount machine { gpuDisplayName } } } }"}')
+              echo "$RESP" | jq .
+              { echo "## Pods"; echo '```json'; echo "$RESP" | jq '.data.myself.pods'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            stop)
+              [ -n "$POD_ID" ] || { echo "::error::pod_id required"; exit 1; }
+              Q=$(jq -nc --arg id "$POD_ID" '{query:"mutation Stop($id: String!) { podStop(input: {podId: $id}) { id desiredStatus } }", variables:{id:$id}}')
+              gql "$Q" | jq .
+              ;;
+            terminate)
+              [ -n "$POD_ID" ] || { echo "::error::pod_id required"; exit 1; }
+              Q=$(jq -nc --arg id "$POD_ID" '{query:"mutation Term($id: String!) { podTerminate(input: {podId: $id}) }", variables:{id:$id}}')
+              gql "$Q" | jq .
+              ;;
+          esac
