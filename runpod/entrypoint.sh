@@ -24,7 +24,9 @@ set -euo pipefail
 #   RUN_ID            default: timestamp
 #   TIME_BUDGET       seconds (Claude research loop will stop near this)
 #   TRAIN_CMD         CLI subcommand for MODE=train (default: train-gan)
-#   TRAIN_ARGS        extra CLI args
+#   TRAIN_ARGS        extra CLI args (e.g. "--model-type skip --epochs 200")
+#   DATA_SAMPLES      MODE=train: samples to generate if DATA_DIR is empty (default 2000)
+#   VOID_DIM          MODE=train: voxel grid size for generated data (default 64)
 #   SYNC_INTERVAL     seconds between periodic checkpoint pushes (default 600)
 #   ITER_BUDGET       MODE=self-improve: seconds per claude iteration (default 1800)
 #   COOLDOWN          MODE=self-improve: seconds between iterations (default 300)
@@ -132,10 +134,22 @@ echo "=== MODE=${MODE} RUN_ID=${RUN_ID} ==="
 
 case "$MODE" in
     train)
+        # Bootstrap training data if neither the GCS warm cache nor a prior
+        # run populated DATA_DIR.
+        if [ -z "$(ls -A "$DATA_DIR" 2>/dev/null)" ]; then
+            echo "=== No data in ${DATA_DIR} — generating ${DATA_SAMPLES:-2000} samples ==="
+            python -m deepsculpt.main generate-data \
+                --num-samples "${DATA_SAMPLES:-2000}" \
+                --void-dim "${VOID_DIM:-64}" \
+                --output-dir "$DATA_DIR"
+            gcs_reload_token
+            gsutil -m -q rsync -r "$DATA_DIR" "${GCS_ROOT}/data" || true
+        fi
+
         echo "=== Training: deepsculpt ${TRAIN_CMD} ${TRAIN_ARGS} ==="
         python -m deepsculpt.main "$TRAIN_CMD" \
-            --ckpt-dir "$CKPT_DIR" \
-            --data-dir "$DATA_DIR" \
+            --data-folder "$DATA_DIR" \
+            --output-dir "$CKPT_DIR" \
             ${TRAIN_ARGS} 2>&1 | tee "${RESULTS_DIR}/train.log"
         ;;
 

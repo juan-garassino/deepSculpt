@@ -25,6 +25,14 @@ on:
         description: 'self-improve: seconds between iterations'
         required: false
         default: '300'
+      train_cmd:
+        description: 'train: deepsculpt CLI subcommand'
+        required: false
+        default: 'train-gan'
+      train_args:
+        description: 'train: extra CLI args (e.g. --model-type skip --epochs 200)'
+        required: false
+        default: ''
       gpu_type:
         description: 'RunPod GPU type'
         required: true
@@ -82,6 +90,8 @@ jobs:
           ITER_BUDGET: ${{ inputs.iter_budget }}
           COOLDOWN: ${{ inputs.cooldown }}
           GPU_TYPE: ${{ inputs.gpu_type }}
+          TRAIN_CMD: ${{ inputs.train_cmd }}
+          TRAIN_ARGS: ${{ inputs.train_args }}
         run: |
           set -euo pipefail
           # Build the env array for the RunPod GraphQL podFindAndDeployOnDemand mutation.
@@ -95,12 +105,16 @@ jobs:
             --arg gcs_project "garassino-ml" \
             --arg gcs_access_token "$GCS_ACCESS_TOKEN" \
             --arg anthropic "$ANTHROPIC_API_KEY" \
+            --arg train_cmd "$TRAIN_CMD" \
+            --arg train_args "$TRAIN_ARGS" \
             '[
               {key:"MODE", value:$mode},
               {key:"RUN_ID", value:$run_id},
               {key:"TIME_BUDGET", value:$time_budget},
               {key:"ITER_BUDGET", value:$iter_budget},
               {key:"COOLDOWN", value:$cooldown},
+              {key:"TRAIN_CMD", value:$train_cmd},
+              {key:"TRAIN_ARGS", value:$train_args},
               {key:"GCS_BUCKET", value:$gcs_bucket},
               {key:"GCS_PROJECT", value:$gcs_project},
               {key:"GCS_ACCESS_TOKEN", value:$gcs_access_token},

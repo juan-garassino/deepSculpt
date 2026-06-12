@@ -501,7 +501,7 @@ class DeepSculptV2Main:
         with open(results_dir / "config.json", "w") as f:
             json.dump(
                 {
-                    "model_type": args.model_type,
+                    "model_type": "unet3d",  # train-diffusion has no --model-type flag; factory call above is hardcoded
                     "void_dim": args.void_dim,
                     "timesteps": args.timesteps,
                     "noise_schedule": args.noise_schedule,

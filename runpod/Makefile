@@ -36,6 +36,8 @@ RUN_ID       ?= $(shell date +%Y%m%d-%H%M%S)
 TIME_BUDGET  ?= 3600
 ITER_BUDGET  ?= 1800
 COOLDOWN     ?= 300
+TRAIN_CMD    ?= train-gan
+TRAIN_ARGS   ?=
 
 # ---------------------------------------------------------------------------
 # Build
@@ -144,7 +146,9 @@ deploy:
 		-f run_id=$(RUN_ID) \
 		-f time_budget=$(TIME_BUDGET) \
 		-f iter_budget=$(ITER_BUDGET) \
-		-f cooldown=$(COOLDOWN)
+		-f cooldown=$(COOLDOWN) \
+		-f train_cmd=$(TRAIN_CMD) \
+		-f train_args='$(TRAIN_ARGS)'
 	@echo "=== Dispatched deploy-runpod.yml. Watch: gh run watch ==="
 
 # ---------------------------------------------------------------------------
