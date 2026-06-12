@@ -98,9 +98,12 @@ echo "=== Pulling state from ${GCS_ROOT} (RUN_ID=${RUN_ID}) ==="
 gcs_reload_token
 gsutil -m -q rsync -r "${GCS_ROOT}/checkpoints/${RUN_ID}" "$CKPT_DIR" 2>/dev/null || \
     echo "  (no prior checkpoints for run ${RUN_ID} — fresh start)"
+# Data cache is keyed by resolution — mixing grid sizes crashes training
+# with a tensor-shape mismatch.
+GCS_DATA="${GCS_ROOT}/data/void${VOID_DIM:-64}"
 gcs_reload_token
-gsutil -m -q rsync -r "${GCS_ROOT}/data" "$DATA_DIR" 2>/dev/null || \
-    echo "  (no warm data cache)"
+gsutil -m -q rsync -r "$GCS_DATA" "$DATA_DIR" 2>/dev/null || \
+    echo "  (no warm data cache for void${VOID_DIM:-64})"
 
 # ---------------------------------------------------------------------------
 # Background periodic checkpoint sync (crash-safe)
@@ -157,7 +160,7 @@ case "$MODE" in
                 --void-dim "${VOID_DIM:-64}" \
                 --output-dir "$DATA_DIR"
             gcs_reload_token
-            gsutil -m -q rsync -r "$DATA_DIR" "${GCS_ROOT}/data" || true
+            gsutil -m -q rsync -r "$DATA_DIR" "$GCS_DATA" || true
         fi
 
         echo "=== Training: deepsculpt ${TRAIN_CMD} ${TRAIN_ARGS} ==="
