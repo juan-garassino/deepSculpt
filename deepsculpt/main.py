@@ -415,7 +415,13 @@ class DeepSculptV2Main:
     def train_diffusion(self, args):
         """Train diffusion models with advanced configuration."""
         print("Training diffusion model")
-        
+
+        # cuDNN benchmark autotuning requests multi-GiB conv workspaces for
+        # the 3D UNet (an 8 GiB single ask at batch 16 OOM'd the L4 even
+        # with gradient checkpointing). Heuristic algo choice is marginally
+        # slower but bounded.
+        torch.backends.cudnn.benchmark = False
+
         # Create results directory
         resume_from = None
         if getattr(args, 'resume', False):
