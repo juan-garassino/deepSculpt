@@ -1,6 +1,6 @@
 # DeepSculpt
 
-> **GCP migration note (2026-06-06):** Lives in `garassino-ml`. Images on `ghcr.io/juan-garassino/deepsculpt-runpod` (public). Artifacts in `gs://garassino-ml-artifacts/deepsculpt/`. No always-on resources — training is RunPod-driven. See root `CLAUDE.md` § "GCP architecture".
+> **GCP migration note (2026-06-12):** Lives in `garassino-ml`. Images on `ghcr.io/juan-garassino/deepsculpt-runpod` (public, canonical) + mirrored to `europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt` (Vertex pulls only from GAR). Artifacts in `gs://garassino-ml-artifacts/deepsculpt/`. No always-on resources — **training is Vertex AI-driven** (RunPod path kept but dormant). See root `CLAUDE.md` § "GCP architecture".
 
 ## What this project is
 A 3D generative art system that learns to create sculptures from scratch.
@@ -80,7 +80,11 @@ Use the relevant skill interactively to write the code together.
 - **Optional-dep imports are guarded with `except Exception`** (Prefect 2/3 raises ValidationError, not ImportError — don't narrow these back).
 - **Architectural data generator is the active mode** — columns + slabs + 3 orthogonal pipes (red/blue/yellow). See recent `git log` for the procedural-shape tuning history.
 - **Test suite has pre-existing import bugs** (all `tests/unit/*.py` and `tests/integration/*` import the dead `deepSculpt` casing — package is `deepsculpt`). Don't trust `pytest` as a green light; smoke-test via the CLI instead. `tests/test_latent_ops.py` is the exception (pure tensor tests; `tests/conftest.py` is torch-only now, coverage is opt-in).
-- **Cloud training is live**: `runpod/` directory ships a CUDA 12.8 + Claude Code container that runs on RunPod and syncs checkpoints/results to GCS bucket `garassino-ml-artifacts`. See `runpod/README.md`. `MODE=train` accepts `train_cmd`/`train_args` workflow inputs and auto-generates data when the GCS cache is empty.
+- **Cloud training runs on Cloud Run jobs** (user pivot 2026-07-03, mirrors the `~/Desktop/garassino-ml` house pattern): job `deepsculpt-train` in `garassino-ml`/`europe-west1` — **L4 GPU** (`--gpu 1 --gpu-type nvidia-l4 --no-gpu-zonal-redundancy`, 8 CPU/32Gi, `--max-retries 0`; quota allows 2 concurrent), same container + entrypoint as Vertex/RunPod, ADC auth via the default compute SA. **GPU jobs are hard-capped at `--task-timeout 3600`** → long training = chained executions with `--resume` in `TRAIN_ARGS` (continues the latest run dir from its newest `checkpoint_epoch_N.pth`). Launch: `gcloud run jobs execute deepsculpt-train --project garassino-ml --region europe-west1` (override per-run env with `--update-env-vars "^@^K=V@K2=V2"`). Pin the image to a `:$(git sha)` GAR tag to test branch builds before merging.
+- **Remote learning signal**: trainer INFO logs never reach Cloud Logging (root logger is CLI-configured; `training.log` files stay empty) — read `logs/epoch_metrics.jsonl` and GAN `snapshots/epoch_NNN.{json,pt}` from GCS instead; render with `scripts/render_run_snapshots.py <run_id>`. GAN snapshots come from the **EMA generator, which looks diffuse/blurry mid-training — judge quality on the RAW generator** (pull a checkpoint, sample `generator_state_dict`).
+- **Working GAN recipe (gan-cr-005)**: `--model-type skip --discriminator-type spectral_norm --gan-loss-type softplus --ttur-ratio 1.0 --batch-size 16 --mixed-precision` (bf16 autocast). Hard-won: fp16 overflows critic logits (NaN); WGAN-GP + light disc diverges (logit race); the EMA-disc-for-gen-loss design was the root cause of gen-loss explosions (fixed: G trains vs live D).
+- **Diffusion on the L4 needs all three**: `--model-channels 64 --grad-checkpoint --batch-size 16` + cudnn benchmark off (hardcoded for train-diffusion) — the 128ch UNet, hand-rolled attention (pre-SDPA), and cuDNN autotune workspaces each independently OOM'd the 22 GiB card.
+- **Vertex AI path kept** (2026-06-12): `gh workflow run deploy-vertex.yml -f mode=train -f machine='n1-standard-8 / 1x T4' ...`; on Vertex the job runs AS the runtime SA (ADC). **T4 is the only usable GPU in europe-west1 Vertex training** (L4/G2 machine rejected; A100 quota 0). **torch must stay on cu12x wheels** (`--index-url .../whl/cu126` in Dockerfile) — Vertex T4 / Cloud Run L4 drivers are CUDA 12.x, cu130 silently falls back to CPU; the entrypoint logs GPU diagnostics on start, check `cuda available: True` in the first log page of every paid run. GCS data cache is keyed `data/void<dim>/`. `runpod-ctl.yml` lists/stops/terminates RunPod pods (no local API key).
 - **This dev machine is old — no local training.** Verify with forward passes and nano runs only (void_dim 16, 1-2 minibatches max); real training goes to RunPod.
 
 ## Cloud training (RunPod + GCS + Claude-in-the-loop)
@@ -116,7 +120,7 @@ scripts/                          # colab_train.py, colab_train_diffusion.py, au
 tests/                            # pytest suite (most fixed via sed; 11 tier-2 errors remain — see Current status)
 runpod/                           # RunPod + GCS deploy (Dockerfile, entrypoint.sh, Makefile, prompts/, scripts/)
 infra/gcp/                        # show-and-destroy Terraform: runtime SA + WIF impersonation binding
-.github/workflows/                # build-push, deploy-runpod, refresh-token (cron), notify-telegram (cron)
+.github/workflows/                # build-push (GHCR+GAR), deploy-vertex, deploy-runpod, runpod-ctl, refresh-token (cron), notify-telegram (cron)
 docs/                             # architecture, training, operations, inference, runpod, gcs_layout
 boilerplate/                      # archived TF/Keras v1 code (do not propagate)
 checkpoints/                      # local checkpoint dir; legacy samples committed under data/11/

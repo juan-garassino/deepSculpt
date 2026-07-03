@@ -193,13 +193,37 @@ class DeepSculptV2Main:
             "data": {"sparse_threshold": 0.1, "num_workers": 4}
         }
     
+    def _find_resume_checkpoint(self, output_dir, pattern):
+        """Latest (run_dir, checkpoint) under output_dir matching run-dir pattern, or None."""
+        import re
+        for run_dir in sorted(Path(output_dir).glob(pattern), reverse=True):
+            ckpt_dir = run_dir / "checkpoints"
+            if not ckpt_dir.is_dir():
+                continue
+            ckpts = []
+            for p in ckpt_dir.iterdir():
+                m = re.fullmatch(r"checkpoint_epoch_(\d+)\.pth", p.name)
+                if m:
+                    ckpts.append((int(m.group(1)), p))
+            if ckpts:
+                return run_dir, max(ckpts)[1]
+        return None
+
     def train_gan(self, args):
         """Train GAN models with comprehensive configuration and monitoring."""
         print(f"Training GAN model: {args.model_type}")
-        
-        # Create results directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        results_dir = Path(args.output_dir) / f"gan_{args.model_type}_{timestamp}"
+
+        # Create results directory (or reuse the latest one when resuming, so
+        # chained ≤1h Cloud Run executions continue the same run)
+        resume_from = None
+        if getattr(args, 'resume', False):
+            resume_from = self._find_resume_checkpoint(args.output_dir, f"gan_{args.model_type}_*")
+        if resume_from is not None:
+            results_dir = resume_from[0]
+            print(f"Resuming run {results_dir.name} from {resume_from[1].name}")
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            results_dir = Path(args.output_dir) / f"gan_{args.model_type}_{timestamp}"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Setup experiment tracking
@@ -318,9 +342,15 @@ class DeepSculptV2Main:
         )
         
         # Train the model
+        start_epoch = 0
+        if resume_from is not None:
+            ckpt = trainer.load_checkpoint(str(resume_from[1]))
+            start_epoch = int(ckpt.get('epoch', -1)) + 1
+            print(f"Resumed at epoch {start_epoch}")
         print(f"Starting training for {args.epochs} epochs")
         metrics = trainer.train(
-            train_dataloader=data_loader
+            train_dataloader=data_loader,
+            start_epoch=start_epoch
         )
         
         # Save final models
@@ -385,10 +415,25 @@ class DeepSculptV2Main:
     def train_diffusion(self, args):
         """Train diffusion models with advanced configuration."""
         print("Training diffusion model")
-        
+
+        # cuDNN requests multi-GiB workspaces for the 3D transposed convs
+        # (batch-scaled 4-8 GiB single asks OOM'd the L4 repeatedly, with
+        # benchmark autotuning on AND off — heuristic mode picks the same
+        # big-workspace algos). deterministic=True restricts cuDNN to
+        # bounded-workspace algorithms; marginally slower, actually fits.
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+
         # Create results directory
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        results_dir = Path(args.output_dir) / f"diffusion_{timestamp}"
+        resume_from = None
+        if getattr(args, 'resume', False):
+            resume_from = self._find_resume_checkpoint(args.output_dir, "diffusion_*")
+        if resume_from is not None:
+            results_dir = resume_from[0]
+            print(f"Resuming run {results_dir.name} from {resume_from[1].name}")
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            results_dir = Path(args.output_dir) / f"diffusion_{timestamp}"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Setup experiment tracking
@@ -414,7 +459,9 @@ class DeepSculptV2Main:
             in_channels=num_channels,
             out_channels=num_channels,
             timesteps=args.timesteps,
-            sparse=args.sparse
+            sparse=args.sparse,
+            model_channels=args.model_channels,
+            use_checkpoint=args.grad_checkpoint
         ).to(self.device)
         
         # Create noise scheduler
@@ -476,9 +523,15 @@ class DeepSculptV2Main:
         )
         
         # Train the model
+        start_epoch = 0
+        if resume_from is not None:
+            ckpt = trainer.load_checkpoint(str(resume_from[1]))
+            start_epoch = int(ckpt.get('epoch', -1)) + 1
+            print(f"Resumed at epoch {start_epoch}")
         print(f"Starting diffusion training for {args.epochs} epochs")
         metrics = trainer.train(
-            train_dataloader=data_loader
+            train_dataloader=data_loader,
+            start_epoch=start_epoch
         )
         
         # Save final model
@@ -494,6 +547,7 @@ class DeepSculptV2Main:
                 'sparse': args.sparse,
                 'use_ema': args.use_ema,
                 'color': color_mode,
+                'model_channels': args.model_channels,
             }
         }, results_dir / "diffusion_final.pt")
 
@@ -651,7 +705,8 @@ class DeepSculptV2Main:
             in_channels=config.get('num_channels', 1),
             out_channels=config.get('num_channels', 1),
             timesteps=config.get('timesteps', 1000),
-            sparse=config.get('sparse', False)
+            sparse=config.get('sparse', False),
+            model_channels=config.get('model_channels', 128)
         ).to(self.device)
         
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -1314,6 +1369,8 @@ def create_parser():
     train_gan_parser.add_argument('--generate-samples', action='store_true', help='Generate sample visualizations')
     train_gan_parser.add_argument('--num-preview-samples', type=int, default=1, help='Number of training-end preview samples to render')
     train_gan_parser.add_argument('--num-workers', type=int, default=4, help='Number of data loader workers')
+    train_gan_parser.add_argument('--resume', action='store_true',
+                                 help='Resume the latest run in --output-dir from its newest checkpoint')
     train_gan_parser.set_defaults(use_ema=True, sample_from_ema=True)
     
     # Diffusion training
@@ -1322,6 +1379,10 @@ def create_parser():
     train_diff_parser.add_argument('--batch-size', type=int, default=16, help='Training batch size')
     train_diff_parser.add_argument('--void-dim', type=int, default=64, help='3D voxel space dimension')
     train_diff_parser.add_argument('--timesteps', type=int, default=1000, help='Diffusion timesteps')
+    train_diff_parser.add_argument('--model-channels', type=int, default=128,
+                                  help='UNet base channel width (128 needs >22GB at void 64; use 64 on the L4)')
+    train_diff_parser.add_argument('--grad-checkpoint', action='store_true',
+                                  help='Recompute UNet block activations in backward (fits batch 16 on the L4, ~30%% slower per step)')
     train_diff_parser.add_argument('--learning-rate', type=float, default=1e-4, help='Learning rate')
     train_diff_parser.add_argument('--weight-decay', type=float, default=0.01, help='Weight decay')
     train_diff_parser.add_argument('--noise-schedule', default='linear',
@@ -1338,6 +1399,8 @@ def create_parser():
     train_diff_parser.add_argument('--use-ema', dest='use_ema', action='store_true', help='Use EMA weights for diffusion checkpoints/sampling')
     train_diff_parser.add_argument('--no-ema', dest='use_ema', action='store_false', help='Disable EMA weights for diffusion checkpoints/sampling')
     train_diff_parser.add_argument('--ema-decay', type=float, default=0.9999, help='EMA decay for diffusion model weights')
+    train_diff_parser.add_argument('--resume', action='store_true',
+                                  help='Resume the latest run in --output-dir from its newest checkpoint')
     train_diff_parser.add_argument('--mlflow', action='store_true', help='Enable MLflow tracking')
     train_diff_parser.add_argument('--num-workers', type=int, default=4, help='Number of data loader workers')
     train_diff_parser.set_defaults(use_ema=True)
@@ -1539,9 +1602,13 @@ def main():
         return 1
     except Exception as e:
         print(f"Error executing command '{args.command}': {e}")
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
+        # Always print the traceback: on cloud runs the message line is the
+        # only thing that reaches Cloud Logging, and an un-located OOM cost
+        # several paid iterations to root-cause.
+        import traceback
+        traceback.print_exc()
+        if torch.cuda.is_available() and "out of memory" in str(e):
+            print(torch.cuda.memory_summary())
         return 1
 
 

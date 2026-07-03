@@ -362,12 +362,12 @@ class GANTrainer(BaseTrainer):
     def _check_step_health(self, metrics: Dict[str, float]):
         """Emit warnings on obvious collapse or non-finite states and run
         the adaptive balance controller."""
-        values = [value for value in metrics.values() if isinstance(value, (int, float))]
-        if any(not np.isfinite(value) for value in values):
+        bad = [k for k, v in metrics.items() if isinstance(v, (int, float)) and not np.isfinite(v)]
+        if bad:
             self.nan_events += 1
-            self.logger.warning("Non-finite GAN metrics detected; run may be unstable")
+            self.logger.warning("Non-finite GAN metrics detected; run may be unstable: %s", bad)
             if getattr(self.config, "nan_guard", True):
-                raise RuntimeError("Non-finite GAN metrics detected")
+                raise RuntimeError(f"Non-finite GAN metrics: {bad}")
 
         occupancy_floor = float(getattr(self.config, "occupancy_floor", 0.01))
         # Collapse is defined by occupancy only — low disc_loss is normal
@@ -491,6 +491,9 @@ class GANTrainer(BaseTrainer):
         real_data = real_data.float()
         batch_size = real_data.size(0)
         autocast_enabled = self.config.mixed_precision and self.device != "cpu"
+        # bf16, not fp16: the WGAN critic's logits are unbounded and overflow
+        # fp16's 65504 max within the first steps (first observed on L4).
+        autocast_dtype = torch.bfloat16 if autocast_enabled else None
         r1_penalty_value = 0.0
         real_occupancy = self._compute_occupancy(real_data)
 
@@ -509,7 +512,7 @@ class GANTrainer(BaseTrainer):
         if not skip_disc:
             self.disc_optimizer.zero_grad(set_to_none=True)
             noise = torch.randn(batch_size, self.noise_dim, device=self.device)
-            with torch.autocast(device_type=self.device, enabled=autocast_enabled):
+            with torch.autocast(device_type=self.device, dtype=autocast_dtype, enabled=autocast_enabled):
                 fake_for_disc = self.generator(noise).detach()
                 # Add instance noise to disc inputs (not gen path)
                 real_noisy = real_data + noise_std * torch.randn_like(real_data) if noise_std > 0 else real_data
@@ -564,8 +567,12 @@ class GANTrainer(BaseTrainer):
         gen_steps = self._adaptive_gen_steps
         adv_gate = max(0.1, self._occupancy_health)
 
-        # Use EMA disc for gen's adversarial loss — stable, slowly-moving target
-        disc_for_gen = self.ema_discriminator if self.ema_discriminator is not None else self.discriminator
+        # Generator trains against the LIVE discriminator. The EMA copy must
+        # not be used here: EMA'd weights don't get functioning spectral-norm
+        # power iteration (stale u/v buffers → unbounded logits), which blew
+        # gen_loss to 1e5-1e8 across runs gan-cr-002/003/004 while the raw
+        # disc stayed perfectly bounded.
+        disc_for_gen = self.discriminator
 
         # Cache real features for feature matching (computed once per step)
         fm_loss_value = 0.0
@@ -579,7 +586,7 @@ class GANTrainer(BaseTrainer):
         for _ in range(gen_steps):
             self.gen_optimizer.zero_grad(set_to_none=True)
             noise = torch.randn(batch_size, self.noise_dim, device=self.device)
-            with torch.autocast(device_type=self.device, enabled=autocast_enabled):
+            with torch.autocast(device_type=self.device, dtype=autocast_dtype, enabled=autocast_enabled):
                 fake_for_gen = self.generator(noise)
 
                 if use_wgan:
@@ -952,7 +959,8 @@ class GANTrainer(BaseTrainer):
         Returns:
             Loaded checkpoint data
         """
-        checkpoint = torch.load(path, map_location=self.device)
+        # weights_only=False: our own checkpoints pickle TrainingConfig
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
         
         self.generator.load_state_dict(checkpoint['generator_state_dict'])
         if self.ema_generator is not None and checkpoint.get('ema_generator_state_dict') is not None:

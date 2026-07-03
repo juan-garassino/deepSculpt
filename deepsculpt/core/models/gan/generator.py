@@ -42,10 +42,11 @@ class SelfAttention3D(nn.Module):
         qkv = self.qkv(h).reshape(B, 3, self.num_heads, self.head_dim, S)
         q, k, v = qkv[:, 0], qkv[:, 1], qkv[:, 2]
 
-        # Scaled dot-product attention
-        attn = (q.transpose(-1, -2) @ k) * (self.head_dim ** -0.5)
-        attn = attn.softmax(dim=-1)
-        out = (v @ attn.transpose(-1, -2)).reshape(B, C, D, H, W)
+        # SDPA (flash/mem-efficient kernels): the explicit S×S matrix was a
+        # multi-GiB allocation at 16³ (4096 tokens) and OOM'd the L4.
+        out = F.scaled_dot_product_attention(
+            q.transpose(-1, -2), k.transpose(-1, -2), v.transpose(-1, -2)
+        ).transpose(-1, -2).reshape(B, C, D, H, W)
 
         return x + self.proj(out)  # residual connection
 

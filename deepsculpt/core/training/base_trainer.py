@@ -6,6 +6,7 @@ inherit from, providing common functionality for training, validation, checkpoin
 and experiment tracking.
 """
 
+import json
 import os
 import time
 import logging
@@ -316,6 +317,17 @@ class BaseTrainer(ABC):
             epoch_metrics['learning_rate'] = self.optimizer.param_groups[0]['lr']
             
             self.log_metrics(epoch_metrics, epoch, "epoch")
+
+            # Durable per-epoch metrics: cloud logs never see trainer INFO
+            # lines (root logger is configured by the CLI before basicConfig
+            # runs), so this JSONL — synced to GCS — is the only reliable
+            # remote learning signal.
+            try:
+                os.makedirs(self.config.log_dir, exist_ok=True)
+                with open(os.path.join(self.config.log_dir, "epoch_metrics.jsonl"), "a") as f:
+                    f.write(json.dumps({"epoch": epoch + 1, **{k: float(v) for k, v in epoch_metrics.items() if isinstance(v, (int, float))}}) + "\n")
+            except Exception:
+                pass
             
             # Log to console
             train_loss = self._resolve_primary_loss(train_metrics)
@@ -421,7 +433,8 @@ class BaseTrainer(ABC):
         Returns:
             Loaded checkpoint data
         """
-        checkpoint = torch.load(path, map_location=self.device)
+        # weights_only=False: our own checkpoints pickle TrainingConfig
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
         
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

@@ -123,6 +123,7 @@ def load_diffusion_pipeline(
         out_channels=config.get("num_channels", 1),
         timesteps=config.get("timesteps", 1000),
         sparse=config.get("sparse", False),
+        model_channels=config.get("model_channels", 128),
     ).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
