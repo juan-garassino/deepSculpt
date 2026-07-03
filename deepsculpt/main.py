@@ -452,7 +452,8 @@ class DeepSculptV2Main:
             out_channels=num_channels,
             timesteps=args.timesteps,
             sparse=args.sparse,
-            model_channels=args.model_channels
+            model_channels=args.model_channels,
+            use_checkpoint=args.grad_checkpoint
         ).to(self.device)
         
         # Create noise scheduler
@@ -1372,6 +1373,8 @@ def create_parser():
     train_diff_parser.add_argument('--timesteps', type=int, default=1000, help='Diffusion timesteps')
     train_diff_parser.add_argument('--model-channels', type=int, default=128,
                                   help='UNet base channel width (128 needs >22GB at void 64; use 64 on the L4)')
+    train_diff_parser.add_argument('--grad-checkpoint', action='store_true',
+                                  help='Recompute UNet block activations in backward (fits batch 16 on the L4, ~30%% slower per step)')
     train_diff_parser.add_argument('--learning-rate', type=float, default=1e-4, help='Learning rate')
     train_diff_parser.add_argument('--weight-decay', type=float, default=0.01, help='Weight decay')
     train_diff_parser.add_argument('--noise-schedule', default='linear',

@@ -8,6 +8,7 @@ for diffusion-based 3D sculpture generation.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.utils.checkpoint
 from typing import Optional, Tuple, Dict, Any, List, Union
 import math
 
@@ -176,16 +177,22 @@ class UNet3D(BaseDiffusionModel):
         num_heads: int = 8,
         sparse: bool = False,
         dropout: float = 0.1,
-        conditioning_dim: Optional[int] = None
+        conditioning_dim: Optional[int] = None,
+        use_checkpoint: bool = False
     ):
         super().__init__(void_dim, in_channels, out_channels, timesteps, sparse)
-        
+
         self.model_channels = model_channels
         self.num_res_blocks = num_res_blocks
         self.attention_resolutions = attention_resolutions
         self.channel_mult = channel_mult
         self.num_heads = num_heads
         self.conditioning_dim = conditioning_dim
+        # Gradient checkpointing: recompute block activations in backward.
+        # Without it the 64ch UNet at void 64 only fits the 22GiB L4 at
+        # batch 2 (~25 min/epoch); with it batch 16 fits. BN running stats
+        # see each batch twice under recompute — accepted, standard caveat.
+        self.use_checkpoint = use_checkpoint
         
         # Time embedding
         time_embed_dim = model_channels * 4
@@ -300,45 +307,52 @@ class UNet3D(BaseDiffusionModel):
         
         # Input projection
         h = self.input_proj(x)
-        
+
+        ckpt = self.use_checkpoint and self.training
+
+        def _run_block(block, h, time_emb):
+            def _inner(h_):
+                out = block[0](h_, time_emb)
+                if len(block) > 1:
+                    out = block[1](out)
+                return out
+            if ckpt:
+                return torch.utils.checkpoint.checkpoint(_inner, h, use_reentrant=False)
+            return _inner(h)
+
         # Encoder path with skip connections
         skip_connections = [h]  # Start with input projection output
-        
+
         block_idx = 0
         for level_idx in range(len(self.channel_mult)):
             # Process all res_blocks at this level
             for _ in range(self.num_res_blocks):
                 if block_idx < len(self.encoder_blocks):
-                    block = self.encoder_blocks[block_idx]
-                    h = block[0](h, time_emb)  # ResBlock
-                    if len(block) > 1:  # Attention block
-                        h = block[1](h)
+                    h = _run_block(self.encoder_blocks[block_idx], h, time_emb)
                     skip_connections.append(h)
                     block_idx += 1
-            
+
             # Downsample after all blocks at this level (except last)
             if level_idx < len(self.encoder_downsample):
                 downsample = self.encoder_downsample[level_idx]
                 if not isinstance(downsample, nn.Identity):
                     h = downsample(h)
                     skip_connections.append(h)
-        
+
         # Middle block
         h = self.middle_block[0](h, time_emb)  # First ResBlock
         h = self.middle_block[1](h)  # Attention
         h = self.middle_block[2](h, time_emb)  # Second ResBlock
-        
+
         # Decoder path with skip connections
         for i, (block, upsample) in enumerate(zip(self.decoder_blocks, self.decoder_upsample)):
             # Add skip connection if available
             if skip_connections:
                 skip = skip_connections.pop()
                 h = torch.cat([h, skip], dim=1)
-            
-            h = block[0](h, time_emb)  # ResBlock
-            if len(block) > 1:  # Attention block
-                h = block[1](h)
-            
+
+            h = _run_block(block, h, time_emb)
+
             if not isinstance(upsample, nn.Identity):
                 h = upsample(h)
         
