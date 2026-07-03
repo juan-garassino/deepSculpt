@@ -1600,9 +1600,13 @@ def main():
         return 1
     except Exception as e:
         print(f"Error executing command '{args.command}': {e}")
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
+        # Always print the traceback: on cloud runs the message line is the
+        # only thing that reaches Cloud Logging, and an un-located OOM cost
+        # several paid iterations to root-cause.
+        import traceback
+        traceback.print_exc()
+        if torch.cuda.is_available() and "out of memory" in str(e):
+            print(torch.cuda.memory_summary())
         return 1
 
 
