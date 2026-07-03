@@ -567,8 +567,12 @@ class GANTrainer(BaseTrainer):
         gen_steps = self._adaptive_gen_steps
         adv_gate = max(0.1, self._occupancy_health)
 
-        # Use EMA disc for gen's adversarial loss — stable, slowly-moving target
-        disc_for_gen = self.ema_discriminator if self.ema_discriminator is not None else self.discriminator
+        # Generator trains against the LIVE discriminator. The EMA copy must
+        # not be used here: EMA'd weights don't get functioning spectral-norm
+        # power iteration (stale u/v buffers → unbounded logits), which blew
+        # gen_loss to 1e5-1e8 across runs gan-cr-002/003/004 while the raw
+        # disc stayed perfectly bounded.
+        disc_for_gen = self.discriminator
 
         # Cache real features for feature matching (computed once per step)
         fm_loss_value = 0.0
