@@ -140,20 +140,16 @@ class AttentionBlock3D(nn.Module):
         qkv = self.qkv(h)
         q, k, v = qkv.chunk(3, dim=1)
         
-        # Reshape for attention computation
+        # SDPA (flash/mem-efficient kernels): never materializes the seq×seq
+        # attention matrix — the einsum version allocated B×heads×4096×4096
+        # at 16³ resolution and OOM'd the 22 GiB L4 on its own.
         spatial_size = depth * height * width
-        q = q.reshape(batch, self.num_heads, self.head_dim, spatial_size)
-        k = k.reshape(batch, self.num_heads, self.head_dim, spatial_size)
-        v = v.reshape(batch, self.num_heads, self.head_dim, spatial_size)
-        
-        # Compute attention
-        scale = self.head_dim ** -0.5
-        attn = torch.einsum('bhds,bhdt->bhst', q, k) * scale
-        attn = F.softmax(attn, dim=-1)
-        
-        # Apply attention to values
-        out = torch.einsum('bhst,bhdt->bhds', attn, v)
-        out = out.reshape(batch, channels, depth, height, width)
+        q = q.reshape(batch, self.num_heads, self.head_dim, spatial_size).transpose(-1, -2)
+        k = k.reshape(batch, self.num_heads, self.head_dim, spatial_size).transpose(-1, -2)
+        v = v.reshape(batch, self.num_heads, self.head_dim, spatial_size).transpose(-1, -2)
+
+        out = F.scaled_dot_product_attention(q, k, v)
+        out = out.transpose(-1, -2).reshape(batch, channels, depth, height, width)
         
         # Project and add residual
         out = self.proj(out)

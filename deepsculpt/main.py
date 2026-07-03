@@ -451,7 +451,8 @@ class DeepSculptV2Main:
             in_channels=num_channels,
             out_channels=num_channels,
             timesteps=args.timesteps,
-            sparse=args.sparse
+            sparse=args.sparse,
+            model_channels=args.model_channels
         ).to(self.device)
         
         # Create noise scheduler
@@ -537,6 +538,7 @@ class DeepSculptV2Main:
                 'sparse': args.sparse,
                 'use_ema': args.use_ema,
                 'color': color_mode,
+                'model_channels': args.model_channels,
             }
         }, results_dir / "diffusion_final.pt")
 
@@ -694,7 +696,8 @@ class DeepSculptV2Main:
             in_channels=config.get('num_channels', 1),
             out_channels=config.get('num_channels', 1),
             timesteps=config.get('timesteps', 1000),
-            sparse=config.get('sparse', False)
+            sparse=config.get('sparse', False),
+            model_channels=config.get('model_channels', 128)
         ).to(self.device)
         
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -1367,6 +1370,8 @@ def create_parser():
     train_diff_parser.add_argument('--batch-size', type=int, default=16, help='Training batch size')
     train_diff_parser.add_argument('--void-dim', type=int, default=64, help='3D voxel space dimension')
     train_diff_parser.add_argument('--timesteps', type=int, default=1000, help='Diffusion timesteps')
+    train_diff_parser.add_argument('--model-channels', type=int, default=128,
+                                  help='UNet base channel width (128 needs >22GB at void 64; use 64 on the L4)')
     train_diff_parser.add_argument('--learning-rate', type=float, default=1e-4, help='Learning rate')
     train_diff_parser.add_argument('--weight-decay', type=float, default=0.01, help='Weight decay')
     train_diff_parser.add_argument('--noise-schedule', default='linear',
