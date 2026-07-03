@@ -416,11 +416,13 @@ class DeepSculptV2Main:
         """Train diffusion models with advanced configuration."""
         print("Training diffusion model")
 
-        # cuDNN benchmark autotuning requests multi-GiB conv workspaces for
-        # the 3D UNet (an 8 GiB single ask at batch 16 OOM'd the L4 even
-        # with gradient checkpointing). Heuristic algo choice is marginally
-        # slower but bounded.
+        # cuDNN requests multi-GiB workspaces for the 3D transposed convs
+        # (batch-scaled 4-8 GiB single asks OOM'd the L4 repeatedly, with
+        # benchmark autotuning on AND off — heuristic mode picks the same
+        # big-workspace algos). deterministic=True restricts cuDNN to
+        # bounded-workspace algorithms; marginally slower, actually fits.
         torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
 
         # Create results directory
         resume_from = None
