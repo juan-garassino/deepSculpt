@@ -200,3 +200,25 @@ def test_terrace_composition():
         if found >= 5:
             break
     assert found >= 1
+
+
+def test_generate_structure_end_to_end():
+    a, pa = sh.generate_structure_with_params(7)
+    b, pb = sh.generate_structure_with_params(7)
+    assert np.array_equal(a, b) and pa == pb          # determinism
+    for seed in range(20):
+        v, p = sh.generate_structure_with_params(seed)
+        assert v.shape == (64, 64, 64)
+        occ = (v > 0).mean()
+        assert 0.05 <= occ <= 0.35, f"seed {seed}: occupancy {occ:.3f}"
+        # invariants: elements present
+        assert (v == sh.COL).any() and (v == sh.SLAB).any()
+        assert np.isin(v, sh.WALL_KINDS).any()
+        assert np.isin(v, sh.PIPE_KINDS).any()
+        # single connected component
+        from scipy.ndimage import label
+        _, n = label(v > 0)
+        assert n == 1, f"seed {seed}: {n} components"
+        # nothing outside the plot square
+        assert (v[:4, :, :] == 0).all() and (v[60:, :, :] == 0).all()
+        assert (v[:, :4, :] == 0).all() and (v[:, 60:, :] == 0).all()

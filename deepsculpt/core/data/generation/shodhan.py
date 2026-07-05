@@ -433,3 +433,51 @@ def add_terrace(sk: Skeleton, rng: np.random.Generator) -> None:
                 break
     sk.params["terrace_info"] = {"block": [int(bx), int(by), int(w), int(d)],
                                  "n_walls": 2, "pipe": bool(has_pipe)}
+
+
+def _integrity_ok(v: np.ndarray) -> Tuple[bool, str]:
+    from scipy.ndimage import label
+    occ = float((v > 0).mean())
+    if not (0.05 <= occ <= 0.35):
+        return False, f"occupancy {occ:.3f}"
+    if not ((v == COL).any() and (v == SLAB).any()
+            and np.isin(v, WALL_KINDS).any() and np.isin(v, PIPE_KINDS).any()):
+        return False, "missing element class"
+    _, n = label(v > 0)
+    if n != 1:
+        return False, f"{n} components"
+    return True, "ok"
+
+
+def _build_once(rng: np.random.Generator) -> Tuple[np.ndarray, Dict]:
+    sk = build_skeleton(rng)
+    strips = cut_slab_strips(sk, rng)
+    add_l_borders(sk)
+    add_massing(sk, rng)
+    walls = add_walls(sk, rng, strips)
+    add_pipes(sk, rng, walls, strips)
+    add_screens(sk, rng)
+    add_terrace(sk, rng)
+    return sk.volume, sk.params
+
+
+def generate_structure_with_params(seed: int, max_tries: int = 20) -> Tuple[np.ndarray, Dict]:
+    """Deterministic per (GRAMMAR_VERSION, seed). Resamples sub-attempts on
+    integrity failure — still deterministic because each attempt's rng
+    derives from (seed, attempt)."""
+    reason = "unknown"
+    for attempt in range(max_tries):
+        rng = np.random.default_rng((seed, attempt))
+        v, params = _build_once(rng)
+        ok, reason = _integrity_ok(v)
+        if ok:
+            params["seed"] = int(seed)
+            params["attempt"] = attempt
+            params["occupancy"] = float((v > 0).mean())
+            return v, params
+    raise RuntimeError(f"seed {seed}: no valid sample in {max_tries} attempts (last: {reason})")
+
+
+def generate_structure(rng_or_seed) -> np.ndarray:
+    seed = rng_or_seed if isinstance(rng_or_seed, (int, np.integer)) else int(rng_or_seed.integers(0, 2**31))
+    return generate_structure_with_params(int(seed))[0]
