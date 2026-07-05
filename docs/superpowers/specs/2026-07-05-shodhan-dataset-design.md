@@ -55,19 +55,20 @@ wall (4 polychrome colors), screen, pipe (red/blue/yellow), massing volume.
   strips in their ceiling slab. Placement is resample-until-valid (24 tries).
 - **W5** With p=0.3 per eligible level, the second wall is double-height: spans two
   levels, stands on solid slab, may rise through the strip void or the intact slab.
-- **W6** Wall thickness 2 ⚙; color per wall sampled from the polychrome palette
-  {red, blue, yellow, green}.
+- **W6** Wall thickness 1 (user rule: thin members are always 1 voxel); color per
+  wall sampled from the polychrome palette {red, blue, yellow, green}.
 
 ### Facade screens (brise-soleil)
 - **F1** Present on 75% of buildings, on 1–2 facades; flush with the slab rim plane
   (possible because cantilever/inset is constant per side); 2 voxels deep ⚙;
   vertical span ground slab → last slab, terminating at slabs.
-- **F2** Vertical fins only (bar width 2 ⚙, rhythm 6–8 ⚙) — EXCEPT buildings with a
+- **F2** Vertical fins only (bar width 1, depth 2 — the user's "1 thick, 2 deep"
+  rule; rhythm 6–8 ⚙) — EXCEPT buildings with a
   single intermediate slab, which may use the full lattice (vertical + horizontal
   bars) with p=0.7.
 
 ### Pipes
-- **P1** Always 2–3 pipes: a vertical riser (2×2 ⚙) hugging a wall face, from the
+- **P1** Always 2–3 pipes: a vertical riser (1×1) hugging a wall face, from the
   ground slab to the slab its wall serves, plus a horizontal run under that slab.
 - **P2** Risers never pass through strip voids of any slab they cross; horizontal
   runs are clipped at strip boundaries. Resample-until-valid (30 tries).
@@ -80,7 +81,8 @@ wall (4 polychrome colors), screen, pipe (red/blue/yellow), massing volume.
   16–32 ⚙ scaled by m), corners snapped near column lines, sitting on ground/slabs,
   1–2 levels tall.
 - **M2** Every block is carved — this is where the emptiness comes from:
-  hollow core (interior room, shell 2–4 thick, with a door slot), through-tunnel
+  hollow core (interior room, shell exactly 1 voxel — masses never grow
+  2-thick "walls" — with a door slot), through-tunnel
   piercing the block (p=0.8), 1–2 corner notches. **All openings are full-height,
   slab to slab — abstracted doors** (vertical slots, never partial-height holes).
   Re-carve until the block is ≤ 70% solid within its own bounding box.
