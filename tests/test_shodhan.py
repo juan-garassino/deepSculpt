@@ -85,5 +85,10 @@ def test_l_borders_all_sides_up_down():
             for zz in (z + sh.SLAB_T, z - 1):
                 if zz < 0 or zz >= sh.N:
                     continue
-                band = sk.volume[x0:x1 + 1, y0, zz]
-                assert (band != 0).all(), f"seed {seed}: L-band gap at z={zz}"
+                for band in (
+                    sk.volume[x0:x1 + 1, y0, zz],
+                    sk.volume[x0:x1 + 1, y1, zz],
+                    sk.volume[x0, y0:y1 + 1, zz],
+                    sk.volume[x1, y0:y1 + 1, zz],
+                ):
+                    assert (band != 0).all(), f"seed {seed}: L-band gap at z={zz}"
