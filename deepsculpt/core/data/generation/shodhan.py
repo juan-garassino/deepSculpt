@@ -89,6 +89,8 @@ def build_skeleton(rng: np.random.Generator) -> Skeleton:
 
     for cx in cols_x:
         for cy in cols_y:
+            # Direct assignment (not put()) — COL is the priority element; all
+            # other elements use put() and will not overwrite columns.
             v[cx:cx + COL_T, cy:cy + COL_T, 0:slabs[-1] + SLAB_T] = COL
     for z in slabs:
         put(v, np.s_[x0:x1 + 1, y0:y1 + 1, z:z + SLAB_T], SLAB)
@@ -98,8 +100,8 @@ def build_skeleton(rng: np.random.Generator) -> Skeleton:
         "storey_height": hz,
         "n_intermediate": n_intermediate,
         "array": [nx, ny],
-        "cols_x": cols_x,
-        "cols_y": cols_y,
+        "cols_x": list(cols_x),
+        "cols_y": list(cols_y),
         "terrace": bool(terrace),
     }
     return Skeleton(v, cols_x, cols_y, slabs, (x0, x1, y0, y1), terrace, roof_plane, params)

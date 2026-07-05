@@ -32,7 +32,7 @@ def test_column_array_structured():
         assert sk.cols_x[0] - sh.MARGIN >= 4 and (sh.N - 1 - sh.MARGIN) - sk.cols_x[-1] >= 4
 
 
-def test_slabs_full_square_and_always_ground_roof():
+def test_slabs_full_square_and_always_ground():
     for seed in range(20):
         sk = sh.build_skeleton(np.random.default_rng(seed))
         x0, x1, y0, y1 = sk.plot
