@@ -84,7 +84,7 @@ wall (4 polychrome colors), screen, pipe (red/blue/yellow), massing volume.
   piercing the block (p=0.8), 1–2 corner notches. **All openings are full-height,
   slab to slab — abstracted doors** (vertical slots, never partial-height holes).
   Re-carve until the block is ≤ 70% solid within its own bounding box.
-- **M3** Stairs: 1–2 stepped diagonals (width 4–6 ⚙) connecting consecutive slabs.
+- ~~M3 Stairs~~ — removed from the grammar (user decision 2026-07-05).
 
 ### Terrace
 - **T1** Only buildings with 3 intermediate slabs may omit the roof slab (p=0.45).
@@ -151,6 +151,10 @@ dataset before generation of the full corpus / any training.
   (±0.15) through epoch 60; generated samples show slabs/columns/walls/pipes
   recognizable in renders; diffusion loss decreasing with samples developing
   slab planes by epoch ~30.
+
+## Backlog (grammar extensions, not in v2)
+
+- Curved walls (free-plan quarter arcs). Ramps. Stairs (removed, may return).
 
 ## Out of scope (separate follow-up specs)
 
