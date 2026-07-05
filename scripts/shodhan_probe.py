@@ -23,7 +23,9 @@ def probe_gates(n: int = 200, seed_start: int = 0) -> dict:
     for i in range(n):
         v, _ = sh.generate_structure_with_params(seed_start + i)
         vols.append(v > 0)
-        temps.append((v == sh.SLAB) | (v == sh.EDGE))
+        zz = np.arange(v.shape[2])[None, None, :]
+        temps.append((v == sh.SLAB) | (v == sh.EDGE)
+                     | ((v == sh.COL) & (zz < sh.SLAB_T)))
     vols = np.stack(vols)
     template = np.stack(temps).mean(0) > 0.95        # near-constant slab/L voxels
     freq = vols.mean(0)
