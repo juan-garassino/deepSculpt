@@ -271,6 +271,79 @@ def add_walls(sk: Skeleton, rng: np.random.Generator, strips) -> List[Wall]:
     return walls
 
 
+def carve_block(v, rng, bx, by, w, d, z_lo, h):
+    """All openings full-height (slab to slab) — abstracted doors.
+    Shell is ALWAYS 1 voxel: masses never grow thick walls."""
+    z_a, z_b = z_lo + SLAB_T, z_lo + h
+    if w >= 16 and d >= 16:
+        t = 1
+        reg = v[bx + t:bx + w - t, by + t:by + d - t, z_a:z_b]
+        reg[reg == VOL] = 0
+        dw = int(rng.integers(4, 8))
+        dp = int(rng.integers(by + 4, max(by + 5, by + d - 4 - dw)))
+        reg = v[bx:bx + t + 1, dp:dp + dw, z_a:z_b]
+        reg[reg == VOL] = 0
+    if rng.random() < 0.8 and w >= 12 and d >= 12:
+        tw = int(rng.integers(6, max(7, w // 2)))
+        ty = int(rng.integers(by + 2, max(by + 3, by + d - tw - 2)))
+        reg = v[bx:bx + w, ty:ty + tw, z_a:z_b]
+        reg[reg == VOL] = 0
+    for _ in range(int(rng.integers(1, 3))):
+        cw = int(rng.integers(6, max(7, w // 2)))
+        cd = int(rng.integers(6, max(7, d // 2)))
+        side = int(rng.integers(0, 4))
+        if side == 0:
+            sl = np.s_[bx:bx + cw, by:by + cd, z_a:z_b]
+        elif side == 1:
+            sl = np.s_[bx + w - cw:bx + w, by + d - cd:by + d, z_a:z_b]
+        elif side == 2:
+            sl = np.s_[bx:bx + cw, by + d - cd:by + d, z_a:z_b]
+        else:
+            sl = np.s_[bx + w - cw:bx + w, by:by + cd, z_a:z_b]
+        reg = v[sl]
+        reg[reg == VOL] = 0
+
+
+def add_massing(sk: Skeleton, rng: np.random.Generator, mass: Optional[float] = None):
+    """Fill volumetric massing blocks on the skeleton, then carve openings.
+
+    gi is sampled from [0, len(slabs)-1) — i.e. never the last slab index —
+    so top is always a higher slab and h = top - z_lo > 0 without exception.
+    The ``or`` fallback in the h expression is therefore dead code; it is kept
+    for documentation only and will never fire.
+    Block ceiling: z_lo + h = top <= slabs[-1], so no block ever exceeds the
+    roof plane regardless of storey count or terrace flag."""
+    v = sk.volume
+    x0, x1, y0, y1 = sk.plot
+    m = mass if mass is not None else float(rng.uniform(0.25, 0.85))
+    blocks = []
+    for _ in range(int(1 + m * 3)):
+        w = int(np.clip(rng.integers(18, 32) * (0.6 + m), 16, x1 - x0 - 2))
+        d = int(np.clip(rng.integers(18, 32) * (0.6 + m), 16, y1 - y0 - 2))
+        # Sample gi from [0, len-1) so gi is never the last slab index.
+        # This guarantees a slab ceiling above every block (top > z_lo always).
+        gi = int(rng.integers(0, max(1, len(sk.slabs) - 1)))
+        z_lo = sk.slabs[gi]
+        top = sk.slabs[min(gi + int(rng.integers(1, 3)), len(sk.slabs) - 1)]
+        # h > 0 is guaranteed: top >= slabs[gi+1] > slabs[gi] = z_lo
+        # The `or` branch is dead code retained for clarity only.
+        h = (top - z_lo) or (sk.slabs[1] - sk.slabs[0])
+        bx = int(np.clip(int(rng.choice(sk.cols_x)) - rng.integers(0, 5), x0 + 1, max(x0 + 1, x1 - w)))
+        by = int(np.clip(int(rng.choice(sk.cols_y)) - rng.integers(0, 5), y0 + 1, max(y0 + 1, y1 - d)))
+        put(v, np.s_[bx:bx + w, by:by + d, z_lo:z_lo + h], VOL)
+        blocks.append((bx, by, w, d, z_lo, h))
+    for b in blocks:
+        carve_block(v, rng, *b)
+        bx, by, w, d, z_lo, h = b
+        for _ in range(4):
+            if (v[bx:bx + w, by:by + d, z_lo:z_lo + h] == VOL).mean() <= 0.7:
+                break
+            carve_block(v, rng, *b)
+    sk.params["mass_dial"] = round(m, 3)
+    sk.params["n_blocks"] = len(blocks)
+    return blocks
+
+
 def add_screens(sk: Skeleton, rng: np.random.Generator) -> Dict:
     """Brise-soleil: 1-voxel bars, 2 deep, flush at the slab rim plane,
     ground -> last slab. Vertical fins only, EXCEPT single-intermediate

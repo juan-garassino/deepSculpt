@@ -163,3 +163,14 @@ def test_screens_flush_and_fins():
         else:
             fins_seen = True
     assert fins_seen
+
+
+def test_massing_carved_and_thin_shells():
+    for seed in range(30):
+        rng = np.random.default_rng(seed)
+        sk = sh.build_skeleton(rng)
+        blocks = sh.add_massing(sk, rng, mass=0.8)
+        assert blocks, "dense mass dial must produce blocks"
+        for (bx, by, w, d, z_lo, h) in blocks:
+            solid = (sk.volume[bx:bx + w, by:by + d, z_lo:z_lo + h] == sh.VOL).mean()
+            assert solid <= 0.7 + 1e-6, f"seed {seed}: block {solid:.2f} solid"
