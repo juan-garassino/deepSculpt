@@ -325,9 +325,10 @@ class DeepSculptV2Main:
             snapshot_dir=str(results_dir / "snapshots"),
             use_tensorboard=False,  # Disable TensorBoard since it's not available
             use_wandb=False,
-            use_mlflow=False
+            use_mlflow=bool(getattr(args, 'mlflow', False) and MLFLOW_AVAILABLE),
+            experiment_name="deepsculpt"
         )
-        
+
         # Setup trainer
         trainer = GANTrainer(
             generator=generator,
@@ -340,7 +341,19 @@ class DeepSculptV2Main:
             device=self.device,
             noise_dim=args.noise_dim
         )
-        
+
+        # Apply run naming and extra params now that the trainer has opened the mlflow run
+        if experiment_tracker is not None:
+            _run_name = os.environ.get("RUN_ID") or f"{args.model_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            experiment_tracker.set_tag("mlflow.runName", _run_name)
+            experiment_tracker.log_params({
+                "framework": "pytorch",
+                "void_dim": args.void_dim,
+                "device": self.device
+            })
+            experiment_tracker.log_param("command", args.command)
+            experiment_tracker.log_param("grammar_version", collection_metadata.get("grammar_version", "n/a"))
+
         # Train the model
         start_epoch = 0
         if resume_from is not None:
@@ -509,9 +522,10 @@ class DeepSculptV2Main:
             snapshot_dir=str(results_dir / "snapshots"),
             use_tensorboard=False,
             use_wandb=False,
-            use_mlflow=False
+            use_mlflow=bool(getattr(args, 'mlflow', False) and MLFLOW_AVAILABLE),
+            experiment_name="deepsculpt"
         )
-        
+
         # Setup trainer
         trainer = DiffusionTrainer(
             model=model,
@@ -521,7 +535,18 @@ class DeepSculptV2Main:
             scheduler=scheduler,
             device=self.device
         )
-        
+
+        # Apply run naming and extra params now that the trainer has opened the mlflow run
+        if experiment_tracker is not None:
+            _run_name = os.environ.get("RUN_ID") or f"diffusion_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            experiment_tracker.set_tag("mlflow.runName", _run_name)
+            experiment_tracker.log_params({
+                "framework": "pytorch",
+                "void_dim": args.void_dim,
+                "device": self.device
+            })
+            experiment_tracker.log_param("command", args.command)
+
         # Train the model
         start_epoch = 0
         if resume_from is not None:
@@ -1258,24 +1283,12 @@ class DeepSculptV2Main:
         """Setup MLflow experiment tracking."""
         import mlflow
         
-        experiment_name = f"deepsculpt_{args.command}"
-        mlflow.set_experiment(experiment_name)
-        
-        run_name = f"{args.model_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        mlflow.start_run(run_name=run_name)
-        
-        # Log parameters
-        params = {
-            "framework": "pytorch",
-            "model_type": getattr(args, 'model_type', 'unknown'),
-            "void_dim": args.void_dim,
-            "epochs": getattr(args, 'epochs', 0),
-            "batch_size": args.batch_size,
-            "device": self.device
-        }
-        
-        mlflow.log_params(params)
-        
+        # Set the single project-level experiment.  The actual run is opened by the
+        # trainer's _setup_experiment_tracking (called in __init__).  Run naming and
+        # extra param logging are applied in train_gan / train_diffusion right after
+        # the trainer is instantiated, once the run is live.
+        mlflow.set_experiment("deepsculpt")
+
         return mlflow
     
     def _setup_wandb_tracking(self, args, results_dir):
