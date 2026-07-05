@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-GRAMMAR_VERSION = "2.0.0"
+GRAMMAR_VERSION = "2.0.1"
 
 N = 64
 MARGIN = 4                      # plot square [MARGIN .. N-1-MARGIN]^2 — constant
@@ -50,7 +50,12 @@ class Skeleton:
 
 
 def _structured_lines(rng: np.random.Generator, lo: int, hi: int, n: int) -> List[int]:
-    """Evenly spaced column lines, inset 4-8 per side, spacing exactly uniform."""
+    """Evenly spaced column lines, inset 4-8 per side, spacing exactly uniform.
+
+    Draws from ALL valid (il, ir) pairs; the maximally-symmetric subset
+    (minimal |il-ir|) receives 2:1 weight so symmetry is preferred without
+    collapsing to a single layout.  Layout distribution changed in v2.0.1.
+    """
     candidates = []
     for il in range(4, 9):
         for ir in range(4, 9):
@@ -59,8 +64,9 @@ def _structured_lines(rng: np.random.Generator, lo: int, hi: int, n: int) -> Lis
                 candidates.append((abs(il - ir), il, ir))
     if candidates:
         best = min(c[0] for c in candidates)
-        pool = [c for c in candidates if c[0] == best]
-        _, il, ir = pool[int(rng.integers(0, len(pool)))]
+        weights = np.array([2.0 if c[0] == best else 1.0 for c in candidates])
+        weights /= weights.sum()
+        _, il, ir = candidates[int(rng.choice(len(candidates), p=weights))]
         step = ((hi - lo) - il - ir) // (n - 1)
         return [lo + il + k * step for k in range(n)]
     i = int(rng.integers(4, 9))
