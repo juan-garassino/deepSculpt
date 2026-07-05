@@ -6,6 +6,10 @@ import pytest
 
 from deepsculpt.core.data.generation import shodhan as sh
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 
 def test_constants():
     assert sh.N == 64
@@ -239,3 +243,10 @@ def test_write_dataset(tmp_path):
     meta = json.loads((out / "dataset_metadata.json").read_text())
     assert "occupancy_stats" in meta and "variant_distribution" in meta
     assert meta["grammar_version"] == sh.GRAMMAR_VERSION
+
+
+def test_probe_gates_smoke(tmp_path):
+    from scripts.shodhan_probe import probe_gates
+    report = probe_gates(n=8)
+    assert set(report) >= {"pairwise_iou_masked", "max_freq_outside_template", "pass"}
+    assert 0.0 <= report["pairwise_iou_masked"] <= 1.0
