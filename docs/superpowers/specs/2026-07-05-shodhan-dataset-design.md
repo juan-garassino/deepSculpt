@@ -90,8 +90,10 @@ wall (4 polychrome colors), screen, pipe (red/blue/yellow), massing volume.
 - **T1** Only buildings with 3 intermediate slabs may omit the roof slab (p=0.45).
 - **T2** Terrace level: NO columns. Carries exactly ONE carved massing block
   (footprint 20–32 ⚙, M2 carving rules, rising to the roof plane so the envelope
-  height always reads) plus exactly ONE accent wall, and a pipe rising to the
-  roof plane (p=0.5).
+  height always reads) plus exactly TWO long walls perpendicular to each other
+  (1 thick ⚙, span 0.55–0.85 of plot, polychrome), and optionally one plain
+  full-height pipe riser hugging a wall at mid-length, placed on a clear column
+  so it is never truncated (p=0.5).
 
 ### Global integrity invariants
 - **G1** Nothing floats: every element terminates on a slab or the ground; each
