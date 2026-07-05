@@ -80,17 +80,18 @@ wall (4 polychrome colors), screen, pipe (red/blue/yellow), massing volume.
   16–32 ⚙ scaled by m), corners snapped near column lines, sitting on ground/slabs,
   1–2 levels tall.
 - **M2** Every block is carved — this is where the emptiness comes from:
-  hollow core (interior room, shell 2–4 thick, with a door punch), through-tunnel
-  piercing the block (p=0.8), 1–2 corner notches; re-carve until the block is
-  ≤ 70% solid within its own bounding box.
+  hollow core (interior room, shell 2–4 thick, with a door slot), through-tunnel
+  piercing the block (p=0.8), 1–2 corner notches. **All openings are full-height,
+  slab to slab — abstracted doors** (vertical slots, never partial-height holes).
+  Re-carve until the block is ≤ 70% solid within its own bounding box.
 - **M3** Stairs: 1–2 stepped diagonals (width 4–6 ⚙) connecting consecutive slabs.
 
 ### Terrace
 - **T1** Only buildings with 3 intermediate slabs may omit the roof slab (p=0.45).
-- **T2** Terrace level: NO columns. Carries a roof pavilion — an enclosed room
-  (footprint 16–28 ⚙, walls to the roof plane, door opening, window with p=0.5,
-  own lid exactly at the roof plane) — plus an accent wall (p=0.5) and a pipe
-  rising to the roof plane (p=0.5). The envelope height always reads.
+- **T2** Terrace level: NO columns. Carries exactly ONE carved massing block
+  (footprint 20–32 ⚙, M2 carving rules, rising to the roof plane so the envelope
+  height always reads) plus exactly ONE accent wall, and a pipe rising to the
+  roof plane (p=0.5).
 
 ### Global integrity invariants
 - **G1** Nothing floats: every element terminates on a slab or the ground; each
