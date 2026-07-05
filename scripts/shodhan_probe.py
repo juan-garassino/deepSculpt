@@ -18,23 +18,26 @@ import numpy as np
 from deepsculpt.core.data.generation import shodhan as sh
 
 
+def _template_mask(v: np.ndarray) -> np.ndarray:
+    """Sanctioned-template voxels of ONE sample: slabs, L-bands, and column
+    feet inside the ground slab (spec E2/S3)."""
+    zz = np.arange(v.shape[2])[None, None, :]
+    return (v == sh.SLAB) | (v == sh.EDGE) | ((v == sh.COL) & (zz < sh.SLAB_T))
+
+
 def probe_gates(n: int = 200, seed_start: int = 0) -> dict:
-    vols, temps = [], []
+    var_occ = []   # per-sample occupancy of VARIABLE (non-template) elements
     for i in range(n):
         v, _ = sh.generate_structure_with_params(seed_start + i)
-        vols.append(v > 0)
-        zz = np.arange(v.shape[2])[None, None, :]
-        temps.append((v == sh.SLAB) | (v == sh.EDGE)
-                     | ((v == sh.COL) & (zz < sh.SLAB_T)))
-    vols = np.stack(vols)
-    template = np.stack(temps).mean(0) > 0.95        # near-constant slab/L voxels
-    freq = vols.mean(0)
-    max_freq_out = float(freq[~template].max())
+        var_occ.append((v > 0) & ~_template_mask(v))
+    var_occ = np.stack(var_occ)
+    freq = var_occ.mean(0)
+    max_freq_out = float(freq.max())
 
     ious = []
     idx = np.random.default_rng(0).permutation(n)[:min(n, 60)]
     for a, b in combinations(idx, 2):
-        va, vb = vols[a] & ~template, vols[b] & ~template
+        va, vb = var_occ[a], var_occ[b]
         union = (va | vb).sum()
         ious.append((va & vb).sum() / union if union else 0.0)
     iou = float(np.mean(ious))
@@ -43,7 +46,7 @@ def probe_gates(n: int = 200, seed_start: int = 0) -> dict:
         "n": n,
         "pairwise_iou_masked": iou,
         "max_freq_outside_template": max_freq_out,
-        "occupancy_mean": float(vols.mean()),
+        "occupancy_mean": float(np.mean([o.mean() for o in var_occ])),  # variable-element occupancy
         "pass": iou < 0.45 and max_freq_out < 0.5,
     }
 
