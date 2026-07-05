@@ -119,6 +119,10 @@ def test_walls_rules():
             floor_strip = strips.get(w.floor_z)
             if floor_strip:
                 assert not sh._wall_hits_strip(w.axis, w.pos, w.s0, w.s1, floor_strip)
+            if not w.double:
+                ceil_strip = strips.get(sk.slabs[w.level + 1])
+                if ceil_strip:
+                    assert not sh._wall_hits_strip(w.axis, w.pos, w.s0, w.s1, ceil_strip)
 
 
 def test_pipes_rules():
@@ -174,3 +178,25 @@ def test_massing_carved_and_thin_shells():
         for (bx, by, w, d, z_lo, h) in blocks:
             solid = (sk.volume[bx:bx + w, by:by + d, z_lo:z_lo + h] == sh.VOL).mean()
             assert solid <= 0.7 + 1e-6, f"seed {seed}: block {solid:.2f} solid"
+
+
+def test_terrace_composition():
+    found = 0
+    for seed in range(300):
+        rng = np.random.default_rng(seed)
+        sk = sh.build_skeleton(rng)
+        if not sk.terrace:
+            continue
+        sh.add_terrace(sk, rng)
+        found += 1
+        z_lo = sk.slabs[-1] + sh.SLAB_T
+        top = sk.volume[:, :, z_lo:sk.roof_plane + 1]
+        # no columns on the terrace
+        assert not (top == sh.COL).any()
+        # something reaches the roof plane (envelope reads full height)
+        assert (sk.volume[:, :, sk.roof_plane] != 0).any()
+        # exactly 2 terrace walls recorded
+        assert sk.params["terrace_info"]["n_walls"] == 2
+        if found >= 5:
+            break
+    assert found >= 1

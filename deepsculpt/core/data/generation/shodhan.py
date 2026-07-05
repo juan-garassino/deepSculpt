@@ -382,3 +382,54 @@ def add_screens(sk: Skeleton, rng: np.random.Generator) -> Dict:
     info.update({"sides": sides, "lattice": bool(lattice), "rhythm": rhythm})
     sk.params["screens"] = info
     return info
+
+
+def add_terrace(sk: Skeleton, rng: np.random.Generator) -> None:
+    """Terrace: ONE carved block rising to the roof plane + TWO long
+    perpendicular walls (1 thick) + optional clean full-height riser."""
+    if not sk.terrace:
+        return
+    v = sk.volume
+    x0, x1, y0, y1 = sk.plot
+    z_lo = sk.slabs[-1] + SLAB_T
+    z_hi = sk.roof_plane
+
+    w = int(rng.integers(20, 32))
+    d = int(rng.integers(20, 32))
+    bx = int(np.clip(int(rng.choice(sk.cols_x)), x0 + GAP, max(x0 + GAP, x1 - GAP - w)))
+    by = int(np.clip(int(rng.choice(sk.cols_y)), y0 + GAP, max(y0 + GAP, y1 - GAP - d)))
+    h = z_hi - sk.slabs[-1]
+    put(v, np.s_[bx:bx + w, by:by + d, z_lo:z_hi + 1], VOL)
+    carve_block(v, rng, bx, by, w, d, sk.slabs[-1], h)
+
+    axis = int(rng.integers(0, 2))
+    first_wall = None
+    for i, ax in enumerate((axis, 1 - axis)):
+        pos = int(rng.integers(x0 + GAP, x1 - GAP + 1))
+        span = int((x1 - x0) * rng.uniform(0.55, 0.85))
+        s0 = int(rng.integers(y0 + GAP, max(y0 + GAP + 1, y1 - GAP - span + 1)))
+        kind = int(rng.choice(WALL_KINDS))
+        if ax == 0:
+            put(v, np.s_[pos, s0:s0 + span, z_lo:z_hi + 1], kind)
+        else:
+            put(v, np.s_[s0:s0 + span, pos, z_lo:z_hi + 1], kind)
+        if i == 0:
+            first_wall = (ax, pos, s0, span)
+
+    has_pipe = False
+    if first_wall and rng.random() < 0.5:
+        ax, pos, s0, span = first_wall
+        k = int(rng.choice(PIPE_KINDS))
+        for _ in range(10):
+            off = int(rng.choice([-1, 1]))
+            along = int(rng.integers(s0 + span // 4, max(s0 + span // 4 + 1, s0 + (3 * span) // 4)))
+            rx = pos + off if ax == 0 else along
+            ry = along if ax == 0 else pos + off
+            rx = int(np.clip(rx, x0 + 1, x1 - 1))
+            ry = int(np.clip(ry, y0 + 1, y1 - 1))
+            if (v[rx, ry, z_lo:z_hi + 1] == 0).all():
+                v[rx, ry, z_lo:z_hi + 1] = k
+                has_pipe = True
+                break
+    sk.params["terrace_info"] = {"block": [int(bx), int(by), int(w), int(d)],
+                                 "n_walls": 2, "pipe": bool(has_pipe)}
