@@ -156,15 +156,45 @@ dataset before generation of the full corpus / any training.
   recognizable in renders; diffusion loss decreasing with samples developing
   slab planes by epoch ~30.
 
+## Stage 2 (IN SCOPE): latent training option for both models
+
+Both GAN and diffusion get a `--latent` option so training can move to a
+compressed space — the road to higher resolution on the same GPU.
+
+- **Shared autoencoder (one VAE serves both):** 64³×1 → 16³×8 latents (f4
+  compression — conservative on purpose: 1-voxel members must survive
+  reconstruction). Fully convolutional (GroupNorm + SiLU; no BatchNorm — it
+  interacts badly with checkpointing; SDPA attention at the bottleneck only),
+  light-KL (β≈1e-6, SD-style). Loss: BCE-with-logits with pos_weight ≈ 1/occupancy
+  + soft-Dice. No adversarial term in v1.
+- **Gate before anything trains on latents:** held-out reconstruction IoU ≥ 0.95
+  AND per-element recall ≥ 0.9 (walls/pipes/fins measured via the colors labels).
+  If thin members don't survive, the latent track stops and reports.
+- **Latent diffusion:** the existing UNet3D takes 16³×8 input (model_channels 64)
+  — batch 64+ on the L4, minutes per epoch; latents normalized by dataset std.
+- **Latent GAN:** generator maps noise → 16³×8 latent grid; spectral-norm critic
+  on latents (in_channels parameterized). Same proven trainer recipe.
+- **Resolution growth path:** grammar is seed-deterministic and CPU-cheap, so a
+  future 128³ dataset is a regeneration, not a redesign; the fully-convolutional
+  VAE retrains at 128³→32³ and the latent models transfer to the new grid.
+  Nothing in the pipeline hard-codes 64.
+
+## Training pipeline (the full sequence this spec commits to)
+
+1. Generate probe (200) → gates + visual gate (user approval).
+2. Generate 20k + 1k → GCS.
+3. Baseline voxel-space training: GAN (cr-005 recipe + ada-lite) and diffusion
+   (b4 + grad-checkpoint) on Cloud Run chained slices with the existing monitors.
+4. VAE training + reconstruction gate.
+5. Latent GAN + latent diffusion (`--latent`), same monitoring, latent walks
+   decoded through the VAE.
+
 ## Backlog (grammar extensions, not in v2)
 
 - Curved walls (free-plan quarter arcs). Ramps. Stairs (removed, may return).
 
 ## Out of scope (separate follow-up specs)
 
-- Stage-2 latent track: light-KL VAE 64³→16³×8 (GroupNorm, BCE pos_weight +
-  soft-Dice, class-weighted via colors), then latent diffusion + latent GAN,
-  reconstruction IoU ≥ 0.95 gate. Enables higher resolution later.
 - Conditional training on params.json; colored/semantic-channel training.
 - TSDF / soft-occupancy representation.
 
