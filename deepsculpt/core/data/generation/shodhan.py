@@ -105,3 +105,43 @@ def build_skeleton(rng: np.random.Generator) -> Skeleton:
         "terrace": bool(terrace),
     }
     return Skeleton(v, cols_x, cols_y, slabs, (x0, x1, y0, y1), terrace, roof_plane, params)
+
+
+def cut_slab_strips(sk: Skeleton, rng: np.random.Generator) -> Dict[int, Tuple[int, int, int]]:
+    """One strip per INTERMEDIATE slab, between two adjacent column rows,
+    rim ring preserved. Returns {slab_z: (axis, a, b)} for exclusion rules."""
+    v = sk.volume
+    x0, x1, y0, y1 = sk.plot
+    strips: Dict[int, Tuple[int, int, int]] = {}
+    for z in sk.slabs[1:-1]:
+        axis = int(rng.integers(0, 2))
+        lines = sorted(sk.cols_x if axis == 0 else sk.cols_y)
+        if len(lines) < 2:
+            continue
+        i = int(rng.integers(0, len(lines) - 1))
+        a, b = lines[i] + COL_T, lines[i + 1]
+        if b <= a:
+            continue
+        for dz in range(SLAB_T):
+            if axis == 0:
+                reg = v[a:b, y0 + 1:y1, z + dz]
+            else:
+                reg = v[x0 + 1:x1, a:b, z + dz]
+            reg[reg == SLAB] = 0
+        strips[z] = (axis, a, b)
+    sk.params["strips"] = {int(z): [int(axis), int(a), int(b)] for z, (axis, a, b) in strips.items()}
+    return strips
+
+
+def add_l_borders(sk: Skeleton) -> None:
+    """White band on every slab rim: all four sides, above AND below."""
+    v = sk.volume
+    x0, x1, y0, y1 = sk.plot
+    for z in sk.slabs:
+        for zz in (z + SLAB_T, z - 1):
+            if zz < 0 or zz >= N:
+                continue
+            put(v, np.s_[x0:x1 + 1, y0:y0 + 1, zz:zz + 1], EDGE)
+            put(v, np.s_[x0:x1 + 1, y1:y1 + 1, zz:zz + 1], EDGE)
+            put(v, np.s_[x0:x0 + 1, y0:y1 + 1, zz:zz + 1], EDGE)
+            put(v, np.s_[x1:x1 + 1, y0:y1 + 1, zz:zz + 1], EDGE)
