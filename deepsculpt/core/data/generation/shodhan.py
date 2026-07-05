@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-GRAMMAR_VERSION = "2.0.1"
+GRAMMAR_VERSION = "2.0.2"
 
 N = 64
 MARGIN = 4                      # plot square [MARGIN .. N-1-MARGIN]^2 — constant
@@ -324,8 +324,8 @@ def add_massing(sk: Skeleton, rng: np.random.Generator, mass: Optional[float] = 
     m = mass if mass is not None else float(rng.uniform(0.25, 0.85))
     blocks = []
     for _ in range(int(1 + m * 3)):
-        w = int(np.clip(rng.integers(18, 32) * (0.6 + m), 16, x1 - x0 - 2))
-        d = int(np.clip(rng.integers(18, 32) * (0.6 + m), 16, y1 - y0 - 2))
+        w = int(np.clip(rng.integers(18, 32) * (0.6 + m), 16, 32))
+        d = int(np.clip(rng.integers(18, 32) * (0.6 + m), 16, 32))
         # Sample gi from [0, len-1) so gi is never the last slab index.
         # This guarantees a slab ceiling above every block (top > z_lo always).
         gi = int(rng.integers(0, max(1, len(sk.slabs) - 1)))
