@@ -594,7 +594,17 @@ class DeepSculptV2Main:
     def generate_data(self, args):
         """Generate synthetic 3D data with comprehensive options."""
         print(f"Generating {args.num_samples} samples")
-        
+
+        # --- Shodhan grammar v2 (default preset) ---
+        if getattr(args, 'structure_preset', 'shodhan') == 'shodhan':
+            from datetime import date
+            from deepsculpt.core.data.generation.shodhan import write_dataset
+            out = Path(args.output_dir) / date.today().isoformat()
+            write_dataset(out, num_samples=args.num_samples,
+                          seed_start=getattr(args, 'seed_start', 0))
+            print(f"Dataset generated successfully! Collection directory: {out}")
+            return 0
+
         # Create output directory
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -1410,7 +1420,11 @@ def create_parser():
     gen_parser.add_argument('--num-samples', type=int, default=1000, help='Number of samples to generate')
     gen_parser.add_argument('--void-dim', type=int, default=64, help='3D voxel space dimension')
     gen_parser.add_argument('--num-shapes', type=int, default=5, help='Number of shapes per sculpture')
-    gen_parser.add_argument('--structure-preset', default='architectural', choices=['architectural', 'generic'], help='Procedural structure recipe preset')
+    gen_parser.add_argument('--structure-preset', default='shodhan',
+                            choices=['shodhan', 'architectural', 'generic'],
+                            help='shodhan = Corbusier/Umemoto grammar v2 (default); architectural/generic = legacy')
+    gen_parser.add_argument('--seed-start', type=int, default=0,
+                            help='first seed for shodhan generation (train/holdout sets use disjoint ranges)')
     gen_parser.add_argument('--grid-count', type=int, default=1, help='Enable grid columns when > 0')
     gen_parser.add_argument('--grid-step', type=int, default=4, help='Grid spacing between columns')
     gen_parser.add_argument('--edge-count', type=int, default=0, help='Number of edge primitives for the selected preset')

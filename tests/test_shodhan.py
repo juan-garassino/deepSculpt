@@ -250,3 +250,18 @@ def test_probe_gates_smoke(tmp_path):
     report = probe_gates(n=8)
     assert set(report) >= {"pairwise_iou_masked", "max_freq_outside_template", "pass"}
     assert 0.0 <= report["pairwise_iou_masked"] <= 1.0
+
+
+def test_cli_generate_shodhan(tmp_path):
+    import subprocess, sys, json
+    r = subprocess.run(
+        [sys.executable, "-m", "deepsculpt.main", "generate-data",
+         "--num-samples", "3", "--void-dim", "64",
+         "--structure-preset", "shodhan", "--output-dir", str(tmp_path)],
+        capture_output=True, text=True, timeout=600,
+        cwd="/Users/juan-garassino/Code/005-products/007-deep-sculpt")
+    assert r.returncode == 0, r.stdout + r.stderr
+    metas = list(tmp_path.rglob("dataset_metadata.json"))
+    assert metas, "no collection written"
+    meta = json.loads(metas[0].read_text())
+    assert meta.get("grammar_version") == "2.0.2"
