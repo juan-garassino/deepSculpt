@@ -222,3 +222,20 @@ def test_generate_structure_end_to_end():
         # nothing outside the plot square
         assert (v[:4, :, :] == 0).all() and (v[60:, :, :] == 0).all()
         assert (v[:, :4, :] == 0).all() and (v[:, 60:, :] == 0).all()
+
+
+def test_write_dataset(tmp_path):
+    import json, torch
+    out = sh.write_dataset(tmp_path, num_samples=4, seed_start=100)
+    st = sorted((out / "pytorch_samples" / "structures").glob("structure_*.pt"))
+    co = sorted((out / "pytorch_samples" / "colors").glob("colors_*.pt"))
+    pr = sorted((out / "params").glob("params_*.json"))
+    assert len(st) == len(co) == len(pr) == 4
+    s = torch.load(st[0], map_location="cpu")
+    c = torch.load(co[0], map_location="cpu")
+    assert s.shape == (64, 64, 64) and s.dtype == torch.int8
+    assert set(s.unique().tolist()) <= {0, 1}
+    assert c.shape == (64, 64, 64)                    # element classes
+    meta = json.loads((out / "dataset_metadata.json").read_text())
+    assert "occupancy_stats" in meta and "variant_distribution" in meta
+    assert meta["grammar_version"] == sh.GRAMMAR_VERSION

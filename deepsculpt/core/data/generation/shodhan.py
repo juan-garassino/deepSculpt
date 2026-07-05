@@ -481,3 +481,50 @@ def generate_structure_with_params(seed: int, max_tries: int = 20) -> Tuple[np.n
 def generate_structure(rng_or_seed) -> np.ndarray:
     seed = rng_or_seed if isinstance(rng_or_seed, (int, np.integer)) else int(rng_or_seed.integers(0, 2**31))
     return generate_structure_with_params(int(seed))[0]
+
+
+def write_dataset(output_dir, num_samples: int, seed_start: int = 0):
+    """Write a loader-compatible collection: binary structures, element-class
+    colors, per-sample params, metadata with occupancy stats + variant table."""
+    import json
+    from pathlib import Path
+
+    import torch
+
+    out = Path(output_dir)
+    (out / "pytorch_samples" / "structures").mkdir(parents=True, exist_ok=True)
+    (out / "pytorch_samples" / "colors").mkdir(parents=True, exist_ok=True)
+    (out / "params").mkdir(parents=True, exist_ok=True)
+
+    occupancies, variants = [], {"terrace": 0, "lattice": 0}
+    level_counts: Dict[str, int] = {}
+    for i in range(num_samples):
+        seed = seed_start + i
+        v, params = generate_structure_with_params(seed)
+        structure = (v > 0).astype(np.int8)
+        torch.save(torch.from_numpy(structure),
+                   out / "pytorch_samples" / "structures" / f"structure_{i:06d}.pt")
+        torch.save(torch.from_numpy(v.copy()),
+                   out / "pytorch_samples" / "colors" / f"colors_{i:06d}.pt")
+        (out / "params" / f"params_{i:06d}.json").write_text(json.dumps(params))
+        occupancies.append(params["occupancy"])
+        variants["terrace"] += int(params["terrace"])
+        variants["lattice"] += int(params.get("screens", {}).get("lattice", False))
+        lk = str(params["n_intermediate"])
+        level_counts[lk] = level_counts.get(lk, 0) + 1
+
+    occ = np.asarray(occupancies, dtype=np.float32)
+    meta = {
+        "grammar_version": GRAMMAR_VERSION,
+        "num_samples": num_samples,
+        "seed_range": [seed_start, seed_start + num_samples - 1],
+        "void_dim": N,
+        "occupancy_stats": {
+            "mean": float(occ.mean()), "min": float(occ.min()), "max": float(occ.max()),
+            "p10": float(np.percentile(occ, 10)), "p90": float(np.percentile(occ, 90)),
+        },
+        "variant_distribution": {**{k: v / num_samples for k, v in variants.items()},
+                                 "intermediate_levels": level_counts},
+    }
+    (out / "dataset_metadata.json").write_text(json.dumps(meta, indent=1))
+    return out
