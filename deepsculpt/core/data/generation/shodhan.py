@@ -168,6 +168,65 @@ def _wall_hits_strip(axis: int, pos: int, s0: int, s1: int, strip) -> bool:
     return not (s1 < a or s0 >= b)
 
 
+def _point_in_strip(x: int, y: int, strip) -> bool:
+    st_axis, a, b = strip
+    return (a <= x < b) if st_axis == 0 else (a <= y < b)
+
+
+def add_pipes(sk: Skeleton, rng: np.random.Generator, walls: List[Wall], strips):
+    """2-3 pipes: 1x1 riser hugging a wall face ground->served slab, plus a
+    horizontal run under that slab, clipped at strips, strictly interior."""
+    v = sk.volume
+    x0, x1, y0, y1 = sk.plot
+    lo, hi = x0 + 1, x1 - 1
+    kinds = list(PIPE_KINDS)
+    rng.shuffle(kinds)
+    target = int(rng.integers(2, 4))
+    placed = []
+    for _ in range(60):
+        if len(placed) >= target or not walls:
+            break
+        w = walls[int(rng.integers(0, len(walls)))]
+        k = kinds[len(placed) % 3]
+        off = int(rng.choice([-1, 1]))
+        span = w.s1 - w.s0
+        along = int(rng.integers(w.s0, max(w.s0 + 1, w.s1)))
+        rx = w.pos + off if w.axis == 0 else along
+        ry = along if w.axis == 0 else w.pos + off
+        rx, ry = int(np.clip(rx, lo, hi)), int(np.clip(ry, lo, hi))
+        z_top = min(w.z_hi + 1, N - 1)
+        if any(_point_in_strip(rx, ry, st) for z, st in strips.items() if 0 < z <= z_top):
+            continue
+        v[rx, ry, 0:z_top][v[rx, ry, 0:z_top] == 0] = k
+        # horizontal run under the slab above, clipped at a strip
+        run = int(span * rng.uniform(0.5, 1.0))
+        zh = max(0, w.z_hi)
+        strip_above = strips.get(w.z_hi + 1)
+        if w.axis == 0:
+            a, b = sorted((ry, int(np.clip(ry + rng.choice([-1, 1]) * run, lo, hi))))
+            if strip_above and strip_above[0] == 1:
+                sa, sb = strip_above[1], strip_above[2]
+                if a < sa <= b:
+                    b = sa - 1
+                elif a <= sb - 1 < b:
+                    a = sb
+            if b >= a:
+                put(v, np.s_[rx, a:b + 1, zh:zh + 1], k)
+        else:
+            a, b = sorted((rx, int(np.clip(rx + rng.choice([-1, 1]) * run, lo, hi))))
+            if strip_above and strip_above[0] == 0:
+                sa, sb = strip_above[1], strip_above[2]
+                if a < sa <= b:
+                    b = sa - 1
+                elif a <= sb - 1 < b:
+                    a = sb
+            if b >= a:
+                put(v, np.s_[a:b + 1, ry, zh:zh + 1], k)
+        placed.append((rx, ry, z_top, k))
+    sk.params["n_pipes"] = len(placed)
+    return placed
+
+
 def add_walls(sk: Skeleton, rng: np.random.Generator, strips) -> List[Wall]:
     """Two walls per level: on grid lines, endpoints at columns, >=2 bays
     when the array allows, GAP-clear of edges, never standing on strips;

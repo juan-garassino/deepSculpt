@@ -119,3 +119,21 @@ def test_walls_rules():
             floor_strip = strips.get(w.floor_z)
             if floor_strip:
                 assert not sh._wall_hits_strip(w.axis, w.pos, w.s0, w.s1, floor_strip)
+
+
+def test_pipes_rules():
+    for seed in range(30):
+        rng = np.random.default_rng(seed)
+        sk = sh.build_skeleton(rng)
+        strips = sh.cut_slab_strips(sk, rng)
+        walls = sh.add_walls(sk, rng, strips)
+        pipes = sh.add_pipes(sk, rng, walls, strips)
+        assert 2 <= len(pipes) <= 3, f"seed {seed}: {len(pipes)} pipes"
+        x0, x1, y0, y1 = sk.plot
+        for rx, ry, z_top, k in pipes:
+            # strictly inside the facade plane
+            assert x0 < rx < x1 and y0 < ry < y1
+            # riser never inside a strip void it crosses
+            for z, st in strips.items():
+                if 0 < z <= z_top:
+                    assert not sh._point_in_strip(rx, ry, st)
