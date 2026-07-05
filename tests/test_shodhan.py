@@ -92,3 +92,30 @@ def test_l_borders_all_sides_up_down():
                     sk.volume[x1, y0:y1 + 1, zz],
                 ):
                     assert (band != 0).all(), f"seed {seed}: L-band gap at z={zz}"
+
+
+def test_walls_rules():
+    for seed in range(30):
+        rng = np.random.default_rng(seed)
+        sk = sh.build_skeleton(rng)
+        strips = sh.cut_slab_strips(sk, rng)
+        walls = sh.add_walls(sk, rng, strips)
+        x0, x1, y0, y1 = sk.plot
+        # exactly two per level
+        per_level = {}
+        for w in walls:
+            per_level[w.level] = per_level.get(w.level, 0) + 1
+        assert all(c == 2 for c in per_level.values()), f"seed {seed}: {per_level}"
+        assert len(per_level) == len(sk.slabs) - 1, f"seed {seed}: missing levels"
+        for w in walls:
+            # on a column line, endpoints at columns
+            lines = sk.cols_x if w.axis == 0 else sk.cols_y
+            across = sk.cols_y if w.axis == 0 else sk.cols_x
+            assert w.pos in lines
+            assert w.s0 in across and w.s1 in across
+            # edge clearance for the wall's own line
+            assert x0 + sh.GAP <= w.pos <= x1 - sh.GAP
+            # never standing on a strip
+            floor_strip = strips.get(w.floor_z)
+            if floor_strip:
+                assert not sh._wall_hits_strip(w.axis, w.pos, w.s0, w.s1, floor_strip)

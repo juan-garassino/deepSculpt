@@ -145,3 +145,68 @@ def add_l_borders(sk: Skeleton) -> None:
             put(v, np.s_[x0:x1 + 1, y1:y1 + 1, zz:zz + 1], EDGE)
             put(v, np.s_[x0:x0 + 1, y0:y1 + 1, zz:zz + 1], EDGE)
             put(v, np.s_[x1:x1 + 1, y0:y1 + 1, zz:zz + 1], EDGE)
+
+
+@dataclass
+class Wall:
+    axis: int
+    pos: int
+    s0: int
+    s1: int
+    z_lo: int
+    z_hi: int
+    level: int
+    floor_z: int
+    double: bool
+    kind: int
+
+
+def _wall_hits_strip(axis: int, pos: int, s0: int, s1: int, strip) -> bool:
+    st_axis, a, b = strip
+    if st_axis == axis:
+        return a <= pos < b
+    return not (s1 < a or s0 >= b)
+
+
+def add_walls(sk: Skeleton, rng: np.random.Generator, strips) -> List[Wall]:
+    """Two walls per level: on grid lines, endpoints at columns, >=2 bays
+    when the array allows, GAP-clear of edges, never standing on strips;
+    ~30% of levels get a double-height second wall."""
+    v = sk.volume
+    x0, x1, y0, y1 = sk.plot
+    walls: List[Wall] = []
+    for gi in range(len(sk.slabs) - 1):
+        z_lo = sk.slabs[gi] + SLAB_T
+        floor_strip = strips.get(sk.slabs[gi])
+        ceil_strip = strips.get(sk.slabs[gi + 1])
+        placed = 0
+        for _ in range(48):
+            if placed >= 2:
+                break
+            double = (placed == 1 and gi + 2 <= len(sk.slabs) - 1 and rng.random() < 0.3)
+            z_hi = sk.slabs[gi + 2] - 1 if double else sk.slabs[gi + 1] - 1
+            axis = int(rng.integers(0, 2))
+            on_lines = sk.cols_x if axis == 0 else sk.cols_y
+            across = sk.cols_y if axis == 0 else sk.cols_x
+            on_ok = [c for c in on_lines if x0 + GAP <= c <= x1 - GAP]
+            if not on_ok or len(across) < 2:
+                continue
+            pos = int(rng.choice(on_ok))
+            i = int(rng.integers(0, len(across) - 1))
+            j_max = min(i + 2, len(across) - 1)
+            j = int(rng.integers(i + 1, j_max + 1))
+            s0, s1 = across[i], across[j]
+            if floor_strip and _wall_hits_strip(axis, pos, s0, s1, floor_strip):
+                continue
+            if not double and ceil_strip and _wall_hits_strip(axis, pos, s0, s1, ceil_strip):
+                continue
+            kind = int(rng.choice(WALL_KINDS))
+            if axis == 0:
+                put(v, np.s_[pos, s0:s1 + 1, z_lo:z_hi + 1], kind)
+            else:
+                put(v, np.s_[s0:s1 + 1, pos, z_lo:z_hi + 1], kind)
+            walls.append(Wall(axis, pos, s0, s1, z_lo, z_hi, gi, sk.slabs[gi], double, kind))
+            placed += 1
+    sk.params["n_walls"] = len(walls)
+    sk.params["n_double_walls"] = sum(1 for w in walls if w.double)
+    return walls
