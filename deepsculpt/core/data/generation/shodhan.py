@@ -269,3 +269,43 @@ def add_walls(sk: Skeleton, rng: np.random.Generator, strips) -> List[Wall]:
     sk.params["n_walls"] = len(walls)
     sk.params["n_double_walls"] = sum(1 for w in walls if w.double)
     return walls
+
+
+def add_screens(sk: Skeleton, rng: np.random.Generator) -> Dict:
+    """Brise-soleil: 1-voxel bars, 2 deep, flush at the slab rim plane,
+    ground -> last slab. Vertical fins only, EXCEPT single-intermediate
+    buildings which may use the full lattice (p=0.7). Present p=0.75."""
+    info = {"sides": [], "lattice": False}
+    if rng.random() >= 0.75:
+        sk.params["screens"] = info
+        return info
+    v = sk.volume
+    x0, x1, y0, y1 = sk.plot
+    n = int(rng.integers(1, 3))
+    sides = [int(s) for s in rng.permutation(4)[:n]]
+    rhythm = int(rng.integers(6, 9))
+    lattice = sk.params["n_intermediate"] <= 1 and rng.random() < 0.7
+    for side in sides:
+        if side == 0:
+            depth = (x0, x0 + 1)
+        elif side == 1:
+            depth = (x1, x1 - 1)
+        elif side == 2:
+            depth = (y0, y0 + 1)
+        else:
+            depth = (y1, y1 - 1)
+        rng_a = range(y0, y1 + 1) if side < 2 else range(x0, x1 + 1)
+        for a in rng_a:
+            for zz in range(SLAB_T, sk.slabs[-1]):
+                if lattice:
+                    if a % rhythm != 0 and zz % rhythm != 0:
+                        continue
+                elif a % rhythm != 0:
+                    continue
+                for dpos in depth:
+                    p = (dpos, a) if side < 2 else (a, dpos)
+                    if v[p[0], p[1], zz] == 0:
+                        v[p[0], p[1], zz] = SCREEN
+    info.update({"sides": sides, "lattice": bool(lattice), "rhythm": rhythm})
+    sk.params["screens"] = info
+    return info

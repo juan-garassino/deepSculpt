@@ -137,3 +137,29 @@ def test_pipes_rules():
             for z, st in strips.items():
                 if 0 < z <= z_top:
                     assert not sh._point_in_strip(rx, ry, st)
+
+
+def test_screens_flush_and_fins():
+    lattice_seen = fins_seen = False
+    for seed in range(60):
+        rng = np.random.default_rng(seed)
+        sk = sh.build_skeleton(rng)
+        info = sh.add_screens(sk, rng)
+        if not info["sides"]:
+            continue
+        x0, x1, y0, y1 = sk.plot
+        scr = sk.volume == sh.SCREEN
+        assert scr.any()
+        # flush: screen voxels only on rim planes or one voxel inward
+        xs, ys, zs = np.where(scr)
+        ok = ((xs == x0) | (xs == x0 + 1) | (xs == x1) | (xs == x1 - 1)
+              | (ys == y0) | (ys == y0 + 1) | (ys == y1) | (ys == y1 - 1))
+        assert ok.all(), f"seed {seed}: screen voxel off the rim planes"
+        # vertical span: ground slab top to below last slab
+        assert zs.min() >= sh.SLAB_T and zs.max() < sk.slabs[-1]
+        if info["lattice"]:
+            lattice_seen = True
+            assert sk.params["n_intermediate"] <= 1
+        else:
+            fins_seen = True
+    assert fins_seen
