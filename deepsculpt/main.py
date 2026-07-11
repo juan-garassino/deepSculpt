@@ -320,6 +320,7 @@ class DeepSculptV2Main:
             dataset_occupancy_p10=occupancy_stats.get("p10"),
             dataset_occupancy_p90=occupancy_stats.get("p90"),
             snapshot_freq=args.snapshot_freq,
+            checkpoint_freq=getattr(args, 'checkpoint_freq', 5),
             checkpoint_dir=str(results_dir / "checkpoints"),
             log_dir=str(results_dir / "logs"),
             snapshot_dir=str(results_dir / "snapshots"),
@@ -518,6 +519,7 @@ class DeepSculptV2Main:
             mixed_precision=args.mixed_precision,
             use_ema=args.use_ema,
             ema_decay=args.ema_decay,
+            checkpoint_freq=getattr(args, 'checkpoint_freq', 5),
             checkpoint_dir=str(results_dir / "checkpoints"),
             log_dir=str(results_dir / "logs"),
             snapshot_dir=str(results_dir / "snapshots"),
@@ -1366,6 +1368,7 @@ def create_parser():
     train_gan_parser.add_argument('--data-folder', default='./data', help='Training data folder')
     train_gan_parser.add_argument('--output-dir', default='./results', help='Output directory')
     train_gan_parser.add_argument('--snapshot-freq', type=int, default=1, help='Snapshot frequency (epochs)')
+    train_gan_parser.add_argument('--checkpoint-freq', type=int, default=5, help='Checkpoint frequency (epochs); lower for timeout-chained cloud slices so resume loses fewer epochs')
     train_gan_parser.add_argument('--color', action='store_true', help='Enable color mode')
     train_gan_parser.add_argument('--sparse', action='store_true', help='Use sparse tensors')
     train_gan_parser.add_argument('--mixed-precision', action='store_true', help='Use mixed precision training')
@@ -1432,6 +1435,7 @@ def create_parser():
                                   help='Resume the latest run in --output-dir from its newest checkpoint')
     train_diff_parser.add_argument('--mlflow', action='store_true', help='Enable MLflow tracking')
     train_diff_parser.add_argument('--num-workers', type=int, default=4, help='Number of data loader workers')
+    train_diff_parser.add_argument('--checkpoint-freq', type=int, default=5, help='Checkpoint frequency (epochs); lower for timeout-chained cloud slices so resume loses fewer epochs')
     train_diff_parser.set_defaults(use_ema=True)
     
     # Data generation
