@@ -1157,6 +1157,11 @@ class DeepSculptV2Main:
         collection_dir = self._resolve_collection_dir(Path(args.data_folder))
         if collection_dir is not None:
             sample_pairs = self._load_sample_pairs(collection_dir)
+            max_samples = getattr(args, "max_samples", None)
+            if max_samples and len(sample_pairs) > max_samples:
+                # Deterministic subset: 1h cloud slices can't finish a 20k
+                # diffusion epoch, so cap the per-epoch dataset instead.
+                sample_pairs = sample_pairs[:max_samples]
             print(f"Loading {len(sample_pairs)} samples from {collection_dir}")
             dataset = PairedTensorDataset(sample_pairs)
             return torch.utils.data.DataLoader(
@@ -1436,6 +1441,7 @@ def create_parser():
     train_diff_parser.add_argument('--mlflow', action='store_true', help='Enable MLflow tracking')
     train_diff_parser.add_argument('--num-workers', type=int, default=4, help='Number of data loader workers')
     train_diff_parser.add_argument('--checkpoint-freq', type=int, default=5, help='Checkpoint frequency (epochs); lower for timeout-chained cloud slices so resume loses fewer epochs')
+    train_diff_parser.add_argument('--max-samples', type=int, default=None, help='Cap the loaded dataset (deterministic prefix); keeps a diffusion epoch inside a 1h cloud slice')
     train_diff_parser.set_defaults(use_ema=True)
     
     # Data generation
