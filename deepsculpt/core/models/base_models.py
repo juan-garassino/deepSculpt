@@ -11,6 +11,11 @@ import torch.nn.functional as F
 from typing import Optional, Tuple, Dict, Any, List, Union
 from abc import ABC, abstractmethod
 
+# Semantic-class ("color") voxel vocabulary for the GAN path: channel 0 = empty,
+# channels 1-12 = shodhan element classes (core/data/generation/shodhan.py:
+# COL, SLAB, SCREEN, PIPE_R/B/Y, VOL, EDGE, WALL_R/B/Y/G).
+SEMANTIC_CLASSES = 13
+
 
 class BaseGenerator(nn.Module, ABC):
     """

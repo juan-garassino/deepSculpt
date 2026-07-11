@@ -87,6 +87,13 @@ class GANTrainer(BaseTrainer):
         self.loss_type = loss_type
         self.use_gradient_penalty = use_gradient_penalty
         self.gradient_penalty_weight = gradient_penalty_weight
+
+        # Color mode is derived from the discriminator's input width:
+        # 1 channel = mono occupancy (legacy path, bit-identical), >1 = the
+        # 13-channel semantic-class field (channel 0 = empty, 1-12 = element
+        # classes). Everything color-specific below gates on self.is_color.
+        self.num_classes = int(getattr(discriminator, "input_channels", 1))
+        self.is_color = self.num_classes > 1
         
         # Additional scaler for discriminator if using mixed precision
         try:
@@ -270,10 +277,19 @@ class GANTrainer(BaseTrainer):
     def _compute_occupancy(self, batch: torch.Tensor, differentiable: bool = False) -> torch.Tensor:
         """Compute scalar occupancy ratio for a voxel batch.
 
-        With straight-through binarization the generator output is already
-        {0,1}, so ``batch.mean()`` equals the hard-threshold occupancy AND
-        is differentiable (STE passes gradients through the binarization).
+        Mono: with straight-through binarization the generator output is
+        already {0,1}, so ``batch.mean()`` equals the hard-threshold occupancy
+        AND is differentiable (STE passes gradients through the binarization).
+
+        Color (13ch categorical, channel 0 = empty): differentiable occupancy
+        is the probability mass outside the empty channel; the hard variant is
+        the argmax-occupied voxel fraction. For real (smoothed) one-hot
+        batches the hard variant equals the exact (colors > 0) fraction.
         """
+        if self.is_color:
+            if differentiable:
+                return (1.0 - batch[:, 0]).mean()
+            return (batch.detach().argmax(dim=1) > 0).float().mean()
         if differentiable:
             return batch.mean()
         return batch.detach().mean()
@@ -692,28 +708,32 @@ class GANTrainer(BaseTrainer):
             elif isinstance(batch, dict):
                 # Handle dictionary batch format from StreamingDataset
                 structure = batch["structure"].to(self.device)
-                
-                # Get color mode from discriminator model
-                color_mode = getattr(self.discriminator, 'color_mode', 0)
-                
-                # The actual discriminator expects PyTorch format: [batch, channels, depth, height, width]
-                # For monochrome: 1 channel, for color: 6 channels
-                if structure.dim() == 4:  # [batch, depth, height, width]
-                    if color_mode == 0:  # Monochrome mode expects 1 channel
-                        # [batch, depth, height, width] -> [batch, 1, depth, height, width]
-                        real_data = structure.unsqueeze(1)
-                    else:  # Color mode: one-hot encode color indices into 6 channels
-                        colors = batch["colors"].to(self.device)
-                        # colors are class indices [B, D, H, W] → one-hot [B, D, H, W, 6] → [B, 6, D, H, W]
-                        num_classes = getattr(self.discriminator, 'input_channels', 6)
-                        real_data = F.one_hot(colors.long(), num_classes=num_classes).float()
-                        real_data = real_data.permute(0, 4, 1, 2, 3)
+
+                if self.is_color:
+                    # Semantic-class mode: reals come from the colors tensor
+                    # (class indices 0-12; colors > 0 == structure > 0), one-hot
+                    # encoded over the channel dim: [B, D, H, W] -> [B, 13, D, H, W].
+                    colors = batch["colors"].to(self.device)
+                    if colors.dim() == 5:  # legacy collector layout [B, 1, D, H, W]
+                        colors = colors.squeeze(1)
+                    real_data = F.one_hot(
+                        colors.long().clamp(0, self.num_classes - 1),
+                        num_classes=self.num_classes,
+                    ).permute(0, 4, 1, 2, 3).float()
+                    # Label smoothing (0.95 one-hot + 0.05 uniform): the disc
+                    # never sees exact simplex vertices, so it can't key on
+                    # the one-hot spikes to separate real from softmax fakes.
+                    real_data = real_data * 0.95 + 0.05 / self.num_classes
                 else:
-                    real_data = structure
-                
-                # Convert to float if needed (models expect float tensors)
-                if real_data.dtype != torch.float32:
-                    real_data = real_data.float()
+                    # Monochrome: [batch, depth, height, width] -> [batch, 1, D, H, W]
+                    if structure.dim() == 4:
+                        real_data = structure.unsqueeze(1)
+                    else:
+                        real_data = structure
+
+                    # Convert to float if needed (models expect float tensors)
+                    if real_data.dtype != torch.float32:
+                        real_data = real_data.float()
             else:
                 real_data = batch.to(self.device)
             
@@ -778,6 +798,10 @@ class GANTrainer(BaseTrainer):
     def _save_epoch_snapshot(self, epoch: int, train_metrics: Dict[str, float]) -> None:
         os.makedirs(self.config.snapshot_dir, exist_ok=True)
         samples = self.generate_samples(num_samples=4, use_fixed_noise=True).detach().cpu()
+        if self.is_color:
+            # Save class-id volumes (int8, (N, D, H, W)) instead of 13ch floats
+            # — ~50x smaller and directly renderable with the class palette.
+            samples = samples.argmax(dim=1).to(torch.int8)
         snapshot_stats = self._snapshot_sample_stats(samples)
         snapshot_stem = Path(self.config.snapshot_dir) / f"epoch_{epoch + 1:03d}"
         torch.save(samples, snapshot_stem.with_suffix(".pt"))
@@ -809,7 +833,12 @@ class GANTrainer(BaseTrainer):
             ).detach().cpu()
         if was_training:
             self.generator.train()
-        torch.save(walk.half(), snapshot_stem.with_name(f"walk_epoch_{epoch + 1:03d}.pt"))
+        if self.is_color:
+            # Class-id volumes (int8) — see _save_epoch_snapshot.
+            walk = walk.argmax(dim=1).to(torch.int8)
+            torch.save(walk, snapshot_stem.with_name(f"walk_epoch_{epoch + 1:03d}.pt"))
+        else:
+            torch.save(walk.half(), snapshot_stem.with_name(f"walk_epoch_{epoch + 1:03d}.pt"))
         return self._snapshot_sample_stats(walk)
 
     def _after_epoch(

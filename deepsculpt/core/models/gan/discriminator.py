@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from typing import Optional, Tuple, Dict, Any, List, Union
 import math
 
-from ..base_models import BaseDiscriminator, SparseConv3d, SparseBatchNorm3d
+from ..base_models import SEMANTIC_CLASSES, BaseDiscriminator, SparseConv3d, SparseBatchNorm3d
 
 
 class SimpleDiscriminator(BaseDiscriminator):
@@ -310,10 +310,15 @@ class SpectralNormDiscriminator(BaseDiscriminator):
     
     def __init__(self, void_dim: int = 64, color_mode: int = 1, sparse: bool = False):
         super().__init__(void_dim, color_mode, sparse)
-        
+
+        if color_mode == 1:
+            # Semantic-class color mode: 13 one-hot channels (empty + 12
+            # shodhan element classes) — mirrors SkipGenerator's color head.
+            self.input_channels = SEMANTIC_CLASSES
+
         # Convolution layers with spectral normalization
         Conv = SparseConv3d if sparse else nn.Conv3d
-        
+
         self.conv1 = nn.utils.spectral_norm(Conv(self.input_channels, 64, 4, 2, 1, bias=False))
         self.conv2 = nn.utils.spectral_norm(Conv(64, 128, 4, 2, 1, bias=False))
         self.conv3 = nn.utils.spectral_norm(Conv(128, 256, 4, 2, 1, bias=False))

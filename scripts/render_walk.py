@@ -33,13 +33,34 @@ PALETTES = {
     "mono": ["#111111", "#555555", "#aaaaaa", "#f0f0f0"],
 }
 
+# Element-class palette for integer class volumes (color-mode GAN outputs:
+# 0 = empty, 1-12 = shodhan classes; see core/data/generation/shodhan.py).
+CLASS_PALETTE = {
+    1: "#d9d4cc",   # COL — concrete
+    2: "#efe9df",   # SLAB — light concrete
+    3: "#c8c2b8",   # SCREEN
+    4: "#c0392b",   # PIPE_R
+    5: "#2e6da4",   # PIPE_B
+    6: "#d4a017",   # PIPE_Y
+    7: "#b9b2a6",   # VOL
+    8: "#8f887c",   # EDGE
+    9: "#c0392b",   # WALL_R
+    10: "#2e6da4",  # WALL_B
+    11: "#d4a017",  # WALL_Y
+    12: "#3d8b5f",  # WALL_G
+}
 
-def load_volumes(path: Path) -> np.ndarray:
+
+def load_volumes(path: Path) -> tuple[np.ndarray, bool]:
+    """Load (N, D, H, W) volumes; second value is True for integer class volumes."""
     vols = torch.load(path, map_location="cpu", weights_only=False)
     if isinstance(vols, torch.Tensor):
-        vols = vols.float().numpy()
+        vols = vols.numpy()
     vols = np.asarray(vols)
-    return vols.reshape(vols.shape[0], *vols.shape[-3:])
+    is_class = np.issubdtype(vols.dtype, np.integer)
+    if not is_class:
+        vols = vols.astype(np.float32)
+    return vols.reshape(vols.shape[0], *vols.shape[-3:]), is_class
 
 
 def mesh_frame(ax, vol: np.ndarray, threshold: float, cmap, dim: int) -> None:
@@ -55,6 +76,35 @@ def mesh_frame(ax, vol: np.ndarray, threshold: float, cmap, dim: int) -> None:
     colors = cmap(0.25 + 0.7 * zn)
     pc = Poly3DCollection(tri, facecolors=colors, edgecolors="none")
     ax.add_collection3d(pc)
+    ax.set_xlim(0, dim)
+    ax.set_ylim(0, dim)
+    ax.set_zlim(0, dim)
+
+
+def class_mesh_frame(ax, vol: np.ndarray, dim: int) -> None:
+    """Render an integer class volume: one isosurface per element class,
+    colored by CLASS_PALETTE with light height shading. Simpler and more
+    robust than per-face class lookups — each marching-cubes call sees a
+    clean binary mask, so surfaces never bleed between classes."""
+    from skimage import measure
+    from matplotlib.colors import to_rgba
+
+    for k in np.unique(vol):
+        k = int(k)
+        if k <= 0:
+            continue
+        mask = (vol == k).astype(np.float32)
+        try:
+            verts, faces, _, _ = measure.marching_cubes(mask, level=0.5)
+        except (ValueError, RuntimeError):
+            continue  # class fills nothing (or everything) at this frame
+        tri = verts[faces]
+        zc = tri[:, :, 2].mean(axis=1)
+        zn = (zc - zc.min()) / max(zc.max() - zc.min(), 1e-6)
+        base = np.asarray(to_rgba(CLASS_PALETTE.get(k, "#999999")))
+        colors = np.tile(base, (len(tri), 1))
+        colors[:, :3] *= (0.75 + 0.25 * zn)[:, None]  # cheap directional light
+        ax.add_collection3d(Poly3DCollection(tri, facecolors=colors, edgecolors="none"))
     ax.set_xlim(0, dim)
     ax.set_ylim(0, dim)
     ax.set_zlim(0, dim)
@@ -78,7 +128,7 @@ def main() -> None:
                    help="also write an .mp4 next to the GIF (needs imageio-ffmpeg)")
     args = p.parse_args()
 
-    vols = load_volumes(args.volumes)
+    vols, is_class = load_volumes(args.volumes)
     dim = vols.shape[-1]
     cmap = LinearSegmentedColormap.from_list(args.color, PALETTES[args.color])
     out = args.out or args.volumes.with_name("walk_hq.gif")
@@ -93,7 +143,10 @@ def main() -> None:
         ax.set_axis_off()
         ax.set_facecolor("white")
         ax.set_box_aspect((1, 1, 1))
-        mesh_frame(ax, vol, args.threshold, cmap, dim)
+        if is_class:
+            class_mesh_frame(ax, vol, dim)
+        else:
+            mesh_frame(ax, vol, args.threshold, cmap, dim)
         ax.view_init(elev=args.elev,
                      azim=args.azim0 + args.orbit * (i / max(n - 1, 1)))
         fig.subplots_adjust(left=0, right=1, top=1, bottom=0)

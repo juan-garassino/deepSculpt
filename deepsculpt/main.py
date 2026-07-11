@@ -243,6 +243,9 @@ class DeepSculptV2Main:
         model_factory = PyTorchModelFactoryV2()
         
         # Create models
+        # color_mode=0: single occupancy channel (default, unchanged behavior)
+        # color_mode=1: 13-channel semantic-class field (empty + 12 element classes)
+        color_mode = 1 if getattr(args, 'color', False) else 0
         gen_kwargs = {}
         if getattr(args, 'gen_channels', None) is not None:
             gen_kwargs['gen_channels'] = args.gen_channels
@@ -250,15 +253,15 @@ class DeepSculptV2Main:
             model_type=args.model_type,
             void_dim=args.void_dim,
             noise_dim=args.noise_dim,
-            color_mode=0,  # Use monochrome mode for single channel
+            color_mode=color_mode,
             sparse=args.sparse,
             **gen_kwargs
         ).to(self.device)
-        
+
         discriminator = model_factory.create_gan_discriminator(
             model_type=args.discriminator_type,
             void_dim=args.void_dim,
-            color_mode=0,  # Use monochrome mode for single channel
+            color_mode=color_mode,
             sparse=args.sparse
         ).to(self.device)
         
@@ -364,7 +367,8 @@ class DeepSculptV2Main:
             "noise_dim": args.noise_dim,
             # Must mirror the color_mode the models were actually built with above,
             # otherwise sample-gan rebuilds the wrong architecture.
-            "color_mode": 0,
+            "color_mode": color_mode,
+            **({"num_classes": 13} if color_mode == 1 else {}),
             "sparse": args.sparse,
             "discriminator_type": args.discriminator_type,
             **({"gen_channels": args.gen_channels} if getattr(args, 'gen_channels', None) is not None else {}),
@@ -972,6 +976,12 @@ class DeepSculptV2Main:
         )
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
+
+        if volumes.dim() == 5 and volumes.shape[1] > 1:
+            # Color (13-class) generator output: collapse channel probabilities
+            # to class-id volumes (int8, (N, D, H, W)) — renderers expect scalar
+            # volumes and the files stay ~50x smaller than 13ch floats.
+            volumes = volumes.argmax(dim=1).to(torch.int8)
         vols_np = volumes.numpy()
 
         # Always dump raw volumes so runs are comparable/deterministic

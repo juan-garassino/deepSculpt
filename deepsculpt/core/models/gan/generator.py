@@ -12,7 +12,9 @@ import torch.nn.functional as F
 from typing import Optional, Tuple, Dict, Any, List, Union
 import math
 
-from ..base_models import BaseGenerator, SparseConv3d, SparseConvTranspose3d, SparseBatchNorm3d
+from ..base_models import (
+    SEMANTIC_CLASSES, BaseGenerator, SparseConv3d, SparseConvTranspose3d, SparseBatchNorm3d,
+)
 
 
 class SelfAttention3D(nn.Module):
@@ -226,6 +228,13 @@ class SkipGenerator(BaseGenerator):
     def __init__(self, void_dim: int = 64, noise_dim: int = 100, color_mode: int = 1,
                  sparse: bool = False, gen_channels: Optional[int] = None):
         super().__init__(void_dim, noise_dim, color_mode, sparse)
+
+        if color_mode == 1:
+            # Semantic-class color mode: one 13-channel categorical field
+            # (channel 0 = empty, 1-12 = shodhan element classes). Overrides
+            # the legacy 6-channel OHE default from BaseGenerator. Final head
+            # only — skip connections and trunk widths are unchanged.
+            self.output_channels = SEMANTIC_CLASSES
 
         ch = gen_channels or noise_dim  # backwards compatible
         self.gen_channels = ch
