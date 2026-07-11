@@ -38,3 +38,4 @@ infra/**/.terraform/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+.superpowers/

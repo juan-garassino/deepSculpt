@@ -55,6 +55,9 @@ class NoiseScheduler:
         # Calculations for diffusion q(x_t | x_{t-1}) and others
         self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)
         self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - self.alphas_cumprod)
+        # Needed by step()'s DDPM posterior-mean coefficient; was missing,
+        # which made every base-scheduler sampling path raise AttributeError.
+        self.sqrt_alphas_cumprod_prev = torch.sqrt(self.alphas_cumprod_prev)
         
         # Calculations for posterior q(x_{t-1} | x_t, x_0)
         self.posterior_variance = (
@@ -103,6 +106,7 @@ class NoiseScheduler:
         self.alphas_cumprod_prev = self.alphas_cumprod_prev.to(self.device)
         self.sqrt_alphas_cumprod = self.sqrt_alphas_cumprod.to(self.device)
         self.sqrt_one_minus_alphas_cumprod = self.sqrt_one_minus_alphas_cumprod.to(self.device)
+        self.sqrt_alphas_cumprod_prev = self.sqrt_alphas_cumprod_prev.to(self.device)
         self.posterior_variance = self.posterior_variance.to(self.device)
         self.sqrt_recip_alphas_cumprod = self.sqrt_recip_alphas_cumprod.to(self.device)
         self.sqrt_recipm1_alphas_cumprod = self.sqrt_recipm1_alphas_cumprod.to(self.device)

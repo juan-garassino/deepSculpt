@@ -113,7 +113,18 @@ def load_diffusion_pipeline(
     from deepsculpt.core.models.diffusion.pipeline import FastSamplingPipeline
 
     checkpoint = torch.load(Path(checkpoint_path), map_location=device, weights_only=False)
-    config = checkpoint["config"]
+
+    # Two on-disk shapes: diffusion_final.pt (post-training export, embeds a
+    # plain-dict config + pickled scheduler) and trainer checkpoint_epoch_N.pth
+    # (cloud slices die at the task timeout, so the final export may never
+    # exist — rebuild from the sibling config.json + noise_scheduler_state).
+    is_trainer_ckpt = "noise_scheduler" not in checkpoint
+    if is_trainer_ckpt:
+        config = find_config(Path(checkpoint_path))
+        state_dict = checkpoint.get("ema_model_state_dict") or checkpoint["model_state_dict"]
+    else:
+        config = checkpoint["config"]
+        state_dict = checkpoint["model_state_dict"]
 
     factory = PyTorchModelFactory(device=device)
     model = factory.create_diffusion_model(
@@ -125,10 +136,22 @@ def load_diffusion_pipeline(
         sparse=config.get("sparse", False),
         model_channels=config.get("model_channels", 128),
     ).to(device)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(state_dict)
     model.eval()
 
-    noise_scheduler = checkpoint["noise_scheduler"]
+    if is_trainer_ckpt:
+        from deepsculpt.core.models.diffusion.noise_scheduler import NoiseScheduler
+
+        ns = checkpoint.get("noise_scheduler_state", {})
+        noise_scheduler = NoiseScheduler(
+            schedule_type=ns.get("schedule_type", config.get("noise_schedule", "linear")),
+            timesteps=ns.get("timesteps", config.get("timesteps", 1000)),
+            beta_start=ns.get("beta_start", config.get("beta_start", 0.0001)),
+            beta_end=ns.get("beta_end", config.get("beta_end", 0.02)),
+            device=device,
+        )
+    else:
+        noise_scheduler = checkpoint["noise_scheduler"]
     if hasattr(noise_scheduler, "device"):
         noise_scheduler.device = device
     if hasattr(noise_scheduler, "_to_device"):

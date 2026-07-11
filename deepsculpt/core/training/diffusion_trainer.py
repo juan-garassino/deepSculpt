@@ -6,6 +6,7 @@ with support for various prediction types, conditioning, and advanced sampling t
 """
 
 import os
+import json
 import time
 import logging
 from typing import Dict, Any, Optional, Tuple, List, Union, Callable
@@ -255,7 +256,10 @@ class DiffusionTrainer(BaseTrainer):
             class_labels = class_labels.to(self.device)
         
         batch_size = x_0.shape[0]
-        
+        # Remember the per-sample shape so snapshot noise matches the data
+        # layout exactly (sample_and_log's hardcoded shape predates this).
+        self._x0_shape = tuple(x_0.shape[1:])
+
         # Sample random timesteps
         timesteps = torch.randint(
             0, self.noise_scheduler.timesteps, (batch_size,), device=self.device, dtype=torch.long
@@ -487,6 +491,105 @@ class DiffusionTrainer(BaseTrainer):
         
         return {key: np.mean(values) for key, values in val_metrics.items() if values}
     
+    def _snapshot_sample_stats(self, samples: torch.Tensor) -> Dict[str, float]:
+        # Diffusion outputs are continuous; occupancy judged at the 0.5
+        # threshold used by the volume exporters.
+        occupancy = (samples.detach() > 0.5).float().reshape(samples.shape[0], -1).mean(dim=1)
+        return {
+            "mean_occupancy": float(occupancy.mean().item()),
+            "min_occupancy": float(occupancy.min().item()),
+            "max_occupancy": float(occupancy.max().item()),
+        }
+
+    def _fixed_snapshot_noise(self) -> torch.Tensor:
+        """Six CPU-seeded noise tensors: [0:4] are the fixed sample vectors,
+        [4:6] the walk anchors. Deterministic across restarts and slices."""
+        if getattr(self, "_snapshot_noise", None) is None:
+            g = torch.Generator().manual_seed(1234)
+            self._snapshot_noise = torch.randn(6, *self._x0_shape, generator=g)
+        return self._snapshot_noise
+
+    def _after_epoch(
+        self,
+        epoch: int,
+        train_metrics: Dict[str, float],
+        val_metrics: Optional[Dict[str, float]],
+        is_best: bool,
+    ) -> None:
+        if (epoch + 1) % max(1, self.config.snapshot_freq) != 0:
+            return
+        if getattr(self, "_x0_shape", None) is None:
+            return
+        try:
+            self._save_epoch_snapshot(epoch, train_metrics)
+        except Exception:
+            self.logger.exception("Epoch snapshot failed (training continues)")
+
+    def _snapshot_pipeline(self):
+        """Deterministic DDIM pipeline for epoch snapshots. The base
+        Diffusion3DPipeline/NoiseScheduler pair is the training-side forward
+        process; DDIM (eta=0) is the proven sampling path (sample-diffusion
+        CLI) and makes fixed-noise snapshots bit-comparable across epochs."""
+        from deepsculpt.core.models.diffusion.pipeline import FastSamplingPipeline
+
+        if getattr(self, "_snap_pipeline", None) is None:
+            self._snap_pipeline = FastSamplingPipeline(
+                model=self.ema_model if self.ema_model else self.model,
+                noise_scheduler=self.noise_scheduler,
+                device=self.device,
+                prediction_type=self.prediction_type,
+                num_inference_steps=25,
+                scheduler_type="ddim",
+            )
+        self._snap_pipeline.model = self.ema_model if self.ema_model else self.model
+        return self._snap_pipeline
+
+    def _save_epoch_snapshot(self, epoch: int, train_metrics: Dict[str, float]) -> None:
+        from deepsculpt.core.latent.ops import slerp
+
+        os.makedirs(self.config.snapshot_dir, exist_ok=True)
+        noise = self._fixed_snapshot_noise()
+        pipeline = self._snapshot_pipeline()
+
+        snapshot_stem = Path(self.config.snapshot_dir) / f"epoch_{epoch + 1:03d}"
+        with torch.no_grad():
+            samples = pipeline.sample(
+                shape=(4, *self._x0_shape),
+                num_inference_steps=25,
+                init_noise=noise[:4].to(self.device),
+            ).detach().cpu()
+        torch.save(samples.half(), snapshot_stem.with_suffix(".pt"))
+        snapshot_stats = self._snapshot_sample_stats(samples)
+
+        # Noise-space walk is ~40 extra UNet batches — only every 5th snapshot.
+        walk_stats = None
+        if (epoch + 1) % (5 * max(1, self.config.snapshot_freq)) == 0:
+            path = slerp(noise[4], noise[5], 8).to(self.device)
+            with torch.no_grad():
+                walk = torch.cat([
+                    pipeline.sample(
+                        shape=(1, *self._x0_shape),
+                        num_inference_steps=25,
+                        init_noise=path[i:i + 1],
+                    ).detach().cpu()
+                    for i in range(path.shape[0])
+                ])
+            torch.save(walk.half(), snapshot_stem.with_name(f"walk_epoch_{epoch + 1:03d}.pt"))
+            walk_stats = self._snapshot_sample_stats(walk)
+
+        with open(snapshot_stem.with_suffix(".json"), "w") as f:
+            json.dump(
+                {
+                    "epoch": epoch + 1,
+                    "train_metrics": {k: float(v) for k, v in train_metrics.items()
+                                      if isinstance(v, (int, float))},
+                    "sample_stats": snapshot_stats,
+                    "walk_stats": walk_stats,
+                },
+                f,
+                indent=2,
+            )
+
     def sample_and_log(self, num_samples: int = 8, conditioning: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         Generate samples and log them.

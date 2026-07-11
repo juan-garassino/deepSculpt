@@ -129,8 +129,11 @@ class GANTrainer(BaseTrainer):
         self.gen_train_freq = 1  # Train generator every N discriminator updates
         self.disc_train_freq = 1  # Train discriminator every N generator updates
         
-        # Create fixed noise for consistent evaluation
-        self.fixed_noise = torch.randn(16, noise_dim, device=device)
+        # Fixed noise for consistent evaluation — CPU-seeded so the same
+        # vectors survive process restarts (chained cloud slices sample
+        # identical latents, keeping snapshots comparable across slices).
+        fixed_gen = torch.Generator().manual_seed(1234)
+        self.fixed_noise = torch.randn(16, noise_dim, generator=fixed_gen).to(device)
         
         # Setup distributed training for discriminator
         if config.distributed:
@@ -778,16 +781,36 @@ class GANTrainer(BaseTrainer):
         snapshot_stats = self._snapshot_sample_stats(samples)
         snapshot_stem = Path(self.config.snapshot_dir) / f"epoch_{epoch + 1:03d}"
         torch.save(samples, snapshot_stem.with_suffix(".pt"))
+        walk_stats = self._save_epoch_walk(epoch, snapshot_stem)
         with open(snapshot_stem.with_suffix(".json"), "w") as f:
             json.dump(
                 {
                     "epoch": epoch + 1,
                     "train_metrics": train_metrics,
                     "sample_stats": snapshot_stats,
+                    "walk_stats": walk_stats,
                 },
                 f,
                 indent=2,
             )
+
+    def _save_epoch_walk(self, epoch: int, snapshot_stem: Path) -> Dict[str, float]:
+        """Dump a fixed-anchor slerp walk through the RAW generator (the EMA
+        copy looks diffuse mid-training). Same path every epoch, so latent
+        smoothness is judgeable across the whole run."""
+        from deepsculpt.core.latent.ops import slerp
+
+        zs = slerp(self.fixed_noise[0], self.fixed_noise[1], 16).to(self.device)
+        was_training = self.generator.training
+        self.generator.eval()
+        with torch.no_grad():
+            walk = torch.cat(
+                [self.generator(zs[i:i + 4]) for i in range(0, len(zs), 4)]
+            ).detach().cpu()
+        if was_training:
+            self.generator.train()
+        torch.save(walk.half(), snapshot_stem.with_name(f"walk_epoch_{epoch + 1:03d}.pt"))
+        return self._snapshot_sample_stats(walk)
 
     def _after_epoch(
         self,

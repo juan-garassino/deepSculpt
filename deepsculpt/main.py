@@ -354,25 +354,9 @@ class DeepSculptV2Main:
             experiment_tracker.log_param("command", args.command)
             experiment_tracker.log_param("grammar_version", collection_metadata.get("grammar_version", "n/a"))
 
-        # Train the model
-        start_epoch = 0
-        if resume_from is not None:
-            ckpt = trainer.load_checkpoint(str(resume_from[1]))
-            start_epoch = int(ckpt.get('epoch', -1)) + 1
-            print(f"Resumed at epoch {start_epoch}")
-        print(f"Starting training for {args.epochs} epochs")
-        metrics = trainer.train(
-            train_dataloader=data_loader,
-            start_epoch=start_epoch
-        )
-        
-        # Save final models
-        torch.save(generator.state_dict(), results_dir / "generator_final.pt")
-        if trainer.ema_generator is not None:
-            torch.save(trainer.ema_generator.state_dict(), results_dir / "ema_generator_final.pt")
-        torch.save(discriminator.state_dict(), results_dir / "discriminator_final.pt")
-        
-        # Save configuration
+        # Write config.json BEFORE training: cloud slices die at the task
+        # timeout without reaching post-training code, and the latent loaders
+        # need this file beside the checkpoints to rebuild the architecture.
         config = {
             "model_type": args.model_type,
             "void_dim": args.void_dim,
@@ -401,10 +385,27 @@ class DeepSculptV2Main:
                 "occupancy_target_mode": args.occupancy_target_mode,
             }
         }
-
         with open(results_dir / "config.json", 'w') as f:
             json.dump(config, f, indent=2)
 
+        # Train the model
+        start_epoch = 0
+        if resume_from is not None:
+            ckpt = trainer.load_checkpoint(str(resume_from[1]))
+            start_epoch = int(ckpt.get('epoch', -1)) + 1
+            print(f"Resumed at epoch {start_epoch}")
+        print(f"Starting training for {args.epochs} epochs")
+        metrics = trainer.train(
+            train_dataloader=data_loader,
+            start_epoch=start_epoch
+        )
+        
+        # Save final models
+        torch.save(generator.state_dict(), results_dir / "generator_final.pt")
+        if trainer.ema_generator is not None:
+            torch.save(trainer.ema_generator.state_dict(), results_dir / "ema_generator_final.pt")
+        torch.save(discriminator.state_dict(), results_dir / "discriminator_final.pt")
+        
         with open(results_dir / "run_summary.json", "w") as f:
             json.dump(
                 {
@@ -547,6 +548,35 @@ class DeepSculptV2Main:
             })
             experiment_tracker.log_param("command", args.command)
 
+        # Write config.json BEFORE training: cloud slices die at the task
+        # timeout without reaching post-training code, and the latent loaders
+        # need this file beside the checkpoints to rebuild the architecture.
+        with open(results_dir / "config.json", "w") as f:
+            json.dump(
+                {
+                    "model_type": "unet3d",  # train-diffusion has no --model-type flag; factory call above is hardcoded
+                    "void_dim": args.void_dim,
+                    "num_channels": num_channels,
+                    "model_channels": args.model_channels,
+                    "timesteps": args.timesteps,
+                    "noise_schedule": args.noise_schedule,
+                    "beta_start": args.beta_start,
+                    "beta_end": args.beta_end,
+                    "sparse": args.sparse,
+                    "color_mode": color_mode,
+                    "use_ema": args.use_ema,
+                    "training_params": {
+                        "epochs": args.epochs,
+                        "batch_size": args.batch_size,
+                        "learning_rate": args.learning_rate,
+                        "weight_decay": args.weight_decay,
+                        "num_workers": args.num_workers,
+                    },
+                },
+                f,
+                indent=2,
+            )
+
         # Train the model
         start_epoch = 0
         if resume_from is not None:
@@ -575,30 +605,6 @@ class DeepSculptV2Main:
                 'model_channels': args.model_channels,
             }
         }, results_dir / "diffusion_final.pt")
-
-        with open(results_dir / "config.json", "w") as f:
-            json.dump(
-                {
-                    "model_type": "unet3d",  # train-diffusion has no --model-type flag; factory call above is hardcoded
-                    "void_dim": args.void_dim,
-                    "timesteps": args.timesteps,
-                    "noise_schedule": args.noise_schedule,
-                    "beta_start": args.beta_start,
-                    "beta_end": args.beta_end,
-                    "sparse": args.sparse,
-                    "color_mode": color_mode,
-                    "use_ema": args.use_ema,
-                    "training_params": {
-                        "epochs": args.epochs,
-                        "batch_size": args.batch_size,
-                        "learning_rate": args.learning_rate,
-                        "weight_decay": args.weight_decay,
-                        "num_workers": args.num_workers,
-                    },
-                },
-                f,
-                indent=2,
-            )
 
         with open(results_dir / "run_summary.json", "w") as f:
             json.dump(
