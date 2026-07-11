@@ -195,7 +195,7 @@ case "$MODE" in
         for vols in "$RESULTS_DIR"/walk_volumes.pt "$RESULTS_DIR"/walk_diffusion_volumes.pt; do
             [ -f "$vols" ] || continue
             python /app/scripts/render_walk.py "$vols" \
-                --out "${vols%.pt}_hq.gif" ${HQ_ARGS:-} 2>&1 | tail -3 || true
+                --out "${vols%.pt}_hq.gif" --mp4 ${HQ_ARGS:-} 2>&1 | tail -3 || true
         done
         ;;
 

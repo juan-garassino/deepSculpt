@@ -21,6 +21,7 @@ pyyaml>=6.0
 h5py>=3.7.0
 zarr>=2.12.0
 imageio>=2.22.0
+imageio-ffmpeg>=0.4.9
 rich>=12.0.0
 typer>=0.7.0
 click>=8.0.0

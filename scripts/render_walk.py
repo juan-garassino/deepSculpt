@@ -74,6 +74,8 @@ def main() -> None:
     p.add_argument("--color", choices=sorted(PALETTES), default="storm")
     p.add_argument("--boomerang", action="store_true",
                    help="append the reversed sequence for a seamless loop")
+    p.add_argument("--mp4", action="store_true",
+                   help="also write an .mp4 next to the GIF (needs imageio-ffmpeg)")
     args = p.parse_args()
 
     vols = load_volumes(args.volumes)
@@ -108,6 +110,13 @@ def main() -> None:
 
     imageio.mimsave(out, frames, duration=1.0 / args.fps, loop=0)
     print(f"wrote {out} ({len(frames)} frames @ {args.fps} fps)")
+
+    if args.mp4:
+        mp4_out = out.with_suffix(".mp4")
+        # macro_block_size=1: frame sizes aren't guaranteed multiples of 16
+        imageio.mimsave(mp4_out, frames, fps=args.fps, codec="libx264",
+                        quality=8, macro_block_size=1)
+        print(f"wrote {mp4_out}")
 
 
 if __name__ == "__main__":
