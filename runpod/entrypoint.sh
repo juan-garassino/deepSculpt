@@ -4,6 +4,8 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # DeepSculpt RunPod entrypoint
 #   MODE=train         → run deepsculpt CLI training
+#   MODE=render        → one-off inference (latent-walk/sample-gan/...) against
+#                        the RUN_ID's checkpoints + HQ GIF pass; no data pull
 #   MODE=research      → launch Claude Code with prompts/research.md (one-shot)
 #   MODE=improve       → launch Claude Code with prompts/improve.md (one-shot)
 #   MODE=self-improve  → continuous improve loop; toggleable on/off via
@@ -25,6 +27,9 @@ set -euo pipefail
 #   TIME_BUDGET       seconds (Claude research loop will stop near this)
 #   TRAIN_CMD         CLI subcommand for MODE=train (default: train-gan)
 #   TRAIN_ARGS        extra CLI args (e.g. "--model-type skip --epochs 200")
+#   RENDER_CMD        MODE=render: CLI subcommand (default: latent-walk)
+#   RENDER_ARGS       MODE=render: subcommand args (--checkpoint under $CKPT_DIR)
+#   HQ_ARGS           MODE=render: extra flags for scripts/render_walk.py
 #   DATA_SAMPLES      MODE=train: samples to generate if DATA_DIR is empty (default 2000)
 #   VOID_DIM          MODE=train: voxel grid size for generated data (default 64)
 #   SYNC_INTERVAL     seconds between periodic checkpoint pushes (default 600)
@@ -99,11 +104,14 @@ gcs_reload_token
 gsutil -m -q rsync -r "${GCS_ROOT}/checkpoints/${RUN_ID}" "$CKPT_DIR" 2>/dev/null || \
     echo "  (no prior checkpoints for run ${RUN_ID} — fresh start)"
 # Data cache is keyed by resolution — mixing grid sizes crashes training
-# with a tensor-shape mismatch.
+# with a tensor-shape mismatch. Render runs only need checkpoints, so skip
+# the multi-GB data pull for them.
 GCS_DATA="${GCS_ROOT}/data/void${VOID_DIM:-64}"
-gcs_reload_token
-gsutil -m -q rsync -r "$GCS_DATA" "$DATA_DIR" 2>/dev/null || \
-    echo "  (no warm data cache for void${VOID_DIM:-64})"
+if [ "$MODE" != "render" ]; then
+    gcs_reload_token
+    gsutil -m -q rsync -r "$GCS_DATA" "$DATA_DIR" 2>/dev/null || \
+        echo "  (no warm data cache for void${VOID_DIM:-64})"
+fi
 
 # ---------------------------------------------------------------------------
 # Background periodic checkpoint sync (crash-safe)
@@ -168,6 +176,27 @@ case "$MODE" in
             --data-folder "$DATA_DIR" \
             --output-dir "$CKPT_DIR" \
             ${TRAIN_ARGS} 2>&1 | tee "${RESULTS_DIR}/train.log"
+        ;;
+
+    render)
+        # One-off inference on the cloud box (the dev machine is too old to
+        # run generators locally): execute any deepsculpt CLI subcommand —
+        # latent-walk, sample-gan, latent-traverse — against this RUN_ID's
+        # synced checkpoints, then beauty-render every walk volume dump it
+        # produced. Artifacts land in results/<RUN_ID>/ and sync to GCS.
+        #   RENDER_CMD   CLI subcommand (default: latent-walk)
+        #   RENDER_ARGS  args for the subcommand; checkpoint paths are under
+        #                ${CKPT_DIR} (e.g. <train_run>/checkpoints/checkpoint_epoch_N.pth)
+        #   HQ_ARGS      extra flags for scripts/render_walk.py (optional)
+        echo "=== Render: deepsculpt ${RENDER_CMD:-latent-walk} ${RENDER_ARGS} ==="
+        python -m deepsculpt.main "${RENDER_CMD:-latent-walk}" \
+            --output-dir "$RESULTS_DIR" \
+            ${RENDER_ARGS} 2>&1 | tee "${RESULTS_DIR}/render.log"
+        for vols in "$RESULTS_DIR"/walk_volumes.pt "$RESULTS_DIR"/walk_diffusion_volumes.pt; do
+            [ -f "$vols" ] || continue
+            python /app/scripts/render_walk.py "$vols" \
+                --out "${vols%.pt}_hq.gif" ${HQ_ARGS:-} 2>&1 | tail -3 || true
+        done
         ;;
 
     research|improve)

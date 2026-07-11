@@ -91,8 +91,9 @@ Use the relevant skill interactively to write the code together.
 - **This dev machine is old — no local training.** Verify with forward passes and nano runs only (void_dim 16, 1-2 minibatches max); real training goes to Cloud Run.
 
 ## Cloud training (RunPod + GCS + Claude-in-the-loop)
-The `runpod/` directory contains the full deploy. Four modes:
+The `runpod/` directory contains the full deploy. Five modes:
 - `MODE=train` — pure training, no Claude in the loop.
+- `MODE=render` — one-off cloud inference (RENDER_CMD=latent-walk/sample-gan/... + RENDER_ARGS) against RUN_ID's checkpoints, HQ-GIF pass via `scripts/render_walk.py` (HQ_ARGS), skips the data pull; artifacts sync to `results/<RUN_ID>/`. Local machine only downloads.
 - `MODE=research` — one-shot Claude reading `runpod/prompts/research.md`, runs experiments to `TIME_BUDGET`.
 - `MODE=improve` — one-shot Claude reading `runpod/prompts/improve.md`, drives the `ds-improve` skill once.
 - `MODE=self-improve` — **continuous** Claude loop; each iteration uses `runpod/prompts/self_improve.md` which references `runpod/prompts/autoresearch_program.md` (mirrored from the [020-autoresearch](../020-autoresearch/) reference repo). **Toggleable on/off** via a GCS-synced object (`gs://garassino-ml-artifacts/deepsculpt/control/self_improve.enabled`); `make toggle-on` / `make toggle-off` from the `runpod/` Makefile — no pod restart needed.
