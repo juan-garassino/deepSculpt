@@ -67,3 +67,19 @@ jobs:
             europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Blackwell variant (Cloud Run RTX PRO 6000, europe-west4): identical
+      # image except torch from cu128 wheels — cu126 has no sm_120 kernels.
+      - name: Build and push (cu128 / Blackwell)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: runpod/Dockerfile
+          push: true
+          build-args: |
+            TORCH_INDEX=cu128
+          tags: |
+            europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest-cu128
+            europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${{ github.sha }}-cu128
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
