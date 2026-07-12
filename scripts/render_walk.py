@@ -110,6 +110,68 @@ def class_mesh_frame(ax, vol: np.ndarray, dim: int) -> None:
     ax.set_zlim(0, dim)
 
 
+# Voxel-style rendering: one quad per exposed cube face, all faces in a
+# single Poly3DCollection (ax.voxels builds per-voxel artists and is
+# unusable at 64^3). Shade by face direction for a cheap directional light.
+_FACE_CORNERS = {
+    (1, 0, 0): [(1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1)],
+    (-1, 0, 0): [(0, 0, 0), (0, 0, 1), (0, 1, 1), (0, 1, 0)],
+    (0, 1, 0): [(0, 1, 0), (0, 1, 1), (1, 1, 1), (1, 1, 0)],
+    (0, -1, 0): [(0, 0, 0), (1, 0, 0), (1, 0, 1), (0, 0, 1)],
+    (0, 0, 1): [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
+    (0, 0, -1): [(0, 0, 0), (0, 1, 0), (1, 1, 0), (1, 0, 0)],
+}
+_FACE_SHADE = {
+    (0, 0, 1): 1.0, (1, 0, 0): 0.85, (0, 1, 0): 0.72,
+    (-1, 0, 0): 0.62, (0, -1, 0): 0.52, (0, 0, -1): 0.40,
+}
+
+
+def _neighbor(occ: np.ndarray, d: tuple[int, int, int]) -> np.ndarray:
+    """Occupancy of the neighbor voxel in direction d (zeros past the border)."""
+    out = np.zeros_like(occ)
+    src = [slice(None)] * 3
+    dst = [slice(None)] * 3
+    for axis, s in enumerate(d):
+        if s == 1:
+            dst[axis], src[axis] = slice(0, -1), slice(1, None)
+        elif s == -1:
+            dst[axis], src[axis] = slice(1, None), slice(0, -1)
+    out[tuple(dst)] = occ[tuple(src)]
+    return out
+
+
+def voxel_frame(ax, vol: np.ndarray, threshold: float, cmap, dim: int,
+                is_class: bool) -> None:
+    from matplotlib.colors import to_rgba
+
+    occ = vol > 0 if is_class else vol > threshold
+    ax.set_xlim(0, dim)
+    ax.set_ylim(0, dim)
+    ax.set_zlim(0, dim)
+    if not occ.any():
+        return
+    if is_class:
+        lut = np.array([to_rgba(CLASS_PALETTE.get(k, "#999999")) for k in range(13)])
+    quads, colors = [], []
+    for d, corners in _FACE_CORNERS.items():
+        exposed = occ & ~_neighbor(occ, d)
+        idx = np.argwhere(exposed)
+        if not len(idx):
+            continue
+        quads.append(idx[:, None, :] + np.asarray(corners)[None])
+        if is_class:
+            cols = lut[np.clip(vol[exposed].astype(int), 0, 12)]
+        else:
+            zn = idx[:, 2] / max(dim - 1, 1)
+            cols = np.asarray(cmap(0.25 + 0.7 * zn))
+        cols = cols.copy()
+        cols[:, :3] *= _FACE_SHADE[d]
+        colors.append(cols)
+    ax.add_collection3d(Poly3DCollection(
+        np.concatenate(quads), facecolors=np.concatenate(colors), edgecolors="none"))
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("volumes", type=Path)
@@ -122,6 +184,8 @@ def main() -> None:
     p.add_argument("--elev", type=float, default=22.0)
     p.add_argument("--azim0", type=float, default=-60.0)
     p.add_argument("--color", choices=sorted(PALETTES), default="storm")
+    p.add_argument("--style", choices=["mesh", "voxel"], default="mesh",
+                   help="mesh: marching-cubes isosurface; voxel: chunky exposed-face cubes")
     p.add_argument("--boomerang", action="store_true",
                    help="append the reversed sequence for a seamless loop")
     p.add_argument("--mp4", action="store_true",
@@ -143,7 +207,9 @@ def main() -> None:
         ax.set_axis_off()
         ax.set_facecolor("white")
         ax.set_box_aspect((1, 1, 1))
-        if is_class:
+        if args.style == "voxel":
+            voxel_frame(ax, vol, args.threshold, cmap, dim, is_class)
+        elif is_class:
             class_mesh_frame(ax, vol, dim)
         else:
             mesh_frame(ax, vol, args.threshold, cmap, dim)
