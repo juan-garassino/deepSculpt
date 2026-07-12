@@ -716,10 +716,13 @@ class GANTrainer(BaseTrainer):
                     colors = batch["colors"].to(self.device)
                     if colors.dim() == 5:  # legacy collector layout [B, 1, D, H, W]
                         colors = colors.squeeze(1)
+                    # .contiguous(): the permute leaves a channels-last layout
+                    # that propagates through the disc convs and crashes the
+                    # flatten .view (mono never hits this — no permute).
                     real_data = F.one_hot(
                         colors.long().clamp(0, self.num_classes - 1),
                         num_classes=self.num_classes,
-                    ).permute(0, 4, 1, 2, 3).float()
+                    ).permute(0, 4, 1, 2, 3).float().contiguous()
                     # Label smoothing (0.95 one-hot + 0.05 uniform): the disc
                     # never sees exact simplex vertices, so it can't key on
                     # the one-hot spikes to separate real from softmax fakes.

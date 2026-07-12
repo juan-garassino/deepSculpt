@@ -64,7 +64,7 @@ class SimpleDiscriminator(BaseDiscriminator):
         x = self.leaky_relu(x)
         
         # Flatten and classify
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         # Don't apply sigmoid - loss function expects logits
         
@@ -138,7 +138,7 @@ class ComplexDiscriminator(BaseDiscriminator):
         x = self.leaky_relu(x)
         
         # Flatten and classify
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.fc1(x)
         x = self.leaky_relu(x)
         x = self.dropout(x)
@@ -292,7 +292,7 @@ class ConditionalDiscriminator(BaseDiscriminator):
         x = self.leaky_relu(x)
         
         # Flatten features
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         
         # Add condition if provided
         if condition is not None:
@@ -347,7 +347,7 @@ class SpectralNormDiscriminator(BaseDiscriminator):
         x = self.leaky_relu(x)
         
         # Flatten and classify
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         x = self.fc(x)
         
         return x
