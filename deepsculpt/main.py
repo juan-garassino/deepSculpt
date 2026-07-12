@@ -739,51 +739,66 @@ class DeepSculptV2Main:
         print(f"Generating {args.num_samples} samples from diffusion: {args.checkpoint}")
         
         # Load checkpoint
-        checkpoint = torch.load(args.checkpoint, map_location=self.device)
-        config = checkpoint['config']
-        
-        # Create model factory
-        model_factory = PyTorchModelFactoryV2()
-        
-        # Create model
-        model = model_factory.create_diffusion_model(
-            model_type="unet3d",
-            void_dim=config['void_dim'],
-            in_channels=config.get('num_channels', 1),
-            out_channels=config.get('num_channels', 1),
-            timesteps=config.get('timesteps', 1000),
-            sparse=config.get('sparse', False),
-            model_channels=config.get('model_channels', 128)
-        ).to(self.device)
-        
-        model.load_state_dict(checkpoint['model_state_dict'])
-        model.eval()
-        
-        # Keep the scheduler tensors on the active device after checkpoint load.
-        noise_scheduler = checkpoint['noise_scheduler']
-        if hasattr(noise_scheduler, "device"):
-            noise_scheduler.device = self.device
-        if hasattr(noise_scheduler, "_to_device"):
-            noise_scheduler._to_device()
-
-        from deepsculpt.core.models.diffusion.pipeline import Diffusion3DPipeline, FastSamplingPipeline
-        if args.sampler == "ddpm":
-            diffusion_pipeline = Diffusion3DPipeline(
-                model=model,
-                noise_scheduler=noise_scheduler,
+        checkpoint = torch.load(args.checkpoint, map_location=self.device, weights_only=False)
+        if 'config' not in checkpoint:
+            # Trainer checkpoint_epoch_N.pth (timed-out slices never write the
+            # final export) — rebuild via the latent loader: EMA weights +
+            # sibling config.json + reconstructed scheduler.
+            if args.sampler == "ddpm":
+                raise ValueError("trainer checkpoints support --sampler ddim/dpm_solver only")
+            from deepsculpt.core.latent.loader import load_diffusion_pipeline
+            diffusion_pipeline, config = load_diffusion_pipeline(
+                Path(args.checkpoint),
                 device=self.device,
+                sampler=args.sampler,
+                num_steps=args.num_steps,
                 guidance_scale=args.guidance_scale,
-                num_inference_steps=args.num_steps,
             )
         else:
-            diffusion_pipeline = FastSamplingPipeline(
-                model=model,
-                noise_scheduler=noise_scheduler,
-                device=self.device,
-                guidance_scale=args.guidance_scale,
-                num_inference_steps=args.num_steps,
-                scheduler_type=args.sampler,
-            )
+            config = checkpoint['config']
+
+            # Create model factory
+            model_factory = PyTorchModelFactoryV2()
+
+            # Create model
+            model = model_factory.create_diffusion_model(
+                model_type="unet3d",
+                void_dim=config['void_dim'],
+                in_channels=config.get('num_channels', 1),
+                out_channels=config.get('num_channels', 1),
+                timesteps=config.get('timesteps', 1000),
+                sparse=config.get('sparse', False),
+                model_channels=config.get('model_channels', 128)
+            ).to(self.device)
+
+            model.load_state_dict(checkpoint['model_state_dict'])
+            model.eval()
+
+            # Keep the scheduler tensors on the active device after checkpoint load.
+            noise_scheduler = checkpoint['noise_scheduler']
+            if hasattr(noise_scheduler, "device"):
+                noise_scheduler.device = self.device
+            if hasattr(noise_scheduler, "_to_device"):
+                noise_scheduler._to_device()
+
+            from deepsculpt.core.models.diffusion.pipeline import Diffusion3DPipeline, FastSamplingPipeline
+            if args.sampler == "ddpm":
+                diffusion_pipeline = Diffusion3DPipeline(
+                    model=model,
+                    noise_scheduler=noise_scheduler,
+                    device=self.device,
+                    guidance_scale=args.guidance_scale,
+                    num_inference_steps=args.num_steps,
+                )
+            else:
+                diffusion_pipeline = FastSamplingPipeline(
+                    model=model,
+                    noise_scheduler=noise_scheduler,
+                    device=self.device,
+                    guidance_scale=args.guidance_scale,
+                    num_inference_steps=args.num_steps,
+                    scheduler_type=args.sampler,
+                )
         
         # Create output directory
         output_dir = Path(args.output_dir)
@@ -800,12 +815,25 @@ class DeepSculptV2Main:
                 # Sample from diffusion model
                 shape = (1, config.get('num_channels', 1),
                         config['void_dim'], config['void_dim'], config['void_dim'])
-                sample = diffusion_pipeline.sample(
-                    shape=shape,
-                    num_inference_steps=args.num_steps,
-                    guidance_scale=args.guidance_scale,
-                )
-                
+                if getattr(args, 'save_trajectory', False):
+                    sample, intermediates = diffusion_pipeline.sample(
+                        shape=shape,
+                        num_inference_steps=args.num_steps,
+                        guidance_scale=args.guidance_scale,
+                        return_intermediate=True,
+                    )
+                    # (T, C, D, H, W) fp16 — same layout render_walk.py expects
+                    traj = torch.stack([s[0].float().cpu() for s in intermediates]).half()
+                    traj_path = output_dir / f"denoise_volumes_{i:04d}.pt"
+                    torch.save(traj, traj_path)
+                    print(f"Saved denoising trajectory ({traj.shape[0]} steps) to {traj_path}")
+                else:
+                    sample = diffusion_pipeline.sample(
+                        shape=shape,
+                        num_inference_steps=args.num_steps,
+                        guidance_scale=args.guidance_scale,
+                    )
+
                 samples.append(sample.cpu())
                 
                 # Save sample
@@ -1497,6 +1525,8 @@ def create_parser():
                                    help='Classifier-free guidance scale. Keep at 1.0 for unconditional models.')
     sample_diff_parser.add_argument('--output-dir', default='./samples', help='Output directory')
     sample_diff_parser.add_argument('--visualize', action='store_true', help='Create visualizations')
+    sample_diff_parser.add_argument('--save-trajectory', action='store_true',
+                                   help='Save per-step denoising states as denoise_volumes_NNNN.pt (render with scripts/render_walk.py)')
 
     # Latent-space navigation
     def _add_latent_common_args(p):
