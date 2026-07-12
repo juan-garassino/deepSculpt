@@ -1,0 +1,27 @@
+# GCP-native build of the Blackwell (cu128) trainer image — no GitHub
+# dependency (Juan's call 2026-07-12: cloud builds + checks live in GCP).
+# Usage, from the repo root:
+#   gcloud builds submit --project garassino-ml --region europe-west1 \
+#     --config infra/gcp/cloudbuild-cu128.yaml \
+#     --substitutions COMMIT_SHA=$(git rev-parse HEAD) .
+# The cu126 fleet image (T4/L4 + public GHCR mirror) still builds via
+# .github/workflows/build-push.yml.
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -f
+      - runpod/Dockerfile
+      - --build-arg
+      - TORCH_INDEX=cu128
+      - -t
+      - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${COMMIT_SHA}-cu128
+      - -t
+      - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest-cu128
+      - .
+images:
+  - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${COMMIT_SHA}-cu128
+  - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest-cu128
+timeout: 2400s
+options:
+  machineType: E2_HIGHCPU_8
