@@ -740,7 +740,9 @@ class DeepSculptV2Main:
         
         # Load checkpoint
         checkpoint = torch.load(args.checkpoint, map_location=self.device, weights_only=False)
-        if 'config' not in checkpoint:
+        # Trainer ckpts DO carry a 'config' key (a TrainingConfig dataclass) —
+        # the pickled scheduler is the reliable discriminator (same as loader.py).
+        if 'noise_scheduler' not in checkpoint:
             # Trainer checkpoint_epoch_N.pth (timed-out slices never write the
             # final export) — rebuild via the latent loader: EMA weights +
             # sibling config.json + reconstructed scheduler.
