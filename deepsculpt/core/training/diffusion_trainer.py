@@ -18,7 +18,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
 import numpy as np
@@ -282,7 +281,13 @@ class DiffusionTrainer(BaseTrainer):
         self.optimizer.zero_grad()
         
         if self.config.mixed_precision:
-            with autocast():
+            # torch.autocast like the GAN trainer — the legacy
+            # torch.cuda.amp.autocast() stopped casting on torch 2.13, so the
+            # whole forward ran fp32 and SDPA fell back to the math kernel
+            # (materializes B*H*4096^2 attention matrices -> OOM on the L4).
+            # bf16 over fp16 for the same overflow reasons as the GAN.
+            device_type = "cuda" if "cuda" in str(self.device) else "cpu"
+            with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
                 # Get model prediction
                 if conditioning is not None and "class_labels" in self.model.forward.__code__.co_varnames:
                     model_output = self.model(x_t, timesteps, conditioning, class_labels)
