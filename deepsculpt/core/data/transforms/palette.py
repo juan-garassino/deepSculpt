@@ -32,11 +32,12 @@ CLASS_PALETTE = {
     9: "#c0392b", 10: "#2e6da4", 11: "#d4a017", 12: "#3d8b5f",
 }
 NUM_CLASSES = 12
-# Concrete structure classes keep low saturation even in 'bold'; the coloured
-# pipes/walls carry the per-sample hue.
+# Concrete structure classes (columns/slabs/screens/volumes/edges) vs the
+# coloured pipes/walls. Both carry colour now — neutrals get a softer tint,
+# accents the vivid hue — so every element (slabs included) reads as coloured.
 NEUTRAL_CLASSES = (1, 2, 3, 7, 8)
 ACCENT_CLASSES = (4, 5, 6, 9, 10, 11, 12)
-PALETTE_VERSION = 1
+PALETTE_VERSION = 2
 _SEED_MASK = 0x7FFFFFFFFFFFFFFF
 
 
@@ -89,6 +90,10 @@ _ACCENT_MASK = torch.zeros(13, dtype=torch.bool)
 for _c in ACCENT_CLASSES:
     _ACCENT_MASK[_c] = True
 
+# Per-class hue offset for 'bold': fan the 12 classes across ~a third of the
+# colour wheel so a per-sample scheme is multi-hue but harmonious (analogous).
+_CLASS_OFFSET = torch.tensor([((c - 1) / (NUM_CLASSES - 1)) * 0.33 for c in range(1, 13)])
+
 
 @dataclass
 class PaletteConfig:
@@ -118,15 +123,23 @@ def _sample_endpoints(index: int, cfg: PaletteConfig) -> torch.Tensor:
         return out
 
     hue_j = (tbl[..., 0] - 0.5) * 0.08          # +-0.04
-    sat = (s0 * (0.45 + 0.35 * tbl[..., 1])).clamp(0.05, 0.55)
-    val = 0.80 + 0.15 * tbl[..., 2]             # pastel brightness
+    val = 0.78 + 0.16 * tbl[..., 2]             # pastel brightness
+    accent = _ACCENT_MASK[1:].view(NUM_CLASSES, 1)  # [12,1] over both endpoints
 
     if cfg.mode == "bold":
-        accent = _ACCENT_MASK[1:].view(NUM_CLASSES, 1)
-        hue = torch.where(accent, (h0 + global_rot + hue_j) % 1.0, (h0 + hue_j) % 1.0)
-        sat = torch.where(accent, (0.35 + 0.35 * tbl[..., 1]).clamp(0.05, 0.75), sat)
-    else:  # subtle
+        # Every element coloured: a per-sample analogous scheme — all classes
+        # share the global hue rotation, fanned across ~a third of the wheel by
+        # class so slabs/columns/walls differ but harmonise. Neutrals saturated
+        # enough to read as coloured concrete, accents vivid.
+        hue = (global_rot + _CLASS_OFFSET.view(NUM_CLASSES, 1) + hue_j) % 1.0
+        sat_neutral = 0.30 + 0.18 * tbl[..., 1]      # 0.30-0.48
+        sat_accent = 0.52 + 0.23 * tbl[..., 1]       # 0.52-0.75
+        sat = torch.where(accent, sat_accent, sat_neutral)
+    else:  # subtle — tinted EVERY element (slabs included), keeps element hues
         hue = (h0 + hue_j) % 1.0
+        sat_neutral = (s0 * 0.7 + 0.24).clamp(0.22, 0.46)
+        sat_accent = (s0 * (0.6 + 0.35 * tbl[..., 1])).clamp(0.34, 0.70)
+        sat = torch.where(accent, sat_accent, sat_neutral)
 
     hsv = torch.stack([hue, sat, val], dim=-1)  # [12,2,3]
     out = torch.zeros(13, 2, 3)
