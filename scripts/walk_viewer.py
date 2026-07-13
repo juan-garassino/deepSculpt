@@ -38,13 +38,13 @@ def load_volumes(path: Path) -> tuple[np.ndarray, bool]:
     if isinstance(vols, torch.Tensor):
         vols = vols.numpy()
     vols = np.asarray(vols)
+    if vols.ndim == 5 and vols.shape[1] == 4:
+        return vols.astype(np.float32), "rgba"
     is_class = np.issubdtype(vols.dtype, np.integer)
-    return vols.reshape(vols.shape[0], *vols.shape[-3:]), is_class
+    return vols.reshape(vols.shape[0], *vols.shape[-3:]), ("class" if is_class else "mono")
 
 
-def exposed_voxels(vol: np.ndarray, threshold: float, is_class: bool) -> np.ndarray:
-    """(M, 4) int16 array of x, y, z, class for voxels with any exposed face."""
-    occ = vol > 0 if is_class else vol > threshold
+def _exposed_mask(occ: np.ndarray) -> np.ndarray:
     interior = np.ones_like(occ)
     for axis in range(3):
         for shift in (1, -1):
@@ -57,9 +57,21 @@ def exposed_voxels(vol: np.ndarray, threshold: float, is_class: bool) -> np.ndar
                 dst[axis], src[axis] = slice(1, None), slice(0, -1)
             n[tuple(dst)] = occ[tuple(src)]
             interior &= n
-    visible = occ & ~interior
+    return occ & ~interior
+
+
+def exposed_voxels(vol: np.ndarray, threshold: float, kind: str) -> np.ndarray:
+    """int16 rows for exposed voxels. class/mono: (x,y,z,class); rgba: (x,y,z,r,g,b)."""
+    if kind == "rgba":
+        alpha, rgb = vol[0], vol[1:]                 # (D,H,W), (3,D,H,W)
+        visible = _exposed_mask(alpha > threshold)
+        idx = np.argwhere(visible).astype(np.int16)
+        cols = (rgb[:, visible].T.clip(0, 1) * 255).astype(np.int16)  # (M,3)
+        return np.concatenate([idx, cols], axis=1)
+    occ = vol > 0 if kind == "class" else vol > threshold
+    visible = _exposed_mask(occ)
     idx = np.argwhere(visible).astype(np.int16)
-    cls = (np.clip(vol[visible].astype(np.int16), 0, 12) if is_class
+    cls = (np.clip(vol[visible].astype(np.int16), 0, 12) if kind == "class"
            else np.zeros(len(idx), dtype=np.int16))
     return np.concatenate([idx, cls[:, None]], axis=1)
 
@@ -99,13 +111,15 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const DIM = __DIM__;
 const PALETTE = __PALETTE__;
 const FRAMES_B64 = __FRAMES__;
+const STRIDE = __STRIDE__;      // int16 per voxel: 4 (x,y,z,class) or 6 (x,y,z,r,g,b)
+const RGBA = __RGBA__;
 const frameCache = new Array(FRAMES_B64.length);
 function frame(i) {  // lazy decode: 50+ MB of base64 would stall startup
   if (!frameCache[i]) {
     const bin = atob(FRAMES_B64[i]);
     const bytes = new Uint8Array(bin.length);
     for (let j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
-    frameCache[i] = new Int16Array(bytes.buffer);  // x,y,z,class per voxel
+    frameCache[i] = new Int16Array(bytes.buffer);
   }
   return frameCache[i];
 }
@@ -133,21 +147,25 @@ scene.add(fill);
 
 const geo = new THREE.BoxGeometry(1, 1, 1);
 const mat = new THREE.MeshLambertMaterial();
-const maxCount = Math.max(...FRAMES_B64.map(b => Math.floor(b.length * 3 / 4 / 8))) + 8;
+// bytes/base64 = len*3/4; int16 = 2 bytes; voxels = that / (2*STRIDE)
+const maxCount = Math.max(...FRAMES_B64.map(b => Math.floor(b.length * 3 / 4 / (2 * STRIDE)))) + 8;
 const mesh = new THREE.InstancedMesh(geo, mat, maxCount);
 mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(maxCount * 3), 3);
 scene.add(mesh);
 
 const colors = PALETTE.map(hex => new THREE.Color(hex));
+const c = new THREE.Color();
 const m = new THREE.Matrix4();
 function show(i) {
   const f = frame(i);
-  const n = f.length / 4;
+  const n = f.length / STRIDE;
   for (let v = 0; v < n; v++) {
+    const o = v * STRIDE;
     // volume (x,y,z) -> scene (x, up=z, y), centered
-    m.makeTranslation(f[v*4] - DIM/2 + .5, f[v*4+2] - DIM/2 + .5, f[v*4+1] - DIM/2 + .5);
+    m.makeTranslation(f[o] - DIM/2 + .5, f[o+2] - DIM/2 + .5, f[o+1] - DIM/2 + .5);
     mesh.setMatrixAt(v, m);
-    mesh.setColorAt(v, colors[f[v*4+3]] || colors[0]);
+    if (RGBA) { c.setRGB(f[o+3]/255, f[o+4]/255, f[o+5]/255); mesh.setColorAt(v, c); }
+    else mesh.setColorAt(v, colors[f[o+3]] || colors[0]);
   }
   mesh.count = n;
   mesh.instanceMatrix.needsUpdate = true;
@@ -191,13 +209,15 @@ def main() -> None:
     p.add_argument("--title", default=None)
     args = p.parse_args()
 
-    vols, is_class = load_volumes(args.volumes)
+    vols, kind = load_volumes(args.volumes)
     vols = vols[:: args.stride]
     dim = vols.shape[-1]
+    rgba = kind == "rgba"
+    stride = 6 if rgba else 4
 
     packed = []
     for i, vol in enumerate(vols):
-        vox = exposed_voxels(vol, args.threshold, is_class)
+        vox = exposed_voxels(vol, args.threshold, kind)
         packed.append(base64.b64encode(vox.astype("<i2").tobytes()).decode())
         print(f"frame {i + 1}/{len(vols)}: {len(vox)} voxels", flush=True)
 
@@ -208,6 +228,8 @@ def main() -> None:
             .replace("__MAXSTEP__", str(len(packed) - 1))
             .replace("__NFRAMES__", str(len(packed)))
             .replace("__DIM__", str(dim))
+            .replace("__STRIDE__", str(stride))
+            .replace("__RGBA__", "true" if rgba else "false")
             .replace("__PALETTE__", json.dumps(palette))
             .replace("__FRAMES__", json.dumps(packed)))
     Path(out).write_text(html)

@@ -44,6 +44,8 @@ def render(run_id: str, snaps: list[Path], out: Path, samples_per_epoch: int = 4
     fig, axes = plt.subplots(rows, samples_per_epoch, figsize=(2.4 * samples_per_epoch, 2.4 * rows), squeeze=False)
     for r, snap in enumerate(snaps):
         vols = torch.load(snap, map_location="cpu", weights_only=False).float().numpy()
+        if vols.ndim == 5 and vols.shape[1] == 4:   # RGBA: alpha channel for this occupancy grid
+            vols = vols[:, 0]
         vols = vols.reshape(vols.shape[0], *vols.shape[-3:])
         for c in range(samples_per_epoch):
             ax = axes[r][c]

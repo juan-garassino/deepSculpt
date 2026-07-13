@@ -56,7 +56,8 @@ class DiffusionTrainer(BaseTrainer):
         ema_decay: float = 0.9999,
         loss_type: str = "mse",  # "mse", "l1", "huber"
         min_snr_gamma: Optional[float] = None,  # None/0 = off; 5.0 = Min-SNR-5 weighting
-        codec: Optional[Any] = None  # LatentCodec => train in VAE latent space
+        codec: Optional[Any] = None,  # LatentCodec => train in VAE latent space
+        latent_input_fn: Optional[Any] = None  # batch dict -> [0,1] volume to encode (RGBA colour)
     ):
         """
         Initialize diffusion trainer.
@@ -87,8 +88,10 @@ class DiffusionTrainer(BaseTrainer):
         self.min_snr_gamma = min_snr_gamma if min_snr_gamma else None
         # Latent mode: frozen VAE codec held as a trainer attribute (never a
         # UNet submodule) so EMA copying, the optimizer, and grad clipping all
-        # keep operating on the UNet alone.
+        # keep operating on the UNet alone. latent_input_fn builds the volume to
+        # encode (RGBA colour) from the raw batch; None => encode mono structure.
         self.codec = codec
+        self.latent_input_fn = latent_input_fn
         
         # Diffusion-specific metrics
         self.metrics.update({
@@ -280,8 +283,10 @@ class DiffusionTrainer(BaseTrainer):
             # Latent mode: encode [0,1] volumes to normalized latents (fp32,
             # no_grad, before autocast). Everything downstream — _x0_shape,
             # fixed snapshot noise, slerp walk anchors — follows the latent
-            # shape automatically.
-            x_0 = self.codec.encode(x_0)
+            # shape automatically. latent_input_fn builds the RGBA colour
+            # volume; without it we encode the mono structure.
+            vol = self.latent_input_fn(batch) if self.latent_input_fn is not None else x_0
+            x_0 = self.codec.encode(vol)
         else:
             # Zero-center binary volumes to [-1, 1]: the DDIM/DDPM samplers
             # clamp pred_original_sample to [-1, 1] (symmetric-data
@@ -539,8 +544,12 @@ class DiffusionTrainer(BaseTrainer):
     
     def _snapshot_sample_stats(self, samples: torch.Tensor) -> Dict[str, float]:
         # Diffusion outputs are continuous; occupancy judged at the 0.5
-        # threshold used by the volume exporters.
-        occupancy = (samples.detach() > 0.5).float().reshape(samples.shape[0], -1).mean(dim=1)
+        # threshold used by the volume exporters. RGBA samples carry colour in
+        # channels 1-3 (mostly >0.5) — occupancy is channel 0 (alpha) only.
+        s = samples.detach()
+        if s.dim() == 5 and s.shape[1] > 1:
+            s = s[:, 0:1]
+        occupancy = (s > 0.5).float().reshape(s.shape[0], -1).mean(dim=1)
         return {
             "mean_occupancy": float(occupancy.mean().item()),
             "min_occupancy": float(occupancy.min().item()),

@@ -51,16 +51,23 @@ CLASS_PALETTE = {
 }
 
 
-def load_volumes(path: Path) -> tuple[np.ndarray, bool]:
-    """Load (N, D, H, W) volumes; second value is True for integer class volumes."""
+def load_volumes(path: Path) -> tuple[np.ndarray, str]:
+    """Load a volume sequence. Returns (array, kind):
+      - "rgba":  (N, 4, D, H, W) float — [alpha, R, G, B] colour volumes
+      - "class": (N, D, H, W) int   — element-class volumes (colour GAN)
+      - "mono":  (N, D, H, W) float — occupancy volumes
+    RGBA must be detected before the reshape below (which assumes a single
+    channel and would otherwise fold colour into geometry)."""
     vols = torch.load(path, map_location="cpu", weights_only=False)
     if isinstance(vols, torch.Tensor):
         vols = vols.numpy()
     vols = np.asarray(vols)
+    if vols.ndim == 5 and vols.shape[1] == 4:
+        return vols.astype(np.float32), "rgba"
     is_class = np.issubdtype(vols.dtype, np.integer)
     if not is_class:
         vols = vols.astype(np.float32)
-    return vols.reshape(vols.shape[0], *vols.shape[-3:]), is_class
+    return vols.reshape(vols.shape[0], *vols.shape[-3:]), ("class" if is_class else "mono")
 
 
 def mesh_frame(ax, vol: np.ndarray, threshold: float, cmap, dim: int) -> None:
@@ -172,6 +179,32 @@ def voxel_frame(ax, vol: np.ndarray, threshold: float, cmap, dim: int,
         np.concatenate(quads), facecolors=np.concatenate(colors), edgecolors="none"))
 
 
+def voxel_rgba_frame(ax, vol: np.ndarray, threshold: float, dim: int) -> None:
+    """Render an [alpha, R, G, B] volume (4, D, H, W): occupancy from alpha,
+    per-face colour straight from the RGB channels with directional shading."""
+    alpha = vol[0]
+    rgb = vol[1:]  # (3, D, H, W)
+    occ = alpha > threshold
+    ax.set_xlim(0, dim)
+    ax.set_ylim(0, dim)
+    ax.set_zlim(0, dim)
+    if not occ.any():
+        return
+    quads, colors = [], []
+    for d, corners in _FACE_CORNERS.items():
+        exposed = occ & ~_neighbor(occ, d)
+        idx = np.argwhere(exposed)
+        if not len(idx):
+            continue
+        quads.append(idx[:, None, :] + np.asarray(corners)[None])
+        cols = np.concatenate(
+            [rgb[:, exposed].T.clip(0, 1), np.ones((len(idx), 1))], axis=1)
+        cols[:, :3] *= _FACE_SHADE[d]
+        colors.append(cols)
+    ax.add_collection3d(Poly3DCollection(
+        np.concatenate(quads), facecolors=np.concatenate(colors), edgecolors="none"))
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("volumes", type=Path)
@@ -192,10 +225,14 @@ def main() -> None:
                    help="also write an .mp4 next to the GIF (needs imageio-ffmpeg)")
     args = p.parse_args()
 
-    vols, is_class = load_volumes(args.volumes)
+    vols, kind = load_volumes(args.volumes)
+    is_class = kind == "class"
     dim = vols.shape[-1]
     cmap = LinearSegmentedColormap.from_list(args.color, PALETTES[args.color])
     out = args.out or args.volumes.with_name("walk_hq.gif")
+    if kind == "rgba" and args.style != "voxel":
+        print("RGBA volumes render voxel-style only; forcing --style voxel")
+        args.style = "voxel"
 
     dpi = 100
     fig = plt.figure(figsize=(args.size / dpi, args.size / dpi), dpi=dpi)
@@ -207,7 +244,9 @@ def main() -> None:
         ax.set_axis_off()
         ax.set_facecolor("white")
         ax.set_box_aspect((1, 1, 1))
-        if args.style == "voxel":
+        if kind == "rgba":
+            voxel_rgba_frame(ax, vol, args.threshold, dim)
+        elif args.style == "voxel":
             voxel_frame(ax, vol, args.threshold, cmap, dim, is_class)
         elif is_class:
             class_mesh_frame(ax, vol, dim)

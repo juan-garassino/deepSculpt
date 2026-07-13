@@ -447,8 +447,13 @@ class DeepSculptV2Main:
         # glob can never cross-resume a latent run (and vice versa).
         latent_ckpt = getattr(args, 'latent_autoencoder', None)
         run_prefix = "latdiff" if latent_ckpt else "diffusion"
-        if latent_ckpt and getattr(args, 'color', False):
-            raise ValueError("latent mode is structure-only (v1) — drop --color")
+        if getattr(args, 'color', False):
+            # The old pixel-space 6-channel --color path was a dead placeholder.
+            # Colour diffusion is the RGBA latent path: train a colour VAE
+            # (train-autoencoder --palette ...) then --latent-autoencoder it.
+            raise ValueError(
+                "--color pixel diffusion is retired; train a colour VAE "
+                "(train-autoencoder --palette subtle) and pass --latent-autoencoder")
 
         # Create results directory
         resume_from = None
@@ -484,19 +489,53 @@ class DeepSculptV2Main:
         # from args each slice and must stay idempotent).
         latent_codec = None
         latent_config = None
+        latent_input_fn = None
         if latent_ckpt:
-            import shutil
             from deepsculpt.core.models.autoencoder import (
                 LatentCodec, load_vae, file_sha256,
             )
 
             vae, vae_cfg = load_vae(Path(latent_ckpt), device=self.device)
+
+            # Colour VAE (in_channels 4) => build RGBA volumes to encode, using
+            # the palette params inherited from the VAE's config (never a CLI
+            # flag here). Absent palette fields on a 4ch VAE means a stale
+            # staged config — fail loud rather than train structure-only.
+            palette_cfg = None
+            if vae.in_channels == 4:
+                from deepsculpt.core.data.transforms.palette import PaletteConfig, build_rgba
+                if not vae_cfg.get("rgba") or not vae_cfg.get("palette_mode"):
+                    raise ValueError(
+                        f"colour VAE (in_channels=4) but no palette fields in its config: {latent_ckpt}")
+                palette_cfg = PaletteConfig(
+                    mode=vae_cfg["palette_mode"],
+                    seed=vae_cfg.get("palette_seed", 0),
+                    version=vae_cfg.get("palette_version", 1),
+                )
+                print(f"RGBA latent mode — palette '{palette_cfg.mode}' seed {palette_cfg.seed}")
+
+                def latent_input_fn(batch):
+                    return build_rgba(
+                        batch["structure"].to(self.device),
+                        batch["colors"].to(self.device),
+                        batch["index"].to(self.device),
+                        palette_cfg,
+                    )
+
             ds = data_loader.dataset
             n_stats = min(256, len(ds))
-            prefix = torch.stack([
-                torch.as_tensor(ds[i]["structure"], dtype=torch.float32)
-                for i in range(n_stats)
-            ]).unsqueeze(1)
+            if palette_cfg is not None:
+                prefix = build_rgba(
+                    torch.stack([torch.as_tensor(ds[i]["structure"]) for i in range(n_stats)]),
+                    torch.stack([torch.as_tensor(ds[i]["colors"]) for i in range(n_stats)]),
+                    torch.stack([torch.as_tensor(ds[i]["index"]) for i in range(n_stats)]),
+                    palette_cfg,
+                )
+            else:
+                prefix = torch.stack([
+                    torch.as_tensor(ds[i]["structure"], dtype=torch.float32)
+                    for i in range(n_stats)
+                ]).unsqueeze(1)
             shift, scale = LatentCodec.compute_stats(vae, prefix, device=self.device)
             latent_codec = LatentCodec(vae, shift, scale, device=self.device)
 
@@ -517,6 +556,10 @@ class DeepSculptV2Main:
                 "scale": [float(v) for v in scale],
                 "autoencoder_sha256": file_sha256(ae_path),
                 "source_checkpoint": str(latent_ckpt),
+                "rgba": palette_cfg is not None,
+                "palette_mode": (palette_cfg.mode if palette_cfg else None),
+                "palette_seed": (palette_cfg.seed if palette_cfg else 0),
+                "palette_version": (palette_cfg.version if palette_cfg else None),
             }
             num_channels = vae.latent_channels
             print(f"Latent mode: {args.void_dim}^3 -> {latent_dim}^3 x {num_channels} "
@@ -610,7 +653,8 @@ class DeepSculptV2Main:
             device=self.device,
             prediction_type=getattr(args, 'prediction_type', 'epsilon'),
             min_snr_gamma=getattr(args, 'min_snr_gamma', 0.0) or None,
-            codec=latent_codec
+            codec=latent_codec,
+            latent_input_fn=latent_input_fn
         )
 
         # Apply run naming and extra params now that the trainer has opened the mlflow run
@@ -682,14 +726,23 @@ class DeepSculptV2Main:
             'raw_model_state_dict': model.state_dict(),
             'noise_scheduler': noise_scheduler,
             'config': {
-                'void_dim': args.void_dim,
+                # Latent runs: void_dim/num_channels are the LATENT dims and the
+                # latent block must travel, or load_diffusion_pipeline rebuilds a
+                # pixel-mode UNet from this export.
+                'void_dim': latent_config["latent_dim"] if latent_config else args.void_dim,
                 'num_channels': num_channels,
+                'latent': latent_config,
                 'timesteps': args.timesteps,
                 'noise_schedule': args.noise_schedule,
                 'sparse': args.sparse,
                 'use_ema': args.use_ema,
                 'color': color_mode,
                 'model_channels': args.model_channels,
+                'num_res_blocks': model.num_res_blocks,
+                'channel_mult': list(model.channel_mult),
+                'attention_resolutions': list(model.attention_resolutions),
+                'num_heads': model.num_heads,
+                'prediction_type': getattr(args, 'prediction_type', 'epsilon'),
             }
         }, results_dir / "diffusion_final.pt")
 
@@ -742,10 +795,22 @@ class DeepSculptV2Main:
         val_loader = TorchDataLoader(val_ds, batch_size=args.batch_size,
                                      shuffle=False, num_workers=0)
 
+        # Colour mode: a --palette flag implies RGBA (4ch VAE). Palette params
+        # live ONLY here (the VAE is trained on exactly one palette) and are
+        # inherited by train-diffusion via load_vae's config.
+        palette_cfg = None
+        palette = getattr(args, 'palette', None)
+        in_channels = 1
+        if palette:
+            from deepsculpt.core.data.transforms.palette import PaletteConfig, PALETTE_VERSION
+            palette_cfg = PaletteConfig(mode=palette, seed=getattr(args, 'palette_seed', 0))
+            in_channels = 4
+            print(f"RGBA colour VAE — palette '{palette}' seed {palette_cfg.seed} v{PALETTE_VERSION}")
+
         model_factory = PyTorchModelFactoryV2()
         model = model_factory.create_autoencoder(
             model_type="vae3d",
-            in_channels=1,
+            in_channels=in_channels,
             latent_channels=args.latent_channels,
             base_channels=args.base_channels,
         ).to(self.device)
@@ -770,11 +835,21 @@ class DeepSculptV2Main:
         )
         trainer = AutoencoderTrainer(
             model=model, optimizer=optimizer, config=training_config,
-            device=self.device, kl_weight=args.kl_weight)
-        trainer._snapshot_batch = torch.stack([
-            torch.as_tensor(val_ds[i]["structure"], dtype=torch.float32)
-            for i in range(min(4, len(val_ds)))
-        ]).unsqueeze(1)
+            device=self.device, kl_weight=args.kl_weight,
+            palette_cfg=palette_cfg, rgb_weight=getattr(args, 'rgb_weight', 1.0))
+        # Fixed held-out snapshot batch — RGBA when colour, mono otherwise.
+        snap = [val_ds[i] for i in range(min(4, len(val_ds)))]
+        if palette_cfg is not None:
+            from deepsculpt.core.data.transforms.palette import build_rgba
+            trainer._snapshot_batch = build_rgba(
+                torch.stack([torch.as_tensor(s["structure"]) for s in snap]),
+                torch.stack([torch.as_tensor(s["colors"]) for s in snap]),
+                torch.stack([torch.as_tensor(s["index"]) for s in snap]),
+                palette_cfg,
+            )
+        else:
+            trainer._snapshot_batch = torch.stack(
+                [torch.as_tensor(s["structure"], dtype=torch.float32) for s in snap]).unsqueeze(1)
 
         # config.json BEFORE training (cloud slices die at the task timeout);
         # codec.load_vae rebuilds the architecture from this file.
@@ -783,10 +858,15 @@ class DeepSculptV2Main:
                 {
                     "model_type": "vae3d",
                     "void_dim": args.void_dim,
-                    "in_channels": 1,
+                    "in_channels": in_channels,
                     "latent_channels": args.latent_channels,
                     "base_channels": args.base_channels,
                     "kl_weight": args.kl_weight,
+                    "rgba": palette_cfg is not None,
+                    "palette_mode": palette,
+                    "palette_seed": getattr(args, 'palette_seed', 0),
+                    "palette_version": (palette_cfg.version if palette_cfg else None),
+                    "rgb_weight": getattr(args, 'rgb_weight', 1.0),
                     "training_params": {
                         "epochs": args.epochs,
                         "batch_size": args.batch_size,
@@ -1192,12 +1272,20 @@ class DeepSculptV2Main:
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        if volumes.dim() == 5 and volumes.shape[1] > 1:
+        if volumes.dim() == 5 and volumes.shape[1] == 4:
+            # RGBA colour volume: keep the full [A,R,G,B] field in the .pt so
+            # render_walk/walk_viewer colour it; the geometry-only exporters
+            # (gif/png/obj/stl) take the alpha channel.
+            geom = volumes[:, 0].to(torch.float32)
+        elif volumes.dim() == 5 and volumes.shape[1] > 1:
             # Color (13-class) generator output: collapse channel probabilities
             # to class-id volumes (int8, (N, D, H, W)) — renderers expect scalar
             # volumes and the files stay ~50x smaller than 13ch floats.
             volumes = volumes.argmax(dim=1).to(torch.int8)
-        vols_np = volumes.numpy()
+            geom = volumes
+        else:
+            geom = volumes
+        vols_np = geom.numpy()
 
         # Always dump raw volumes so runs are comparable/deterministic
         torch.save(volumes, output_dir / f"{stem}_volumes.pt")
@@ -1682,6 +1770,12 @@ def create_parser():
     train_ae_parser.add_argument('--latent-channels', type=int, default=4)
     train_ae_parser.add_argument('--base-channels', type=int, default=32)
     train_ae_parser.add_argument('--kl-weight', type=float, default=1e-6)
+    train_ae_parser.add_argument('--palette', default=None, choices=['flat', 'subtle', 'bold'],
+                                 help='Colour (RGBA) VAE with this procedural palette; omit for a binary occupancy VAE')
+    train_ae_parser.add_argument('--palette-seed', type=int, default=0,
+                                 help='Base seed for per-sample palette generation')
+    train_ae_parser.add_argument('--rgb-weight', type=float, default=1.0,
+                                 help='Weight on the masked RGB reconstruction loss (colour mode)')
     train_ae_parser.add_argument('--learning-rate', type=float, default=3e-4)
     train_ae_parser.add_argument('--weight-decay', type=float, default=0.0)
     train_ae_parser.add_argument('--data-folder', default='./data')
