@@ -191,8 +191,14 @@ class Diffusion3DPipeline:
                     intermediate_samples.append(sample.clone())
         
         self.generation_count += sample.shape[0]
-        
+
+        # Training scales binary volumes to [-1, 1] (see DiffusionTrainer
+        # .train_step); map back so every consumer (snapshots, walks,
+        # trajectories, CLI sampling) keeps the [0, 1] / threshold-0.5
+        # convention.
+        sample = (sample + 1.0) / 2.0
         if return_intermediate:
+            intermediate_samples = [(s + 1.0) / 2.0 for s in intermediate_samples]
             return sample, intermediate_samples
         return sample
     

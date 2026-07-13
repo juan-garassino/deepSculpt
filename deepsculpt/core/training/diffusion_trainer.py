@@ -249,6 +249,13 @@ class DiffusionTrainer(BaseTrainer):
             if x_0.dtype != torch.float32:
                 x_0 = x_0.float()
         
+        # Zero-center binary volumes to [-1, 1]: the DDIM/DDPM samplers clamp
+        # pred_original_sample to [-1, 1] (symmetric-data convention), and
+        # training on raw {0,1} leaves a +mean bias the model burns dozens of
+        # epochs unlearning — samples came out ~3x too dense (occ 0.4 vs 0.12).
+        # pipeline.sample() maps outputs back to [0, 1].
+        x_0 = x_0 * 2.0 - 1.0
+
         if conditioning is not None:
             conditioning = conditioning.to(self.device)
         if class_labels is not None:
