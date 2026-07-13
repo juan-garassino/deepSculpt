@@ -55,7 +55,8 @@ class DiffusionTrainer(BaseTrainer):
         use_ema: bool = True,
         ema_decay: float = 0.9999,
         loss_type: str = "mse",  # "mse", "l1", "huber"
-        min_snr_gamma: Optional[float] = None  # None/0 = off; 5.0 = Min-SNR-5 weighting
+        min_snr_gamma: Optional[float] = None,  # None/0 = off; 5.0 = Min-SNR-5 weighting
+        codec: Optional[Any] = None  # LatentCodec => train in VAE latent space
     ):
         """
         Initialize diffusion trainer.
@@ -84,6 +85,10 @@ class DiffusionTrainer(BaseTrainer):
         self.ema_decay = ema_decay
         self.loss_type = loss_type
         self.min_snr_gamma = min_snr_gamma if min_snr_gamma else None
+        # Latent mode: frozen VAE codec held as a trainer attribute (never a
+        # UNet submodule) so EMA copying, the optimizer, and grad clipping all
+        # keep operating on the UNet alone.
+        self.codec = codec
         
         # Diffusion-specific metrics
         self.metrics.update({
@@ -271,12 +276,19 @@ class DiffusionTrainer(BaseTrainer):
             if x_0.dtype != torch.float32:
                 x_0 = x_0.float()
         
-        # Zero-center binary volumes to [-1, 1]: the DDIM/DDPM samplers clamp
-        # pred_original_sample to [-1, 1] (symmetric-data convention), and
-        # training on raw {0,1} leaves a +mean bias the model burns dozens of
-        # epochs unlearning — samples came out ~3x too dense (occ 0.4 vs 0.12).
-        # pipeline.sample() maps outputs back to [0, 1].
-        x_0 = x_0 * 2.0 - 1.0
+        if self.codec is not None:
+            # Latent mode: encode [0,1] volumes to normalized latents (fp32,
+            # no_grad, before autocast). Everything downstream — _x0_shape,
+            # fixed snapshot noise, slerp walk anchors — follows the latent
+            # shape automatically.
+            x_0 = self.codec.encode(x_0)
+        else:
+            # Zero-center binary volumes to [-1, 1]: the DDIM/DDPM samplers
+            # clamp pred_original_sample to [-1, 1] (symmetric-data
+            # convention), and training on raw {0,1} leaves a +mean bias the
+            # model burns dozens of epochs unlearning — samples came out ~3x
+            # too dense (occ 0.4 vs 0.12). pipeline.sample() maps back to [0,1].
+            x_0 = x_0 * 2.0 - 1.0
 
         if conditioning is not None:
             conditioning = conditioning.to(self.device)
@@ -564,17 +576,31 @@ class DiffusionTrainer(BaseTrainer):
         Diffusion3DPipeline/NoiseScheduler pair is the training-side forward
         process; DDIM (eta=0) is the proven sampling path (sample-diffusion
         CLI) and makes fixed-noise snapshots bit-comparable across epochs."""
-        from deepsculpt.core.models.diffusion.pipeline import FastSamplingPipeline
+        from deepsculpt.core.models.diffusion.pipeline import (
+            FastSamplingPipeline,
+            LatentFastSamplingPipeline,
+        )
 
         if getattr(self, "_snap_pipeline", None) is None:
-            self._snap_pipeline = FastSamplingPipeline(
-                model=self.ema_model if self.ema_model else self.model,
-                noise_scheduler=self.noise_scheduler,
-                device=self.device,
-                prediction_type=self.prediction_type,
-                num_inference_steps=25,
-                scheduler_type="ddim",
-            )
+            if self.codec is not None:
+                self._snap_pipeline = LatentFastSamplingPipeline(
+                    codec=self.codec,
+                    model=self.ema_model if self.ema_model else self.model,
+                    noise_scheduler=self.noise_scheduler,
+                    device=self.device,
+                    prediction_type=self.prediction_type,
+                    num_inference_steps=25,
+                    scheduler_type="ddim",
+                )
+            else:
+                self._snap_pipeline = FastSamplingPipeline(
+                    model=self.ema_model if self.ema_model else self.model,
+                    noise_scheduler=self.noise_scheduler,
+                    device=self.device,
+                    prediction_type=self.prediction_type,
+                    num_inference_steps=25,
+                    scheduler_type="ddim",
+                )
         self._snap_pipeline.model = self.ema_model if self.ema_model else self.model
         return self._snap_pipeline
 
@@ -692,7 +718,11 @@ class DiffusionTrainer(BaseTrainer):
         if self.ema_model:
             checkpoint['ema_model_state_dict'] = self.ema_model.state_dict()
             checkpoint['ema_decay'] = self.ema_decay
-        
+
+        if self.codec is not None:
+            checkpoint['latent_shift'] = self.codec.shift.flatten().cpu()
+            checkpoint['latent_scale'] = self.codec.scale.flatten().cpu()
+
         torch.save(checkpoint, path)
         
         if is_best:
@@ -736,6 +766,18 @@ class DiffusionTrainer(BaseTrainer):
         self.conditioning_key = checkpoint.get('conditioning_key', self.conditioning_key)
         self.conditioning_dropout = checkpoint.get('conditioning_dropout', self.conditioning_dropout)
         self.loss_type = checkpoint.get('loss_type', self.loss_type)
+
+        # Latent stats are a pure function of (VAE weights, dataset prefix) —
+        # a resumed slice recomputing different values means the data pipeline
+        # changed under the run. Fail loudly, never train on shifted latents.
+        if self.codec is not None and 'latent_shift' in checkpoint:
+            for name, ours in (('latent_shift', self.codec.shift.flatten().cpu()),
+                               ('latent_scale', self.codec.scale.flatten().cpu())):
+                saved = checkpoint[name].float()
+                if not torch.allclose(saved, ours.float(), atol=1e-4):
+                    raise RuntimeError(
+                        f"{name} mismatch on resume: checkpoint {saved.tolist()} vs "
+                        f"recomputed {ours.tolist()} — VAE or dataset prefix changed")
         
         self.logger.info(f"Diffusion checkpoint loaded: {path}")
         return checkpoint

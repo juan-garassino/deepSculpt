@@ -443,16 +443,23 @@ class DeepSculptV2Main:
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
+        # Latent mode: disjoint run-dir prefix so the pixel chain's resume
+        # glob can never cross-resume a latent run (and vice versa).
+        latent_ckpt = getattr(args, 'latent_autoencoder', None)
+        run_prefix = "latdiff" if latent_ckpt else "diffusion"
+        if latent_ckpt and getattr(args, 'color', False):
+            raise ValueError("latent mode is structure-only (v1) — drop --color")
+
         # Create results directory
         resume_from = None
         if getattr(args, 'resume', False):
-            resume_from = self._find_resume_checkpoint(args.output_dir, "diffusion_*")
+            resume_from = self._find_resume_checkpoint(args.output_dir, f"{run_prefix}_*")
         if resume_from is not None:
             results_dir = resume_from[0]
             print(f"Resuming run {results_dir.name} from {resume_from[1].name}")
         else:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            results_dir = Path(args.output_dir) / f"diffusion_{timestamp}"
+            results_dir = Path(args.output_dir) / f"{run_prefix}_{timestamp}"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Setup experiment tracking
@@ -462,26 +469,86 @@ class DeepSculptV2Main:
         
         # Create data loader
         data_loader = self._create_data_loader(args)
-        
+
         # Create model factory
         model_factory = PyTorchModelFactoryV2()
-        
+
         # Determine number of channels based on color mode
         # For diffusion models: monochrome=1, color=6 (structure + colors with more detail)
         color_mode = getattr(args, 'color', False)
         num_channels = 6 if color_mode else 1
-        
+
+        # Latent mode: frozen VAE codec + latent-shaped UNet. Per-channel
+        # shift/scale come from a deterministic unshuffled prefix so every
+        # resumed slice recomputes identical values (config.json is rewritten
+        # from args each slice and must stay idempotent).
+        latent_codec = None
+        latent_config = None
+        if latent_ckpt:
+            import shutil
+            from deepsculpt.core.models.autoencoder import (
+                LatentCodec, load_vae, file_sha256,
+            )
+
+            vae, vae_cfg = load_vae(Path(latent_ckpt), device=self.device)
+            ds = data_loader.dataset
+            n_stats = min(256, len(ds))
+            prefix = torch.stack([
+                torch.as_tensor(ds[i]["structure"], dtype=torch.float32)
+                for i in range(n_stats)
+            ]).unsqueeze(1)
+            shift, scale = LatentCodec.compute_stats(vae, prefix, device=self.device)
+            latent_codec = LatentCodec(vae, shift, scale, device=self.device)
+
+            # Self-contained run dir: VAE weights travel with the run so
+            # slices on other containers/regions can always rebuild.
+            ae_path = results_dir / "autoencoder.pt"
+            if not ae_path.exists():
+                torch.save(vae.state_dict(), ae_path)
+            latent_dim = args.void_dim // 4  # two stride-2 encoder downsamples
+            latent_config = {
+                "enabled": True,
+                "latent_channels": vae.latent_channels,
+                "latent_dim": latent_dim,
+                "volume_dim": args.void_dim,
+                "vae_in_channels": vae.in_channels,
+                "vae_base_channels": vae.base_channels,
+                "shift": [float(v) for v in shift],
+                "scale": [float(v) for v in scale],
+                "autoencoder_sha256": file_sha256(ae_path),
+                "source_checkpoint": str(latent_ckpt),
+            }
+            num_channels = vae.latent_channels
+            print(f"Latent mode: {args.void_dim}^3 -> {latent_dim}^3 x {num_channels} "
+                  f"(shift {latent_config['shift']}, scale {latent_config['scale']})")
+
         # Create diffusion model
-        model = model_factory.create_diffusion_model(
-            model_type="unet3d",
-            void_dim=args.void_dim,
-            in_channels=num_channels,
-            out_channels=num_channels,
-            timesteps=args.timesteps,
-            sparse=args.sparse,
-            model_channels=args.model_channels,
-            use_checkpoint=args.grad_checkpoint
-        ).to(self.device)
+        if latent_codec is not None:
+            model = model_factory.create_diffusion_model(
+                model_type="unet3d",
+                void_dim=latent_config["latent_dim"],
+                in_channels=num_channels,
+                out_channels=num_channels,
+                timesteps=args.timesteps,
+                sparse=False,
+                model_channels=args.model_channels,
+                # At void 16 the pixel mult [1,2,4,8] would bottleneck at
+                # 2^3 x 1024ch; attention at 8 and 4 instead of 16 and 8.
+                channel_mult=[1, 2, 4],
+                attention_resolutions=[8, 4],
+                use_checkpoint=args.grad_checkpoint
+            ).to(self.device)
+        else:
+            model = model_factory.create_diffusion_model(
+                model_type="unet3d",
+                void_dim=args.void_dim,
+                in_channels=num_channels,
+                out_channels=num_channels,
+                timesteps=args.timesteps,
+                sparse=args.sparse,
+                model_channels=args.model_channels,
+                use_checkpoint=args.grad_checkpoint
+            ).to(self.device)
         
         # Create noise scheduler
         from deepsculpt.core.models.diffusion.noise_scheduler import NoiseScheduler
@@ -542,7 +609,8 @@ class DeepSculptV2Main:
             scheduler=scheduler,
             device=self.device,
             prediction_type=getattr(args, 'prediction_type', 'epsilon'),
-            min_snr_gamma=getattr(args, 'min_snr_gamma', 0.0) or None
+            min_snr_gamma=getattr(args, 'min_snr_gamma', 0.0) or None,
+            codec=latent_codec
         )
 
         # Apply run naming and extra params now that the trainer has opened the mlflow run
@@ -563,8 +631,11 @@ class DeepSculptV2Main:
             json.dump(
                 {
                     "model_type": "unet3d",  # train-diffusion has no --model-type flag; factory call above is hardcoded
-                    "void_dim": args.void_dim,
+                    # In latent mode these are the LATENT dims — walk noise
+                    # shapes and the loader's UNet rebuild derive from them.
+                    "void_dim": latent_config["latent_dim"] if latent_config else args.void_dim,
                     "num_channels": num_channels,
+                    "latent": latent_config,
                     "model_channels": args.model_channels,
                     "timesteps": args.timesteps,
                     "noise_schedule": args.noise_schedule,
@@ -637,6 +708,109 @@ class DeepSculptV2Main:
         print(f"Diffusion training completed! Results saved to {results_dir}")
         return 0
     
+    def train_autoencoder(self, args):
+        """Train the 3D KL-autoencoder for latent diffusion (Stage B).
+
+        Quality gate before any latent diffusion run: held-out IoU@0.5 >= 0.95
+        and |occupancy error| < 0.01 (read val_iou / val_occupancy_error from
+        epoch_metrics.jsonl)."""
+        print("Training 3D autoencoder (latent diffusion stage)")
+        from torch.utils.data import DataLoader as TorchDataLoader, Subset
+        from deepsculpt.core.training.autoencoder_trainer import AutoencoderTrainer
+
+        resume_from = None
+        if getattr(args, 'resume', False):
+            resume_from = self._find_resume_checkpoint(args.output_dir, "autoencoder_*")
+        if resume_from is not None:
+            results_dir = resume_from[0]
+            print(f"Resuming run {results_dir.name} from {resume_from[1].name}")
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            results_dir = Path(args.output_dir) / f"autoencoder_{timestamp}"
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        # Deterministic 95/5 train/val split on the dataset order (the IoU
+        # gate must measure the same held-out volumes on every slice).
+        base_loader = self._create_data_loader(args)
+        ds = base_loader.dataset
+        n = len(ds)
+        n_val = max(1, int(0.05 * n))
+        train_loader = TorchDataLoader(
+            Subset(ds, list(range(0, n - n_val))), batch_size=args.batch_size,
+            shuffle=True, num_workers=args.num_workers)
+        val_ds = Subset(ds, list(range(n - n_val, n)))
+        val_loader = TorchDataLoader(val_ds, batch_size=args.batch_size,
+                                     shuffle=False, num_workers=0)
+
+        model_factory = PyTorchModelFactoryV2()
+        model = model_factory.create_autoencoder(
+            model_type="vae3d",
+            in_channels=1,
+            latent_channels=args.latent_channels,
+            base_channels=args.base_channels,
+        ).to(self.device)
+
+        optimizer = torch.optim.AdamW(
+            model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+
+        training_config = TrainingConfig(
+            batch_size=args.batch_size,
+            learning_rate=args.learning_rate,
+            epochs=args.epochs,
+            mixed_precision=False,  # small model; fp32 keeps BCE/KL simple
+            use_ema=False,
+            checkpoint_freq=getattr(args, 'checkpoint_freq', 1),
+            checkpoint_dir=str(results_dir / "checkpoints"),
+            log_dir=str(results_dir / "logs"),
+            snapshot_dir=str(results_dir / "snapshots"),
+            use_tensorboard=False,
+            use_wandb=False,
+            use_mlflow=False,
+            experiment_name="deepsculpt",
+        )
+        trainer = AutoencoderTrainer(
+            model=model, optimizer=optimizer, config=training_config,
+            device=self.device, kl_weight=args.kl_weight)
+        trainer._snapshot_batch = torch.stack([
+            torch.as_tensor(val_ds[i]["structure"], dtype=torch.float32)
+            for i in range(min(4, len(val_ds)))
+        ]).unsqueeze(1)
+
+        # config.json BEFORE training (cloud slices die at the task timeout);
+        # codec.load_vae rebuilds the architecture from this file.
+        with open(results_dir / "config.json", "w") as f:
+            json.dump(
+                {
+                    "model_type": "vae3d",
+                    "void_dim": args.void_dim,
+                    "in_channels": 1,
+                    "latent_channels": args.latent_channels,
+                    "base_channels": args.base_channels,
+                    "kl_weight": args.kl_weight,
+                    "training_params": {
+                        "epochs": args.epochs,
+                        "batch_size": args.batch_size,
+                        "learning_rate": args.learning_rate,
+                        "weight_decay": args.weight_decay,
+                    },
+                },
+                f,
+                indent=2,
+            )
+
+        start_epoch = 0
+        if resume_from is not None:
+            ckpt = trainer.load_checkpoint(str(resume_from[1]))
+            start_epoch = int(ckpt.get('epoch', -1)) + 1
+            print(f"Resumed at epoch {start_epoch}")
+        print(f"Starting autoencoder training for {args.epochs} epochs")
+        trainer.train(train_dataloader=train_loader, val_dataloader=val_loader,
+                      start_epoch=start_epoch)
+
+        torch.save(model.state_dict(), results_dir / "autoencoder_final.pt")
+        print(f"Autoencoder training completed! Results saved to {results_dir}")
+        return 0
+
     def generate_data(self, args):
         """Generate synthetic 3D data with comprehensive options."""
         print(f"Generating {args.num_samples} samples")
@@ -765,6 +939,8 @@ class DeepSculptV2Main:
                 num_steps=args.num_steps,
                 guidance_scale=args.guidance_scale,
             )
+            if (config.get("latent") or {}).get("enabled") and getattr(args, 'save_trajectory', False):
+                raise ValueError("--save-trajectory is pixel-mode only for now (v1 latent scope)")
         else:
             config = checkpoint['config']
 
@@ -1495,6 +1671,27 @@ def create_parser():
                                    help='Model prediction target. v_prediction is better-conditioned at low noise')
     train_diff_parser.add_argument('--min-snr-gamma', type=float, default=0.0,
                                    help='Min-SNR loss weighting gamma (0 = off; 5.0 typical) — faster convergence')
+    train_diff_parser.add_argument('--latent-autoencoder', default=None,
+                                   help='Path to a trained VAE3D checkpoint — diffuse in its 16^3 latent space (run dirs become latdiff_*)')
+
+    # Autoencoder training (latent-diffusion Stage B)
+    train_ae_parser = subparsers.add_parser('train-autoencoder', help='Train the 3D KL-autoencoder for latent diffusion')
+    train_ae_parser.add_argument('--epochs', type=int, default=60)
+    train_ae_parser.add_argument('--batch-size', type=int, default=32)
+    train_ae_parser.add_argument('--void-dim', type=int, default=64, help='3D voxel space dimension')
+    train_ae_parser.add_argument('--latent-channels', type=int, default=4)
+    train_ae_parser.add_argument('--base-channels', type=int, default=32)
+    train_ae_parser.add_argument('--kl-weight', type=float, default=1e-6)
+    train_ae_parser.add_argument('--learning-rate', type=float, default=3e-4)
+    train_ae_parser.add_argument('--weight-decay', type=float, default=0.0)
+    train_ae_parser.add_argument('--data-folder', default='./data')
+    train_ae_parser.add_argument('--output-dir', default='./results')
+    train_ae_parser.add_argument('--num-workers', type=int, default=4)
+    train_ae_parser.add_argument('--checkpoint-freq', type=int, default=1)
+    train_ae_parser.add_argument('--max-samples', type=int, default=None,
+                                 help='Cap the loaded dataset (deterministic prefix)')
+    train_ae_parser.add_argument('--resume', action='store_true',
+                                 help='Resume the latest autoencoder_* run from its newest checkpoint')
     train_diff_parser.set_defaults(use_ema=True)
     
     # Data generation
@@ -1668,6 +1865,8 @@ def main():
             return main_app.train_gan(args)
         elif args.command == 'train-diffusion':
             return main_app.train_diffusion(args)
+        elif args.command == 'train-autoencoder':
+            return main_app.train_autoencoder(args)
         elif args.command == 'generate-data':
             return main_app.generate_data(args)
         elif args.command == 'sample-gan':

@@ -471,6 +471,21 @@ class FastSamplingPipeline(Diffusion3DPipeline):
             )
 
 
+class LatentFastSamplingPipeline(FastSamplingPipeline):
+    """FastSamplingPipeline that diffuses VAE latents and returns decoded
+    [0,1] occupancy volumes. clip_sample is forced off — normalized latents
+    are ~unit variance and the [-1,1] per-step clamp would silently crush
+    ~a third of their values."""
+
+    def __init__(self, codec, **kwargs):
+        kwargs["clip_sample"] = False
+        super().__init__(**kwargs)
+        self.codec = codec
+
+    def _finalize(self, sample: torch.Tensor) -> torch.Tensor:
+        return self.codec.decode(sample)
+
+
 class ProgressiveDiffusion3DPipeline(Diffusion3DPipeline):
     """
     Progressive diffusion pipeline for multi-resolution generation.

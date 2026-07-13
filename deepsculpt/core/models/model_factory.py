@@ -269,6 +269,28 @@ class PyTorchModelFactory:
         self.created_models.append(model)
         return model
     
+    def create_autoencoder(
+        self,
+        model_type: str = "vae3d",
+        in_channels: int = 1,
+        latent_channels: int = 4,
+        base_channels: int = 32,
+        **kwargs,
+    ):
+        """Create a 3D autoencoder for latent diffusion (registry: vae3d)."""
+        from deepsculpt.core.models.autoencoder import VAE3D
+
+        registry = {"vae3d": VAE3D}
+        if model_type not in registry:
+            raise ValueError(f"Unknown autoencoder type: {model_type}. Available: {list(registry)}")
+        model = registry[model_type](
+            in_channels=in_channels,
+            latent_channels=latent_channels,
+            base_channels=base_channels,
+        ).to(self.device)
+        self.created_models.append(model)
+        return model
+
     def create_noise_scheduler(
         self,
         schedule_type: str = "linear",

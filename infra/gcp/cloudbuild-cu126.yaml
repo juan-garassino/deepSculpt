@@ -1,0 +1,23 @@
+# GCP-native build of the standard cu126 trainer image (T4/L4 fleet).
+# Usage, from the repo root:
+#   gcloud builds submit --project garassino-ml --region europe-west1 \
+#     --config infra/gcp/cloudbuild-cu126.yaml \
+#     --substitutions COMMIT_SHA=$(git rev-parse HEAD) .
+# The GHA build-push workflow remains only as the public GHCR mirror.
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - -f
+      - runpod/Dockerfile
+      - -t
+      - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${COMMIT_SHA}
+      - -t
+      - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest
+      - .
+images:
+  - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${COMMIT_SHA}
+  - europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest
+timeout: 2400s
+options:
+  machineType: E2_HIGHCPU_8

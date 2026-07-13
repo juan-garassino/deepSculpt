@@ -163,15 +163,54 @@ def load_diffusion_pipeline(
     if hasattr(noise_scheduler, "_to_device"):
         noise_scheduler._to_device()
 
-    pipeline = FastSamplingPipeline(
-        model=model,
-        noise_scheduler=noise_scheduler,
-        device=device,
-        prediction_type=config.get("prediction_type", "epsilon"),
-        guidance_scale=guidance_scale,
-        num_inference_steps=num_steps,
-        scheduler_type=sampler,
-    )
+    latent_cfg = config.get("latent") or {}
+    if latent_cfg.get("enabled"):
+        # Latent run: rebuild the codec from the self-contained run dir
+        # (autoencoder.pt travels with the run) and return the decoding
+        # pipeline — callers keep receiving [0,1] occupancy volumes.
+        from deepsculpt.core.models.autoencoder import VAE3D, LatentCodec
+        from deepsculpt.core.models.diffusion.pipeline import LatentFastSamplingPipeline
+
+        ae_path = None
+        for parent in (Path(checkpoint_path).parent, Path(checkpoint_path).parent.parent):
+            if (parent / "autoencoder.pt").exists():
+                ae_path = parent / "autoencoder.pt"
+                break
+        if ae_path is None:
+            raise FileNotFoundError(
+                f"latent run but no autoencoder.pt beside {checkpoint_path}")
+        vae = VAE3D(
+            in_channels=latent_cfg.get("vae_in_channels", 1),
+            latent_channels=latent_cfg.get("latent_channels", 4),
+            base_channels=latent_cfg.get("vae_base_channels", 32),
+        ).to(device)
+        vae.load_state_dict(torch.load(ae_path, map_location=device, weights_only=False))
+        codec = LatentCodec(
+            vae,
+            torch.tensor(latent_cfg["shift"]),
+            torch.tensor(latent_cfg["scale"]),
+            device=device,
+        )
+        pipeline = LatentFastSamplingPipeline(
+            codec=codec,
+            model=model,
+            noise_scheduler=noise_scheduler,
+            device=device,
+            prediction_type=config.get("prediction_type", "epsilon"),
+            guidance_scale=guidance_scale,
+            num_inference_steps=num_steps,
+            scheduler_type=sampler,
+        )
+    else:
+        pipeline = FastSamplingPipeline(
+            model=model,
+            noise_scheduler=noise_scheduler,
+            device=device,
+            prediction_type=config.get("prediction_type", "epsilon"),
+            guidance_scale=guidance_scale,
+            num_inference_steps=num_steps,
+            scheduler_type=sampler,
+        )
     logger.info("Loaded diffusion pipeline from %s (%s, %d steps)",
                 checkpoint_path, sampler, num_steps)
     return pipeline, config
