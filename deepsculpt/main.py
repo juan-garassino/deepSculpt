@@ -540,7 +540,9 @@ class DeepSculptV2Main:
             config=training_config,
             noise_scheduler=noise_scheduler,
             scheduler=scheduler,
-            device=self.device
+            device=self.device,
+            prediction_type=getattr(args, 'prediction_type', 'epsilon'),
+            min_snr_gamma=getattr(args, 'min_snr_gamma', 0.0) or None
         )
 
         # Apply run naming and extra params now that the trainer has opened the mlflow run
@@ -571,6 +573,14 @@ class DeepSculptV2Main:
                     "sparse": args.sparse,
                     "color_mode": color_mode,
                     "use_ema": args.use_ema,
+                    # Full arch + objective so load_diffusion_pipeline rebuilds
+                    # non-default UNets and decodes v-pred checkpoints correctly.
+                    "num_res_blocks": model.num_res_blocks,
+                    "channel_mult": list(model.channel_mult),
+                    "attention_resolutions": list(model.attention_resolutions),
+                    "num_heads": model.num_heads,
+                    "prediction_type": getattr(args, 'prediction_type', 'epsilon'),
+                    "min_snr_gamma": getattr(args, 'min_snr_gamma', 0.0),
                     "training_params": {
                         "epochs": args.epochs,
                         "batch_size": args.batch_size,
@@ -618,8 +628,7 @@ class DeepSculptV2Main:
                     "train_history": metrics,
                     "last_epoch_metrics": getattr(trainer, "last_epoch_metrics", {}),
                     "training_info": trainer.get_training_info(),
-                    "dataset_path": str(collection_dir) if collection_dir is not None else None,
-                    "dataset_occupancy_stats": occupancy_stats,
+                    "dataset_path": getattr(args, "data_folder", None),
                 },
                 f,
                 indent=2,
@@ -1482,6 +1491,10 @@ def create_parser():
     train_diff_parser.add_argument('--num-workers', type=int, default=4, help='Number of data loader workers')
     train_diff_parser.add_argument('--checkpoint-freq', type=int, default=5, help='Checkpoint frequency (epochs); lower for timeout-chained cloud slices so resume loses fewer epochs')
     train_diff_parser.add_argument('--max-samples', type=int, default=None, help='Cap the loaded dataset (deterministic prefix); keeps a diffusion epoch inside a 1h cloud slice')
+    train_diff_parser.add_argument('--prediction-type', default='epsilon', choices=['epsilon', 'v_prediction'],
+                                   help='Model prediction target. v_prediction is better-conditioned at low noise')
+    train_diff_parser.add_argument('--min-snr-gamma', type=float, default=0.0,
+                                   help='Min-SNR loss weighting gamma (0 = off; 5.0 typical) — faster convergence')
     train_diff_parser.set_defaults(use_ema=True)
     
     # Data generation

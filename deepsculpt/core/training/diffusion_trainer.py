@@ -54,7 +54,8 @@ class DiffusionTrainer(BaseTrainer):
         conditioning_dropout: float = 0.1,
         use_ema: bool = True,
         ema_decay: float = 0.9999,
-        loss_type: str = "mse"  # "mse", "l1", "huber"
+        loss_type: str = "mse",  # "mse", "l1", "huber"
+        min_snr_gamma: Optional[float] = None  # None/0 = off; 5.0 = Min-SNR-5 weighting
     ):
         """
         Initialize diffusion trainer.
@@ -82,6 +83,7 @@ class DiffusionTrainer(BaseTrainer):
         self.use_ema = use_ema
         self.ema_decay = ema_decay
         self.loss_type = loss_type
+        self.min_snr_gamma = min_snr_gamma if min_snr_gamma else None
         
         # Diffusion-specific metrics
         self.metrics.update({
@@ -156,9 +158,29 @@ class DiffusionTrainer(BaseTrainer):
             Dictionary of computed losses
         """
         losses = {}
-        
+
         # Main loss based on prediction type
-        if self.loss_type == "mse":
+        if self.min_snr_gamma:
+            # Min-SNR weighting (Hang et al. 2023): per-sample loss weighted by
+            # min(SNR, gamma)/SNR (epsilon) or min(SNR, gamma)/(SNR+1) (v-pred)
+            # so easy high-noise timesteps stop dominating the objective.
+            if self.loss_type == "mse":
+                per_elem = F.mse_loss(model_output, target, reduction="none")
+            elif self.loss_type == "l1":
+                per_elem = F.l1_loss(model_output, target, reduction="none")
+            elif self.loss_type == "huber":
+                per_elem = F.huber_loss(model_output, target, reduction="none")
+            else:
+                raise ValueError(f"Unknown loss type: {self.loss_type}")
+            per_sample = per_elem.mean(dim=list(range(1, per_elem.dim())))
+            alphas_cumprod = self.noise_scheduler.alphas_cumprod.to(timesteps.device)
+            snr = alphas_cumprod[timesteps] / (1 - alphas_cumprod[timesteps])
+            if self.prediction_type == "v_prediction":
+                weight = torch.clamp(snr, max=self.min_snr_gamma) / (snr + 1)
+            else:
+                weight = torch.clamp(snr, max=self.min_snr_gamma) / snr
+            main_loss = (weight * per_sample).mean()
+        elif self.loss_type == "mse":
             main_loss = F.mse_loss(model_output, target)
         elif self.loss_type == "l1":
             main_loss = F.l1_loss(model_output, target)
@@ -166,7 +188,7 @@ class DiffusionTrainer(BaseTrainer):
             main_loss = F.huber_loss(model_output, target)
         else:
             raise ValueError(f"Unknown loss type: {self.loss_type}")
-        
+
         losses['diffusion_loss'] = main_loss
         losses['mse_loss'] = F.mse_loss(model_output, target)
         losses['l1_loss'] = F.l1_loss(model_output, target)

@@ -135,6 +135,12 @@ def load_diffusion_pipeline(
         timesteps=config.get("timesteps", 1000),
         sparse=config.get("sparse", False),
         model_channels=config.get("model_channels", 128),
+        # Older config.json lacks these — factory defaults reproduce the
+        # historical architecture exactly.
+        num_res_blocks=config.get("num_res_blocks", 2),
+        channel_mult=config.get("channel_mult", [1, 2, 4, 8]),
+        attention_resolutions=config.get("attention_resolutions", [16, 8]),
+        num_heads=config.get("num_heads", 8),
     ).to(device)
     model.load_state_dict(state_dict)
     model.eval()
@@ -161,6 +167,7 @@ def load_diffusion_pipeline(
         model=model,
         noise_scheduler=noise_scheduler,
         device=device,
+        prediction_type=config.get("prediction_type", "epsilon"),
         guidance_scale=guidance_scale,
         num_inference_steps=num_steps,
         scheduler_type=sampler,

@@ -192,15 +192,21 @@ class Diffusion3DPipeline:
         
         self.generation_count += sample.shape[0]
 
-        # Training scales binary volumes to [-1, 1] (see DiffusionTrainer
-        # .train_step); map back so every consumer (snapshots, walks,
-        # trajectories, CLI sampling) keeps the [0, 1] / threshold-0.5
-        # convention.
-        sample = (sample + 1.0) / 2.0
+        sample = self._finalize(sample)
         if return_intermediate:
-            intermediate_samples = [(s + 1.0) / 2.0 for s in intermediate_samples]
+            intermediate_samples = [self._finalize(s) for s in intermediate_samples]
             return sample, intermediate_samples
         return sample
+
+    def _finalize(self, sample: torch.Tensor) -> torch.Tensor:
+        """Map raw sampler output to consumer space — the single hook every
+        consumer (trainer snapshots, walks, trajectories, CLI sampling)
+        funnels through. Training scales binary volumes to [-1, 1] (see
+        DiffusionTrainer.train_step), so the pixel-space base maps back to
+        the [0, 1] / threshold-0.5 convention. Latent pipelines override
+        this with codec decode. Final clamp covers samplers without a
+        per-step clip (DPM-Solver)."""
+        return ((sample + 1.0) / 2.0).clamp_(0.0, 1.0)
     
     def _ddpm_step(self, model_output: torch.Tensor, timestep: int, sample: torch.Tensor) -> torch.Tensor:
         """
@@ -384,16 +390,20 @@ class FastSamplingPipeline(Diffusion3DPipeline):
         prediction_type: str = "epsilon",
         guidance_scale: float = 7.5,
         num_inference_steps: int = 20,
-        scheduler_type: str = "ddim"
+        scheduler_type: str = "ddim",
+        clip_sample: bool = True
     ):
         """
         Initialize fast sampling pipeline.
-        
+
         Args:
             scheduler_type: Type of fast scheduler ("ddim", "dpm_solver")
+            clip_sample: Clamp pred_x0 to [-1, 1] each step. Correct for pixel
+                volumes (trained in [-1, 1]); latent pipelines MUST pass False
+                or unit-variance latents get crushed every step.
         """
         super().__init__(model, noise_scheduler, device, prediction_type, guidance_scale, num_inference_steps)
-        
+
         # Create fast scheduler
         if scheduler_type == "ddim":
             self.fast_scheduler = DDIMScheduler(
@@ -402,7 +412,8 @@ class FastSamplingPipeline(Diffusion3DPipeline):
                 beta_start=noise_scheduler.beta_start,
                 beta_end=noise_scheduler.beta_end,
                 device=device,
-                eta=0.0  # Deterministic sampling
+                eta=0.0,  # Deterministic sampling
+                clip_sample=clip_sample
             )
         elif scheduler_type == "dpm_solver":
             self.fast_scheduler = DPMSolverScheduler(
@@ -411,7 +422,8 @@ class FastSamplingPipeline(Diffusion3DPipeline):
                 beta_start=noise_scheduler.beta_start,
                 beta_end=noise_scheduler.beta_end,
                 device=device,
-                solver_order=2
+                solver_order=2,
+                prediction_type=prediction_type
             )
         else:
             raise ValueError(f"Unsupported scheduler type: {scheduler_type}")

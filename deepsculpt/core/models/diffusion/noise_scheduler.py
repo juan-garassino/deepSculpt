@@ -322,6 +322,11 @@ class DDIMScheduler(NoiseScheduler):
             pred_original_sample = (sample - beta_prod_t ** 0.5 * model_output) / alpha_prod_t ** 0.5
         elif prediction_type == "sample":
             pred_original_sample = model_output
+        elif prediction_type == "v_prediction":
+            # v = sqrt(a)*eps - sqrt(1-a)*x0  =>  x0 = sqrt(a)*x_t - sqrt(1-a)*v
+            pred_original_sample = (
+                alpha_prod_t ** 0.5 * sample - beta_prod_t ** 0.5 * model_output
+            )
         else:
             raise ValueError(f"Unsupported prediction type: {prediction_type}")
 
@@ -414,16 +419,22 @@ class DPMSolverScheduler(NoiseScheduler):
             x_0_pred = (sample - sigma_t * model_output) / alpha_t
         elif self.prediction_type == "sample":
             x_0_pred = model_output
+        elif self.prediction_type == "v_prediction":
+            x_0_pred = alpha_t * sample - sigma_t * model_output
         else:
             raise ValueError(f"Unsupported prediction type: {self.prediction_type}")
-        
+
+        # The update needs epsilon; derive it from x_0_pred so all prediction
+        # types share one correct path (for 'epsilon' this is the identity).
+        pred_epsilon = (sample - alpha_t * x_0_pred) / sigma_t
+
         # First-order update
         if self.solver_order == 1:
-            x_prev = alpha_s * x_0_pred + sigma_s * model_output
+            x_prev = alpha_s * x_0_pred + sigma_s * pred_epsilon
         else:
             # Higher-order updates would require storing previous model outputs
             # For simplicity, using first-order here
-            x_prev = alpha_s * x_0_pred + sigma_s * model_output
+            x_prev = alpha_s * x_0_pred + sigma_s * pred_epsilon
         
         return x_prev
 
