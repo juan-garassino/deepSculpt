@@ -235,6 +235,10 @@ class SkipGenerator(BaseGenerator):
             # the legacy 6-channel OHE default from BaseGenerator. Final head
             # only — skip connections and trunk widths are unchanged.
             self.output_channels = SEMANTIC_CLASSES
+        elif color_mode == 2:
+            # RGBA continuous colour field: [alpha, R, G, B] in [0,1], the
+            # diffusion-style representation (palette gradients baked in).
+            self.output_channels = 4
 
         ch = gen_channels or noise_dim  # backwards compatible
         self.gen_channels = ch
@@ -266,6 +270,10 @@ class SkipGenerator(BaseGenerator):
         # Init final bias so sigmoid(bias) ≈ 0.05 for monochrome
         if self.color_mode == 0:
             nn.init.constant_(self.conv4.bias, -2.94)
+        elif self.color_mode == 2:
+            # Alpha (ch 0) sparse like occupancy; RGB (ch 1-3) mid-grey.
+            nn.init.zeros_(self.conv4.bias)
+            nn.init.constant_(self.conv4.bias[0:1], -2.0)
 
         self.relu = nn.ReLU()
 
@@ -305,6 +313,9 @@ class SkipGenerator(BaseGenerator):
         if self.color_mode == 1 and self.output_channels >= 6:
             # OHE: mutually exclusive class selection
             x = F.softmax(logits, dim=1)
+        elif self.color_mode == 2:
+            # RGBA continuous field in [0,1] (alpha + RGB)
+            x = torch.sigmoid(logits)
         elif self.output_channels == 3:
             # RGB: continuous color in [-1, 1]
             x = torch.tanh(logits)

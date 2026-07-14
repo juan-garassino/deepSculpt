@@ -245,7 +245,17 @@ class DeepSculptV2Main:
         # Create models
         # color_mode=0: single occupancy channel (default, unchanged behavior)
         # color_mode=1: 13-channel semantic-class field (empty + 12 element classes)
-        color_mode = 1 if getattr(args, 'color', False) else 0
+        # color_mode=2: 4-channel RGBA continuous field (--palette; procedural
+        #               palette targets, same as the colour diffusion)
+        gan_palette = getattr(args, 'palette', None)
+        gan_palette_cfg = None
+        if gan_palette:
+            from deepsculpt.core.data.transforms.palette import PaletteConfig
+            color_mode = 2
+            gan_palette_cfg = PaletteConfig(mode=gan_palette, seed=getattr(args, 'palette_seed', 0))
+            print(f"RGBA colour GAN — palette '{gan_palette}' seed {gan_palette_cfg.seed}")
+        else:
+            color_mode = 1 if getattr(args, 'color', False) else 0
         gen_kwargs = {}
         if getattr(args, 'gen_channels', None) is not None:
             gen_kwargs['gen_channels'] = args.gen_channels
@@ -345,6 +355,8 @@ class DeepSculptV2Main:
             device=self.device,
             noise_dim=args.noise_dim
         )
+        # RGBA colour mode: reals become build_rgba palette fields.
+        trainer.palette_cfg = gan_palette_cfg
 
         # Apply run naming and extra params now that the trainer has opened the mlflow run
         if experiment_tracker is not None:
@@ -1687,7 +1699,10 @@ def create_parser():
     train_gan_parser.add_argument('--output-dir', default='./results', help='Output directory')
     train_gan_parser.add_argument('--snapshot-freq', type=int, default=1, help='Snapshot frequency (epochs)')
     train_gan_parser.add_argument('--checkpoint-freq', type=int, default=5, help='Checkpoint frequency (epochs); lower for timeout-chained cloud slices so resume loses fewer epochs')
-    train_gan_parser.add_argument('--color', action='store_true', help='Enable color mode')
+    train_gan_parser.add_argument('--color', action='store_true', help='Enable 13-class semantic colour mode')
+    train_gan_parser.add_argument('--palette', default=None, choices=['flat', 'subtle', 'bold'],
+                                  help='RGBA colour GAN with this procedural palette (4-ch [alpha,R,G,B]); overrides --color')
+    train_gan_parser.add_argument('--palette-seed', type=int, default=0, help='Base seed for per-sample palette generation')
     train_gan_parser.add_argument('--sparse', action='store_true', help='Use sparse tensors')
     train_gan_parser.add_argument('--mixed-precision', action='store_true', help='Use mixed precision training')
     train_gan_parser.add_argument('--gradient-clip', type=float, default=1.0, help='Gradient clipping value')

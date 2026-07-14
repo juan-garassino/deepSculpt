@@ -315,6 +315,9 @@ class SpectralNormDiscriminator(BaseDiscriminator):
             # Semantic-class color mode: 13 one-hot channels (empty + 12
             # shodhan element classes) — mirrors SkipGenerator's color head.
             self.input_channels = SEMANTIC_CLASSES
+        elif color_mode == 2:
+            # RGBA continuous field: [alpha, R, G, B].
+            self.input_channels = 4
 
         # Convolution layers with spectral normalization
         Conv = SparseConv3d if sparse else nn.Conv3d

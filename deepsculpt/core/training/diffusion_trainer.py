@@ -579,6 +579,17 @@ class DiffusionTrainer(BaseTrainer):
             self._save_epoch_snapshot(epoch, train_metrics)
         except Exception:
             self.logger.exception("Epoch snapshot failed (training continues)")
+        finally:
+            # The snapshot sampling (fixed-vector samples + the periodic
+            # noise-space walk) is the per-epoch memory high-water mark; on the
+            # 32Gi L4 the latent runs OOM-killed (exit 137) right at the walk
+            # epoch. Drop the sampling pipeline + reclaim CPU/GPU memory so the
+            # baseline doesn't creep across epochs.
+            import gc
+            self._snap_pipeline = None
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     def _snapshot_pipeline(self):
         """Deterministic DDIM pipeline for epoch snapshots. The base

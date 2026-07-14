@@ -93,6 +93,10 @@ class GANTrainer(BaseTrainer):
         # 13-channel semantic-class field (channel 0 = empty, 1-12 = element
         # classes). Everything color-specific below gates on self.is_color.
         self.num_classes = int(getattr(discriminator, "input_channels", 1))
+        # RGBA colour mode: a palette_cfg (set post-construction by the CLI)
+        # switches reals to build_rgba [alpha,R,G,B] fields; without it, >1
+        # disc channels means the 13-class semantic path.
+        self.palette_cfg = None
         self.is_color = self.num_classes > 1
         
         # Additional scaler for discriminator if using mixed precision
@@ -286,6 +290,11 @@ class GANTrainer(BaseTrainer):
         the argmax-occupied voxel fraction. For real (smoothed) one-hot
         batches the hard variant equals the exact (colors > 0) fraction.
         """
+        if self.palette_cfg is not None:
+            # RGBA: channel 0 (alpha) IS the occupancy (sigmoid in [0,1]).
+            if differentiable:
+                return batch[:, 0].mean()
+            return (batch[:, 0].detach() > 0.5).float().mean()
         if self.is_color:
             if differentiable:
                 return (1.0 - batch[:, 0]).mean()
@@ -709,7 +718,15 @@ class GANTrainer(BaseTrainer):
                 # Handle dictionary batch format from StreamingDataset
                 structure = batch["structure"].to(self.device)
 
-                if self.is_color:
+                if self.palette_cfg is not None:
+                    # RGBA colour mode: reals are the procedural palette field
+                    # [alpha, R, G, B] — same targets the colour diffusion uses.
+                    from deepsculpt.core.data.transforms.palette import build_rgba
+                    real_data = build_rgba(
+                        structure, batch["colors"].to(self.device),
+                        batch["index"].to(self.device), self.palette_cfg,
+                    )
+                elif self.is_color:
                     # Semantic-class mode: reals come from the colors tensor
                     # (class indices 0-12; colors > 0 == structure > 0), one-hot
                     # encoded over the channel dim: [B, D, H, W] -> [B, 13, D, H, W].
@@ -787,8 +804,11 @@ class GANTrainer(BaseTrainer):
         return avg_metrics
 
     def _snapshot_sample_stats(self, samples: torch.Tensor) -> Dict[str, float]:
-        occupancy = (samples.detach().abs() > 0).float().reshape(samples.shape[0], -1).mean(dim=1)
-        nonzero = (samples.detach().abs() > 0).reshape(samples.shape[0], -1).sum(dim=1).float()
+        s = samples.detach()
+        if self.palette_cfg is not None and s.dim() == 5 and s.shape[1] == 4:
+            s = s[:, 0:1] > 0.5   # RGBA occupancy is the alpha channel at 0.5
+        occupancy = (s.abs() > 0).float().reshape(s.shape[0], -1).mean(dim=1)
+        nonzero = (s.abs() > 0).reshape(s.shape[0], -1).sum(dim=1).float()
         return {
             "mean_occupancy": float(occupancy.mean().item()),
             "min_occupancy": float(occupancy.min().item()),
@@ -801,7 +821,10 @@ class GANTrainer(BaseTrainer):
     def _save_epoch_snapshot(self, epoch: int, train_metrics: Dict[str, float]) -> None:
         os.makedirs(self.config.snapshot_dir, exist_ok=True)
         samples = self.generate_samples(num_samples=4, use_fixed_noise=True).detach().cpu()
-        if self.is_color:
+        if self.palette_cfg is not None:
+            # RGBA: keep the [alpha,R,G,B] field (fp16) — render_walk colours it.
+            samples = samples.half()
+        elif self.is_color:
             # Save class-id volumes (int8, (N, D, H, W)) instead of 13ch floats
             # — ~50x smaller and directly renderable with the class palette.
             samples = samples.argmax(dim=1).to(torch.int8)
