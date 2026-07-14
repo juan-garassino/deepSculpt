@@ -101,8 +101,23 @@ GCS_ROOT="gs://${GCS_BUCKET}/deepsculpt"
 
 echo "=== Pulling state from ${GCS_ROOT} (RUN_ID=${RUN_ID}) ==="
 gcs_reload_token
-gsutil -m -q rsync -r "${GCS_ROOT}/checkpoints/${RUN_ID}" "$CKPT_DIR" 2>/dev/null || \
-    echo "  (no prior checkpoints for run ${RUN_ID} — fresh start)"
+# Pull everything EXCEPT the bulky per-epoch checkpoints (config.json, vae/,
+# logs, snapshots — all small), then fetch ONLY the newest checkpoint to
+# resume from. Rsyncing the whole checkpoints dir grew unbounded at
+# checkpoint_freq and, cross-region (west1 bucket -> west4 RTX), hung slices
+# for the full 1h timeout downloading 60+GB before training ever started.
+gsutil -m -q rsync -r -x '.*/checkpoint_epoch_[0-9]+.*\.pth$' \
+    "${GCS_ROOT}/checkpoints/${RUN_ID}" "$CKPT_DIR" 2>/dev/null || \
+    echo "  (no prior state for run ${RUN_ID} — fresh start)"
+NEWEST_CKPT=$(gsutil ls "${GCS_ROOT}/checkpoints/${RUN_ID}/"*"/checkpoints/checkpoint_epoch_"*.pth 2>/dev/null \
+    | grep -v _best \
+    | awk -F 'checkpoint_epoch_' 'NF>1 {split($2,a,".pth"); print a[1]"\t"$0}' \
+    | sort -n | tail -1 | cut -f2)
+if [ -n "$NEWEST_CKPT" ]; then
+    REL="${NEWEST_CKPT#${GCS_ROOT}/checkpoints/${RUN_ID}/}"
+    mkdir -p "$CKPT_DIR/$(dirname "$REL")"
+    gsutil -q cp "$NEWEST_CKPT" "$CKPT_DIR/$REL" && echo "  resume from: $REL"
+fi
 # Data cache is keyed by resolution — mixing grid sizes crashes training
 # with a tensor-shape mismatch. Render runs only need checkpoints, so skip
 # the multi-GB data pull for them.
