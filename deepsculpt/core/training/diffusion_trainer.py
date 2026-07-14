@@ -642,8 +642,12 @@ class DiffusionTrainer(BaseTrainer):
         snapshot_stats = self._snapshot_sample_stats(samples)
 
         # Noise-space walk is ~40 extra UNet batches — only every 5th snapshot.
+        # Latent runs (self.codec set) SKIP it: on the 32Gi L4 this walk is the
+        # per-epoch memory high-water mark that OOM-killed (exit 137) every
+        # latent slice at epoch 5. Latent walks are produced on demand via
+        # MODE=render latent-walk instead, so nothing is lost.
         walk_stats = None
-        if (epoch + 1) % (5 * max(1, self.config.snapshot_freq)) == 0:
+        if self.codec is None and (epoch + 1) % (5 * max(1, self.config.snapshot_freq)) == 0:
             path = slerp(noise[4], noise[5], 8).to(self.device)
             with torch.no_grad():
                 walk = torch.cat([
