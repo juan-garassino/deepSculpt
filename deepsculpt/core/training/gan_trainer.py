@@ -806,9 +806,13 @@ class GANTrainer(BaseTrainer):
     def _snapshot_sample_stats(self, samples: torch.Tensor) -> Dict[str, float]:
         s = samples.detach()
         if self.palette_cfg is not None and s.dim() == 5 and s.shape[1] == 4:
-            s = s[:, 0:1] > 0.5   # RGBA occupancy is the alpha channel at 0.5
-        occupancy = (s.abs() > 0).float().reshape(s.shape[0], -1).mean(dim=1)
-        nonzero = (s.abs() > 0).reshape(s.shape[0], -1).sum(dim=1).float()
+            # RGBA occupancy is the alpha channel thresholded at 0.5 (already
+            # a {0,1} mask — don't .abs() a bool below).
+            occ_mask = (s[:, 0:1] > 0.5)
+        else:
+            occ_mask = (s.abs() > 0)
+        occupancy = occ_mask.float().reshape(s.shape[0], -1).mean(dim=1)
+        nonzero = occ_mask.reshape(s.shape[0], -1).sum(dim=1).float()
         return {
             "mean_occupancy": float(occupancy.mean().item()),
             "min_occupancy": float(occupancy.min().item()),
