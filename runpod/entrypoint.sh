@@ -106,10 +106,15 @@ gcs_reload_token
 # resume from. Rsyncing the whole checkpoints dir grew unbounded at
 # checkpoint_freq and, cross-region (west1 bucket -> west4 RTX), hung slices
 # for the full 1h timeout downloading 60+GB before training ever started.
-gsutil -m -q rsync -r -x '.*/checkpoint_epoch_[0-9]+.*\.pth$' \
+# Exclude only the per-epoch checkpoints of TIMESTAMPED run dirs
+# (PREFIX_YYYYMMDD_HHMMSS/checkpoints/...); this deliberately KEEPS the staged
+# vae/checkpoints/ VAE weights (no timestamp in that path) which the latent
+# diffusion needs for --latent-autoencoder.
+gsutil -m -q rsync -r -x '.*_[0-9]{8}_[0-9]{6}/checkpoints/checkpoint_epoch_[0-9]+.*\.pth$' \
     "${GCS_ROOT}/checkpoints/${RUN_ID}" "$CKPT_DIR" 2>/dev/null || \
     echo "  (no prior state for run ${RUN_ID} — fresh start)"
 NEWEST_CKPT=$(gsutil ls "${GCS_ROOT}/checkpoints/${RUN_ID}/"*"/checkpoints/checkpoint_epoch_"*.pth 2>/dev/null \
+    | grep -E '_[0-9]{8}_[0-9]{6}/checkpoints/' \
     | grep -v _best \
     | awk -F 'checkpoint_epoch_' 'NF>1 {split($2,a,".pth"); print a[1]"\t"$0}' \
     | sort -n | tail -1 | cut -f2)
