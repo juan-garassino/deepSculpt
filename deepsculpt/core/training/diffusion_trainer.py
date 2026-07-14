@@ -797,7 +797,10 @@ class DiffusionTrainer(BaseTrainer):
         if self.codec is not None and 'latent_shift' in checkpoint:
             for name, ours in (('latent_shift', self.codec.shift.flatten().cpu()),
                                ('latent_scale', self.codec.scale.flatten().cpu())):
-                saved = checkpoint[name].float()
+                # .cpu(): the checkpoint was map_location'd to the training
+                # device, so its tensor is on cuda while `ours` is cpu — compare
+                # on one device or allclose raises a device-mismatch error.
+                saved = checkpoint[name].float().cpu()
                 if not torch.allclose(saved, ours.float(), atol=1e-4):
                     raise RuntimeError(
                         f"{name} mismatch on resume: checkpoint {saved.tolist()} vs "
