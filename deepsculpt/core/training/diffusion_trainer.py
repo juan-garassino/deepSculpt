@@ -801,7 +801,11 @@ class DiffusionTrainer(BaseTrainer):
                 # device, so its tensor is on cuda while `ours` is cpu — compare
                 # on one device or allclose raises a device-mismatch error.
                 saved = checkpoint[name].float().cpu()
-                if not torch.allclose(saved, ours.float(), atol=1e-4):
+                # atol 1e-2: the stats are recomputed by a non-deterministic GPU
+                # VAE encode, so they wobble at the 4th decimal run-to-run. A
+                # real palette/VAE swap moves them by >0.1 — this catches that
+                # without tripping on fp noise (1e-4 was a false-positive magnet).
+                if not torch.allclose(saved, ours.float(), atol=1e-2):
                     raise RuntimeError(
                         f"{name} mismatch on resume: checkpoint {saved.tolist()} vs "
                         f"recomputed {ours.tolist()} — VAE or dataset prefix changed")
