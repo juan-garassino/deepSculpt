@@ -64,7 +64,6 @@ jobs:
             ghcr.io/juan-garassino/deepsculpt-runpod:latest
             ghcr.io/juan-garassino/deepsculpt-runpod:${{ github.sha }}
             europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest
-            europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -80,6 +79,5 @@ jobs:
             TORCH_INDEX=cu128
           tags: |
             europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:latest-cu128
-            europe-west1-docker.pkg.dev/garassino-ml/ml-images/deepsculpt:${{ github.sha }}-cu128
           cache-from: type=gha
           cache-to: type=gha,mode=max
