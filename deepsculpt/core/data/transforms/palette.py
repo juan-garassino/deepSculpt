@@ -97,6 +97,12 @@ _CLASS_OFFSET = torch.tensor([((c - 1) / (NUM_CLASSES - 1)) * 0.33 for c in rang
 
 @dataclass
 class PaletteConfig:
+    """Palette settings; with the sample index they fully determine a sample's colours.
+
+    ``mode`` is ``flat``, ``subtle`` or ``bold``; ``seed`` offsets the per-sample
+    RNG; ``version`` is :data:`PALETTE_VERSION`.
+    """
+
     mode: str = "subtle"          # flat | subtle | bold
     seed: int = 0
     version: int = PALETTE_VERSION
