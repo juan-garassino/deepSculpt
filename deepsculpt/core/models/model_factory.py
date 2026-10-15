@@ -8,7 +8,7 @@ interfaces and configuration management.
 
 import torch
 import torch.nn as nn
-from typing import Dict, Any, Optional, Union, Type, List
+from typing import Dict, Any, List
 import warnings
 
 # Import model classes
@@ -34,7 +34,7 @@ class PyTorchModelFactory:
     Provides methods to create generators, discriminators, diffusion models,
     and complete pipelines with proper parameter validation and device management.
     """
-    
+
     # Registry of available model classes
     GENERATOR_REGISTRY = {
         "simple": SimpleGenerator,
@@ -45,7 +45,7 @@ class PyTorchModelFactory:
         "progressive": ProgressiveGenerator,
         "conditional": ConditionalGenerator,
     }
-    
+
     DISCRIMINATOR_REGISTRY = {
         "simple": SimpleDiscriminator,
         "complex": ComplexDiscriminator,
@@ -57,12 +57,12 @@ class PyTorchModelFactory:
         "light": LightDiscriminator,
         "slice": SliceDiscriminator2D,  # SliceGAN 2D->3D slicing critic (from-2D-imagery)
     }
-    
+
     DIFFUSION_REGISTRY = {
         "unet3d": UNet3D,
         "conditional_unet3d": ConditionalUNet3D,
     }
-    
+
     SCHEDULER_REGISTRY = {
         "linear": NoiseScheduler,
         "cosine": NoiseScheduler,
@@ -70,7 +70,7 @@ class PyTorchModelFactory:
         "dpm_solver": DPMSolverScheduler,
         "adaptive": AdaptiveScheduler,
     }
-    
+
     def __init__(self, device: str = "auto"):
         """
         Initialize the model factory.
@@ -80,18 +80,18 @@ class PyTorchModelFactory:
         """
         self.device = self._setup_device(device)
         self.created_models = []  # Track created models for management
-    
+
     def _setup_device(self, device: str) -> str:
         """Setup and validate the compute device."""
         if device == "auto":
             return "cuda" if torch.cuda.is_available() else "cpu"
-        
+
         if device == "cuda" and not torch.cuda.is_available():
             warnings.warn("CUDA requested but not available, falling back to CPU")
             return "cpu"
-        
+
         return device
-    
+
     def create_gan_generator(
         self,
         model_type: str,
@@ -117,9 +117,9 @@ class PyTorchModelFactory:
         """
         if model_type not in self.GENERATOR_REGISTRY:
             raise ValueError(f"Unknown generator type: {model_type}. Available: {list(self.GENERATOR_REGISTRY.keys())}")
-        
+
         generator_class = self.GENERATOR_REGISTRY[model_type]
-        
+
         # Create model with common parameters
         model_kwargs = {
             "void_dim": void_dim,
@@ -127,26 +127,26 @@ class PyTorchModelFactory:
             "color_mode": color_mode,
             "sparse": sparse,
         }
-        
+
         # Add model-specific parameters
         if model_type == "progressive":
             model_kwargs["max_resolution"] = kwargs.get("max_resolution", 128)
         elif model_type == "conditional":
             model_kwargs["condition_dim"] = kwargs.get("condition_dim", 10)
-        
+
         # Add any additional kwargs
         model_kwargs.update(kwargs)
-        
+
         # Create and initialize model
         model = generator_class(**model_kwargs)
         model = model.to(self.device)
-        
+
         # Initialize weights
         self._initialize_weights(model)
-        
+
         self.created_models.append(model)
         return model
-    
+
     def create_gan_discriminator(
         self,
         model_type: str,
@@ -170,16 +170,16 @@ class PyTorchModelFactory:
         """
         if model_type not in self.DISCRIMINATOR_REGISTRY:
             raise ValueError(f"Unknown discriminator type: {model_type}. Available: {list(self.DISCRIMINATOR_REGISTRY.keys())}")
-        
+
         discriminator_class = self.DISCRIMINATOR_REGISTRY[model_type]
-        
+
         # Create model with common parameters
         model_kwargs = {
             "void_dim": void_dim,
             "color_mode": color_mode,
             "sparse": sparse,
         }
-        
+
         # Add model-specific parameters
         if model_type == "progressive":
             model_kwargs["max_resolution"] = kwargs.get("max_resolution", 128)
@@ -192,20 +192,20 @@ class PyTorchModelFactory:
         elif model_type == "slice":
             model_kwargs["axis"] = kwargs.get("axis", 0)
             model_kwargs["spectral"] = kwargs.get("spectral", True)
-        
+
         # Add any additional kwargs
         model_kwargs.update(kwargs)
-        
+
         # Create and initialize model
         model = discriminator_class(**model_kwargs)
         model = model.to(self.device)
-        
+
         # Initialize weights
         self._initialize_weights(model)
-        
+
         self.created_models.append(model)
         return model
-    
+
     def create_diffusion_model(
         self,
         model_type: str,
@@ -233,9 +233,9 @@ class PyTorchModelFactory:
         """
         if model_type not in self.DIFFUSION_REGISTRY:
             raise ValueError(f"Unknown diffusion model type: {model_type}. Available: {list(self.DIFFUSION_REGISTRY.keys())}")
-        
+
         diffusion_class = self.DIFFUSION_REGISTRY[model_type]
-        
+
         # Create model with common parameters
         model_kwargs = {
             "void_dim": void_dim,
@@ -244,12 +244,12 @@ class PyTorchModelFactory:
             "timesteps": timesteps,
             "sparse": sparse,
         }
-        
+
         # Add model-specific parameters
         if model_type == "conditional_unet3d":
             model_kwargs["conditioning_dim"] = kwargs.get("conditioning_dim", 512)
             model_kwargs["num_classes"] = kwargs.get("num_classes", None)
-        
+
         # Add common UNet parameters
         model_kwargs.update({
             "model_channels": kwargs.get("model_channels", 128),
@@ -259,20 +259,20 @@ class PyTorchModelFactory:
             "num_heads": kwargs.get("num_heads", 8),
             "dropout": kwargs.get("dropout", 0.1),
         })
-        
+
         # Add any additional kwargs
         model_kwargs.update(kwargs)
-        
+
         # Create and initialize model
         model = diffusion_class(**model_kwargs)
         model = model.to(self.device)
-        
+
         # Initialize weights
         self._initialize_weights(model)
-        
+
         self.created_models.append(model)
         return model
-    
+
     def create_autoencoder(
         self,
         model_type: str = "vae3d",
@@ -318,9 +318,9 @@ class PyTorchModelFactory:
         """
         if schedule_type not in self.SCHEDULER_REGISTRY:
             raise ValueError(f"Unknown scheduler type: {schedule_type}. Available: {list(self.SCHEDULER_REGISTRY.keys())}")
-        
+
         scheduler_class = self.SCHEDULER_REGISTRY[schedule_type]
-        
+
         # Create scheduler with common parameters
         scheduler_kwargs = {
             "schedule_type": schedule_type if schedule_type in ["linear", "cosine"] else "linear",
@@ -329,7 +329,7 @@ class PyTorchModelFactory:
             "beta_end": beta_end,
             "device": self.device,
         }
-        
+
         # Add scheduler-specific parameters
         if schedule_type == "ddim":
             scheduler_kwargs.update({
@@ -345,12 +345,12 @@ class PyTorchModelFactory:
             scheduler_kwargs.update({
                 "adaptation_rate": kwargs.get("adaptation_rate", 0.01),
             })
-        
+
         # Add any additional kwargs
         scheduler_kwargs.update(kwargs)
-        
+
         return scheduler_class(**scheduler_kwargs)
-    
+
     def create_diffusion_pipeline(
         self,
         model: nn.Module,
@@ -378,7 +378,7 @@ class PyTorchModelFactory:
             "guidance_scale": kwargs.get("guidance_scale", 7.5),
             "num_inference_steps": kwargs.get("num_inference_steps", 50),
         }
-        
+
         if pipeline_type == "conditional":
             pipeline_kwargs["conditioning_dropout"] = kwargs.get("conditioning_dropout", 0.1)
             return ConditionalDiffusion3DPipeline(**pipeline_kwargs)
@@ -387,7 +387,7 @@ class PyTorchModelFactory:
             return FastSamplingPipeline(**pipeline_kwargs)
         else:
             return Diffusion3DPipeline(**pipeline_kwargs)
-    
+
     def create_gan_pair(
         self,
         generator_type: str,
@@ -419,9 +419,9 @@ class PyTorchModelFactory:
         discriminator = self.create_gan_discriminator(
             discriminator_type, void_dim, color_mode, sparse, **kwargs
         )
-        
+
         return generator, discriminator
-    
+
     def _initialize_weights(self, model: nn.Module):
         """Initialize model weights using best practices."""
         for module in model.modules():
@@ -438,12 +438,12 @@ class PyTorchModelFactory:
                     nn.init.constant_(module.bias, 0)
             elif isinstance(module, nn.Embedding):
                 nn.init.normal_(module.weight, mean=0, std=0.02)
-    
+
     def get_model_info(self, model: nn.Module) -> Dict[str, Any]:
         """Get detailed information about a model."""
         total_params = sum(p.numel() for p in model.parameters())
         trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        
+
         info = {
             "model_class": model.__class__.__name__,
             "total_parameters": total_params,
@@ -451,19 +451,19 @@ class PyTorchModelFactory:
             "device": str(next(model.parameters()).device),
             "memory_usage_mb": self._estimate_model_memory(model),
         }
-        
+
         # Add model-specific info if available
         if hasattr(model, 'get_model_info'):
             info.update(model.get_model_info())
-        
+
         return info
-    
+
     def _estimate_model_memory(self, model: nn.Module) -> float:
         """Estimate model memory usage in MB."""
         param_size = sum(p.numel() * p.element_size() for p in model.parameters())
         buffer_size = sum(b.numel() * b.element_size() for b in model.buffers())
         return (param_size + buffer_size) / (1024 ** 2)
-    
+
     def list_available_models(self) -> Dict[str, List[str]]:
         """List all available model types."""
         return {
@@ -472,11 +472,11 @@ class PyTorchModelFactory:
             "diffusion_models": list(self.DIFFUSION_REGISTRY.keys()),
             "schedulers": list(self.SCHEDULER_REGISTRY.keys()),
         }
-    
+
     def clear_created_models(self):
         """Clear the list of created models."""
         self.created_models.clear()
-    
+
     def get_created_models_info(self) -> List[Dict[str, Any]]:
         """Get information about all created models."""
         return [self.get_model_info(model) for model in self.created_models]
