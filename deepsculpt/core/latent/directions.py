@@ -25,6 +25,20 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LatentDirections:
+    """A set of unit-norm latent directions plus how they were found.
+
+    Attributes
+    ----------
+    directions : torch.Tensor
+        Float32, shape ``(k, noise_dim)``, each row unit norm.
+    explained_variance : list of float
+        Variance ratio of each retained component (length ``k``).
+    method : str
+        ``"ganspace"`` or ``"output-pca"``.
+    noise_dim : int
+        Size of the generator's latent vector.
+    """
+
     directions: torch.Tensor  # (k, noise_dim), unit norm
     explained_variance: List[float]
     method: str  # "ganspace" | "output-pca"
@@ -52,6 +66,39 @@ def compute_directions(
     device: str = "cpu",
     seed: int = 0,
 ) -> LatentDirections:
+    """Find semantic latent directions for a generator via PCA.
+
+    Parameters
+    ----------
+    generator : torch.nn.Module
+        Trained generator mapping ``(B, noise_dim)`` to volumes.
+    noise_dim : int
+        Latent size.
+    num_samples : int
+        Number of seeded latents (shape ``(num_samples, noise_dim)``) to analyse.
+    num_components : int
+        Maximum number of directions to keep.
+    method : {"ganspace", "output-pca"}
+        ``ganspace`` runs PCA on the first ``nn.Linear`` layer's activations and maps
+        components back through its weight; ``output-pca`` runs PCA on generated
+        volumes and regresses back to z-space.
+    batch_size : int
+        Generation batch size (``output-pca`` only).
+    device : str
+        Torch device for generation.
+    seed : int
+        Seed for the sampled latents.
+
+    Returns
+    -------
+    LatentDirections
+        Unit-norm directions of shape ``(k, noise_dim)``.
+
+    Raises
+    ------
+    ValueError
+        On an unknown ``method``, or ``ganspace`` with no ``nn.Linear`` layer.
+    """
     zs = seeded_z(seed, noise_dim, batch=num_samples)
 
     if method == "ganspace":
@@ -94,6 +141,7 @@ def compute_directions(
 
 
 def save_directions(d: LatentDirections, path: Path) -> None:
+    """Serialise ``d`` to ``path`` with ``torch.save`` (read back by :func:`load_directions`)."""
     torch.save(
         {
             "directions": d.directions,
@@ -106,6 +154,7 @@ def save_directions(d: LatentDirections, path: Path) -> None:
 
 
 def load_directions(path: Path) -> LatentDirections:
+    """Load a :class:`LatentDirections` written by :func:`save_directions`."""
     obj = torch.load(path, map_location="cpu", weights_only=False)
     return LatentDirections(
         directions=obj["directions"],

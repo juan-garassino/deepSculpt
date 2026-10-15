@@ -28,6 +28,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LoadedGenerator:
+    """A generator rebuilt from a checkpoint, with the metadata needed to drive it.
+
+    ``noise_dim`` is the latent size, ``void_dim`` the output cube edge, and
+    ``source`` records which checkpoint layout the weights came from.
+    """
+
     generator: torch.nn.Module
     config: Dict[str, Any]
     noise_dim: int

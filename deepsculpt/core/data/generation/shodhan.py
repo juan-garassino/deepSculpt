@@ -39,6 +39,13 @@ def put(v: np.ndarray, sl, kind: int) -> None:
 
 @dataclass
 class Skeleton:
+    """Dom-ino frame: columns and slabs, before walls and carved blocks are added.
+
+    ``volume`` is an int8 ``(N, N, N)`` grid of element ids; ``cols_x``/``cols_y``
+    are column line coordinates, ``slabs`` the z of each slab, ``plot`` the
+    footprint, and ``params`` the sampled parameters recorded per sample.
+    """
+
     volume: np.ndarray
     cols_x: List[int]
     cols_y: List[int]
@@ -76,6 +83,7 @@ def _structured_lines(rng: np.random.Generator, lo: int, hi: int, n: int) -> Lis
 
 
 def build_skeleton(rng: np.random.Generator) -> Skeleton:
+    """Sample storey height, column grid and slabs; return the frame as a :class:`Skeleton`."""
     v = np.zeros((N, N, N), dtype=np.int8)
     x0, x1 = MARGIN, N - 1 - MARGIN
     y0, y1 = MARGIN, N - 1 - MARGIN
@@ -155,6 +163,8 @@ def add_l_borders(sk: Skeleton) -> None:
 
 @dataclass
 class Wall:
+    """A column-to-column wall: ``axis``/``pos`` locate its plane, ``s0..s1`` and ``z_lo..z_hi`` its extent."""
+
     axis: int
     pos: int
     s0: int
@@ -485,6 +495,11 @@ def generate_structure_with_params(seed: int, max_tries: int = 20) -> Tuple[np.n
 
 
 def generate_structure(rng_or_seed) -> np.ndarray:
+    """Return one structure as an int8 ``(64, 64, 64)`` array of element ids.
+
+    Accepts an int seed or a ``numpy.random.Generator`` (a seed is drawn from it).
+    Params are dropped; use :func:`generate_structure_with_params` to keep them.
+    """
     seed = rng_or_seed if isinstance(rng_or_seed, (int, np.integer)) else int(rng_or_seed.integers(0, 2**31))
     return generate_structure_with_params(int(seed))[0]
 
