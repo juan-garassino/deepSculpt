@@ -27,6 +27,7 @@ from services.inference.app.schemas import (
     TrainStatusResponse,
 )
 from services.inference.app.settings import get_settings
+from services.inference.app.uri_utils import parse_allowed_gcs_uri
 from services.inference.app.visualization import (
     make_and_upload_gif,
     make_and_upload_gif_from_slices,
@@ -301,7 +302,10 @@ def visualize_dataset(request: DatasetVisualizationRequest) -> InferenceResponse
     if not request.gcs_uri.endswith(".npy"):
         raise HTTPException(status_code=400, detail="gcs_uri must point to a .npy file")
 
-    bucket_name, blob_path = request.gcs_uri.replace("gs://", "").split("/", 1)
+    try:
+        bucket_name, blob_path = parse_allowed_gcs_uri(request.gcs_uri, settings.models_bucket)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     client = storage.Client()
     blob = client.bucket(bucket_name).blob(blob_path)
     if not blob.exists():
@@ -309,7 +313,7 @@ def visualize_dataset(request: DatasetVisualizationRequest) -> InferenceResponse
 
     local_path = f"/tmp/{request_id}.npy"
     blob.download_to_filename(local_path)
-    volume = np.load(local_path)
+    volume = np.load(local_path, allow_pickle=False)
 
     if volume.ndim == 3:
         volume = volume[None, None, ...]
