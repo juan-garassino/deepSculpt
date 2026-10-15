@@ -13,7 +13,27 @@ DeepSculpt is a 3‑service, GPU‑ready system for 3D voxel generation with GAN
 
 See `docs/architecture.md` for details.
 
-## Quick Start (Local)
+## Quick Start: data and tests (CPU, no Docker)
+
+Requires Python 3.9+ and the dependencies in `pyproject.toml` / `requirements.txt` (PyTorch, NumPy, SciPy, scikit-learn, plotly, psutil, among others). Run from the repo root; `tests/conftest.py` puts the package on the path, but scripts under `scripts/` need `PYTHONPATH=.`.
+
+```bash
+# Generate 3 shodhan-grammar sample structures (64^3, int8 element ids + class colours + per-sample params JSON)
+python -m deepsculpt.main generate-data --num-samples 3 --void-dim 64 \
+  --structure-preset shodhan --output-dir ./data
+
+# Data gate used before GPU spend (masked IoU + frequency gates, contact sheet, 3D HTML under results/shodhan_probe/)
+PYTHONPATH=. python scripts/shodhan_probe.py --n 200
+
+# Tests that are expected to pass
+python -m pytest tests/test_shodhan.py tests/test_palette.py tests/test_latent_ops.py tests/test_factory.py -q
+```
+
+`python -m deepsculpt.main --help` lists the 14 subcommands (`train-gan`, `train-diffusion`, `train-autoencoder`, `generate-data`, `sample-gan`, `sample-diffusion`, `latent-walk`, `latent-traverse`, `latent-directions`, `preprocess`, `visualize`, `benchmark`, `evaluate`, `export`).
+
+Known test status: a bare `pytest` stops at 11 collection errors in `tests/unit/`, `tests/integration/` and `tests/test_trainer.py` (imports of modules that no longer exist, e.g. `from workflow import ...`). Only the four files above are maintained. No trained-model metrics are published in this repo; run history and recipes are in `CLAUDE.md` and `docs/training.md`.
+
+## Quick Start (Services, Docker)
 
 1. Start services.
 ```bash
@@ -136,7 +156,7 @@ If you prefer the manual UI route, on RunPod create a GPU Pod with the image and
 | `GCS_BUCKET` | `garassino-ml-artifacts` (region `europe-west1`) |
 | `GCS_PROJECT` | `garassino-ml` |
 | `GCS_ACCESS_TOKEN` | short-lived OAuth2 token minted by GHA via WIF. No SA JSON. |
-| `MODE` | `train` \| `research` \| `improve` \| `self-improve` (continuous + toggleable; see [`docs/runpod.md`](docs/runpod.md)) |
+| `MODE` | `train` \| `render` \| `research` \| `improve` \| `self-improve` (continuous + toggleable; see [`docs/runpod.md`](docs/runpod.md)) |
 | `RUN_ID` | run identifier (used in GCS paths) |
 | `TIME_BUDGET` | seconds (research/improve modes) |
 
