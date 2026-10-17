@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class InferenceRequest(BaseModel):
-    input_vector: Optional[List[float]] = Field(default=None, description="Optional noise vector")
+    input_vector: Optional[List[float]] = Field(default=None, max_length=4096, description="Optional noise vector")
     num_samples: int = Field(default=1, ge=1, le=8)
     return_visualization: bool = Field(default=False)
     visualization_format: str = Field(default="png", description="png|gif|obj|stl")
@@ -11,7 +11,7 @@ class InferenceRequest(BaseModel):
     latent_steps: int = Field(default=12, ge=2, le=48)
     num_inference_steps: int = Field(default=50, ge=5, le=250)
     guidance_scale: float = Field(default=1.0, ge=0.0, le=20.0)
-    conditioning: Optional[List[float]] = Field(default=None, description="Conditioning vector for conditional diffusion")
+    conditioning: Optional[List[float]] = Field(default=None, max_length=4096, description="Conditioning vector for conditional diffusion")
     class_label: Optional[int] = Field(default=None, ge=0)
     conditioning_mode: Optional[str] = Field(
         default=None,

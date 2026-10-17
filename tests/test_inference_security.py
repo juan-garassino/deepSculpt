@@ -94,3 +94,56 @@ def test_gcloud_fallback_env_survives_commas(monkeypatch):
     key, _, raw = pairs[0].partition("=")
     assert key == "TRAIN_REQUEST_JSON"
     assert json.loads(raw) == params
+
+
+# --------------------------------------------------------------------------
+# G-011: /train/status must accept real execution names and nothing else
+# --------------------------------------------------------------------------
+
+from services.inference.app.uri_utils import normalize_execution_name  # noqa: E402
+
+_FULL = "projects/p1/locations/europe-west1/jobs/deepsculpt-train/executions/deepsculpt-train-abc12"
+
+
+def test_execution_full_name_accepted():
+    assert normalize_execution_name(_FULL, "p1", "europe-west1", "deepsculpt-train") == _FULL
+
+
+def test_execution_short_id_expanded():
+    assert (
+        normalize_execution_name("deepsculpt-train-abc12", "p1", "europe-west1", "deepsculpt-train")
+        == _FULL
+    )
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "projects/other/locations/europe-west1/jobs/deepsculpt-train/executions/x",  # foreign project
+        "projects/p1/locations/europe-west1/jobs/other-job/executions/x",  # foreign job
+        "projects/p1/locations/europe-west1/services/api",  # different resource type
+        "projects/p1/locations/europe-west1/jobs/deepsculpt-train/executions/../../x",
+        "../secrets",
+        "a?b=c",
+        "",
+    ],
+)
+def test_execution_name_rejects_other_resources(bad):
+    with pytest.raises(ValueError):
+        normalize_execution_name(bad, "p1", "europe-west1", "deepsculpt-train")
+
+
+# --------------------------------------------------------------------------
+# Request size bounds (cheap DoS guard on the public JSON body)
+# --------------------------------------------------------------------------
+
+
+def test_inference_request_vectors_are_bounded():
+    pydantic = pytest.importorskip("pydantic")
+    from services.inference.app.schemas import InferenceRequest
+
+    with pytest.raises(pydantic.ValidationError):
+        InferenceRequest(input_vector=[0.0] * 100_000)
+    with pytest.raises(pydantic.ValidationError):
+        InferenceRequest(conditioning=[0.0] * 100_000)
+    assert InferenceRequest(input_vector=[0.0] * 128).input_vector is not None
