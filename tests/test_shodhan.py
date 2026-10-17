@@ -259,7 +259,7 @@ def test_cli_generate_shodhan(tmp_path):
          "--num-samples", "3", "--void-dim", "64",
          "--structure-preset", "shodhan", "--output-dir", str(tmp_path)],
         capture_output=True, text=True, timeout=600,
-        cwd="/Users/juan-garassino/Code/005-products/007-deep-sculpt")
+        cwd=str(Path(__file__).resolve().parents[1]))
     assert r.returncode == 0, r.stdout + r.stderr
     metas = list(tmp_path.rglob("dataset_metadata.json"))
     assert metas, "no collection written"

@@ -3,9 +3,9 @@ uvicorn==0.27.1
 pydantic==2.6.4
 google-cloud-storage==2.16.0
 google-auth==2.29.0
-requests==2.31.0
+requests==2.33.0
 numpy==1.26.4
-pillow==10.2.0
+pillow==12.3.0
 imageio==2.34.0
 scikit-image==0.23.2
 mlflow==2.13.1

@@ -27,6 +27,7 @@ from services.inference.app.schemas import (
     TrainStatusResponse,
 )
 from services.inference.app.settings import get_settings
+from services.inference.app.uri_utils import normalize_execution_name, parse_allowed_gcs_uri
 from services.inference.app.visualization import (
     make_and_upload_gif,
     make_and_upload_gif_from_slices,
@@ -185,7 +186,8 @@ def train(request: TrainRequest) -> TrainResponse:
             allow_gcloud_fallback=settings.allow_gcloud_fallback,
         )
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to submit training job: {exc}") from exc
+        logger.exception("train request_id=%s submit failed", request_id)
+        raise HTTPException(status_code=500, detail="Failed to submit training job") from exc
 
     execution_id = response.get("name") or response.get("metadata", {}).get("name")
 
@@ -212,11 +214,18 @@ def latest_model_pointer() -> ModelPointerResponse:
     return ModelPointerResponse(request_id=request_id, pointer=pointer)
 
 
-@app.get("/train/status/{execution_id}", response_model=TrainStatusResponse)
+@app.get("/train/status/{execution_id:path}", response_model=TrainStatusResponse)
 def train_status(execution_id: str) -> TrainStatusResponse:
     request_id = str(uuid.uuid4())
     settings = get_settings()
     settings.validate_for_train_trigger()
+
+    try:
+        execution_id = normalize_execution_name(
+            execution_id, settings.project_id, settings.region, settings.train_job_name
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     token = None
     try:
@@ -227,13 +236,20 @@ def train_status(execution_id: str) -> TrainStatusResponse:
         credentials.refresh(Request())
         token = credentials.token
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Failed to get access token: {exc}") from exc
+        logger.exception("train_status request_id=%s token refresh failed", request_id)
+        raise HTTPException(status_code=500, detail="Failed to get access token") from exc
 
     url = f"https://run.googleapis.com/v2/{execution_id}"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers, timeout=20)
     if response.status_code >= 400:
-        raise HTTPException(status_code=response.status_code, detail=response.text)
+        logger.warning(
+            "train_status request_id=%s run api %s: %s",
+            request_id,
+            response.status_code,
+            response.text[:500],
+        )
+        raise HTTPException(status_code=response.status_code, detail="Run API request failed")
     data = response.json()
     status = data.get("status", "unknown")
     return TrainStatusResponse(request_id=request_id, execution_id=execution_id, status=status, raw=data)
@@ -250,7 +266,8 @@ def mlflow_last_run() -> MlflowLastRunResponse:
         import mlflow
         from mlflow.tracking import MlflowClient
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"MLflow client unavailable: {exc}") from exc
+        logger.exception("mlflow client import failed")
+        raise HTTPException(status_code=500, detail="MLflow client unavailable") from exc
 
     mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     client = MlflowClient()
@@ -301,7 +318,10 @@ def visualize_dataset(request: DatasetVisualizationRequest) -> InferenceResponse
     if not request.gcs_uri.endswith(".npy"):
         raise HTTPException(status_code=400, detail="gcs_uri must point to a .npy file")
 
-    bucket_name, blob_path = request.gcs_uri.replace("gs://", "").split("/", 1)
+    try:
+        bucket_name, blob_path = parse_allowed_gcs_uri(request.gcs_uri, settings.models_bucket)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     client = storage.Client()
     blob = client.bucket(bucket_name).blob(blob_path)
     if not blob.exists():
@@ -309,7 +329,7 @@ def visualize_dataset(request: DatasetVisualizationRequest) -> InferenceResponse
 
     local_path = f"/tmp/{request_id}.npy"
     blob.download_to_filename(local_path)
-    volume = np.load(local_path)
+    volume = np.load(local_path, allow_pickle=False)
 
     if volume.ndim == 3:
         volume = volume[None, None, ...]

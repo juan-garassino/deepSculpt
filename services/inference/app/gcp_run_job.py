@@ -8,6 +8,9 @@ from google.auth.transport.requests import Request
 import requests
 
 
+_ENV_DELIM = "~|~"
+
+
 def _get_access_token() -> str:
     credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
     credentials.refresh(Request())
@@ -41,6 +44,8 @@ def run_job_via_api(project_id: str, region: str, job_name: str, train_params: D
 
 def run_job_via_gcloud(project_id: str, region: str, job_name: str, train_params: Dict[str, Any]) -> Dict[str, Any]:
     env_json = json.dumps(train_params)
+    if _ENV_DELIM in env_json:
+        raise ValueError("train params may not contain the env delimiter")
     cmd = [
         "gcloud",
         "run",
@@ -49,7 +54,9 @@ def run_job_via_gcloud(project_id: str, region: str, job_name: str, train_params
         job_name,
         f"--project={project_id}",
         f"--region={region}",
-        f"--set-env-vars=TRAIN_REQUEST_JSON={env_json}",
+        # gcloud splits --set-env-vars on ','; JSON is full of commas, so
+        # declare an alternate delimiter (^DELIM^) that cannot occur in it.
+        f"--set-env-vars=^{_ENV_DELIM}^TRAIN_REQUEST_JSON={env_json}",
         "--format=json",
     ]
     result = subprocess.run(cmd, check=True, capture_output=True, text=True)

@@ -12,6 +12,10 @@ COPY services/inference /app/services/inference
 
 ENV PYTHONPATH=/app
 
+# Run unprivileged: the API only writes to /tmp and $HOME (matplotlib cache).
+RUN useradd --create-home --uid 10001 app
+USER app
+
 EXPOSE 8080
 
 CMD ["uvicorn", "services.inference.app.main:app", "--host", "0.0.0.0", "--port", "8080"]
